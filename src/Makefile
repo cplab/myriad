@@ -1,9 +1,3 @@
-CC = gcc
-CFLAGS = -Wall -O0 -g3 -std=c99
-LDFLAGS = -static -L. -lmyriad
-
-OBJECTS = Object.o Point.o Circle.o Compartment.o Mechanism.o LifCompartment.o DCMechanism.o LifLeakMechanism.o
-
 Object.o:
 	$(CC) $(CFLAGS) -c Object.c -o Object.o
 
@@ -28,14 +22,22 @@ LifCompartment.o: Compartment.o
 LifLeakMechanism.o: Mechanism.o LifCompartment.o
 	$(CC) $(CFLAGS) -c LifLeakMechanism.c -o LifLeakMechanism.o
 
-libmyriad: $(OBJECTS)
+libmyriad.a: $(OBJECTS)
 	ar rcs libmyriad.a $(OBJECTS)
-
-all: $(OBJECTS) libmyriad
+	
+any_test: $(OBJECTS)
 	$(CC) $(CFLAGS) any.c $(LDFLAGS) -o any_test
+	
+points_test: $(OBJECT)
 	$(CC) $(CFLAGS) points.c $(LDFLAGS) -o points_test
-	$(CC) $(CFLAGS) circles.c $(LDFLAGS) -o circles_test
-	$(CC) $(CFLAGS) compartments.c  $(LDFLAGS) -o compartments 
 
-clean:
-	rm -f *.o libmyriad.a any_test circles_test points_test compartments
+circles_test: $(OBJECT)
+	$(CC) $(CFLAGS) circles.c $(LDFLAGS) -o circles_test
+	
+compartments: $(OBJECT)
+	$(CC) $(CFLAGS) compartments.c  $(LDFLAGS) -o compartments
+
+all: $(OBJECTS) $(LIBRARIES) $(BINARIES)
+	mv $(OBJECTS) ../$(OBJDIR)
+	mv $(LIBRARIES) ../$(LIBDIR)
+	mv $(BINARIES) ../$(BINDIR)
