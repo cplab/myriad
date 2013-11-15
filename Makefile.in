@@ -55,9 +55,11 @@ $(distdir).tar.gz: $(distdir)
 # Build a distributable dummy folder from our source & autotools scripts
 $(distdir): FORCE
 	mkdir -p $(distdir)/src
-	cp configure.ac $(distdir)
-	cp configure $(distdir)
-	cp Makefile.in $(distdir)
+	cp $(srcdir)/configure.ac $(distdir)
+	cp $(srcdir)/configure $(distdir)
+	cp $(srcdir)/config.h.in $(distdir)
+	-cp  $(srcdir)/install-sh $(distdir)
+	cp $(srcdir)/Makefile.in $(distdir)
 	cp -r $(srcdir) $(distdir)/src
 
 # Force a clean-build of the distributable

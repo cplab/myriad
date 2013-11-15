@@ -41,6 +41,9 @@ build/
 autom4te.cache/
 configure
 config.status
+install-sh
+config.h
+config.h.in
 
 # Non-autotools Makefiles
 Makefile
