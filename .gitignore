@@ -17,6 +17,9 @@
 *.out
 *.app
 
+# logs
+*.log
+
 # Binaries folder
 bin/
 
@@ -33,3 +36,8 @@ lib/
 
 # Build directory
 build/
+
+# Autotools junk
+autom4te.cache/
+configure
+configure.status
