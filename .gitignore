@@ -40,4 +40,8 @@ build/
 # Autotools junk
 autom4te.cache/
 configure
-configure.status
+config.status
+
+# Non-autotools Makefiles
+Makefile
+src/Makefile
