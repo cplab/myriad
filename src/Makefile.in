@@ -1,0 +1,81 @@
+# @configure_input@
+
+# Pacakge-specific substitution variables
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
+distdir = $(tarname)-$(version)
+
+# Prefix-specific substitution variables
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+
+# VPATH-related substitution variables
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+# ...
+
+CC = gcc
+CFLAGS = -Wall -O0 -g3 -std=c99
+LDFLAGS = -static -L. -lmyriad
+
+OBJECTS = Object.o Point.o Circle.o Compartment.o Mechanism.o LifCompartment.o DCMechanism.o LifLeakMechanism.o
+LIBRARIES = libmyriad.a
+BINARIES = any_test points_test circles_test compartments
+
+all: Makefile $(OBJECTS) $(LIBRARIES) $(BINARIES)
+	mv $(OBJECTS) ../$(OBJDIR)
+	mv $(LIBRARIES) ../$(LIBDIR)
+	mv $(BINARIES) ../$(BINDIR)
+
+# Make sure to generate Makefile from template (.in)
+Makefile: Makefile.in ../config.status
+	cd .. && ./config.status src/$@
+
+# Make sure our parent directory's configure exists
+../config.status: ../configure
+	cd .. && ./config.status --recheck
+
+Object.o:
+	$(CC) $(CFLAGS) -c $(srcdir)/Object.c -o Object.o
+
+Point.o: Object.o
+	$(CC) $(CFLAGS) -c $(srcdir)/Point.c -o Point.o
+	
+Circle.o: Object.o Point.o
+	$(CC) $(CFLAGS) -c $(srcdir)/Circle.c -o Circle.o
+
+Compartment.o: Object.o
+	$(CC) $(CFLAGS) -c $(srcdir)/Compartment.c -o Compartment.o
+
+Mechanism.o: Object.o
+	$(CC) $(CFLAGS) -c $(srcdir)/Mechanism.c -o Mechanism.o
+
+DCMechanism: Mechanism.o
+	$(CC) $(CFLAGS) -c $(srcdir)/DCMechanism.c -o DCMechanism.o
+
+LifCompartment.o: Compartment.o
+	$(CC) $(CFLAGS) -c $(srcdir)/LifCompartment.c -o LifCompartment.o
+
+LifLeakMechanism.o: Mechanism.o LifCompartment.o
+	$(CC) $(CFLAGS) -c $(srcdir)/LifLeakMechanism.c -o LifLeakMechanism.o
+
+libmyriad.a: $(OBJECTS)
+	ar rcs libmyriad.a $(OBJECTS)
+	
+any_test: $(OBJECTS)
+	$(CC) $(CFLAGS) $(srcdir)/any.c $(LDFLAGS) -o any_test
+	
+points_test: $(OBJECT)
+	$(CC) $(CFLAGS) $(srcdir)/points.c $(LDFLAGS) -o points_test
+
+circles_test: $(OBJECT)
+	$(CC) $(CFLAGS) $(srcdir)/circles.c $(LDFLAGS) -o circles_test
+	
+compartments: $(OBJECT)
+	$(CC) $(CFLAGS) $(srcdir)/compartments.c  $(LDFLAGS) -o compartments
+
+
