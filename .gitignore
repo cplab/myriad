@@ -16,17 +16,3 @@
 *.exe
 *.out
 *.app
-
-# Binaries Folder
-bin/
-
-# Object folder
-obj/
-
-# Library folder
-lib/
-
-# Eclipse junk
-.cproject
-.settings/
-.project
