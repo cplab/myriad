@@ -16,10 +16,11 @@ bindir = @bindir@
 srcdir = @srcdir@
 VPATH = @srcdir@
 
-# ...
-
-CC = gcc
-CFLAGS = -Wall -O0 -g3 -std=c99
+# Compilation flags
+CC = @CC@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
 LDFLAGS = -static -L. -lmyriad
 IFLAGS = -I. -I$(srcdir) -I..
 
@@ -41,42 +42,42 @@ Makefile: Makefile.in ../config.status
 	cd .. && ./config.status --recheck
 
 Object.o:
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/Object.c -o Object.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/Object.c -o Object.o
 
 Point.o: Object.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/Point.c -o Point.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/Point.c -o Point.o
 	
 Circle.o: Object.o Point.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/Circle.c -o Circle.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/Circle.c -o Circle.o
 
 Compartment.o: Object.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/Compartment.c -o Compartment.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/Compartment.c -o Compartment.o
 
 Mechanism.o: Object.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/Mechanism.c -o Mechanism.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/Mechanism.c -o Mechanism.o
 
 DCMechanism: Mechanism.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/DCMechanism.c -o DCMechanism.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/DCMechanism.c -o DCMechanism.o
 
 LifCompartment.o: Compartment.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/LifCompartment.c -o LifCompartment.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/LifCompartment.c -o LifCompartment.o
 
 LifLeakMechanism.o: Mechanism.o LifCompartment.o
-	$(CC) $(IFLAGS) $(CFLAGS) -c $(srcdir)/LifLeakMechanism.c -o LifLeakMechanism.o
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) -c $(srcdir)/LifLeakMechanism.c -o LifLeakMechanism.o
 
 libmyriad.a: $(OBJECTS)
 	ar rcs libmyriad.a $(OBJECTS)
 	
 any_test: $(OBJECTS)
-	$(CC) $(IFLAGS) $(CFLAGS) $(srcdir)/any.c $(LDFLAGS) -o any_test
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) $(srcdir)/any.c $(LDFLAGS) -o any_test
 	
 points_test: $(OBJECT)
-	$(CC) $(IFLAGS) $(CFLAGS) $(srcdir)/points.c $(LDFLAGS) -o points_test
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) $(srcdir)/points.c $(LDFLAGS) -o points_test
 
 circles_test: $(OBJECT)
-	$(CC) $(IFLAGS) $(CFLAGS) $(srcdir)/circles.c $(LDFLAGS) -o circles_test
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) $(srcdir)/circles.c $(LDFLAGS) -o circles_test
 	
 compartments: $(OBJECT)
-	$(CC) $(IFLAGS) $(CFLAGS) $(srcdir)/compartments.c  $(LDFLAGS) -o compartments
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(IFLAGS) $(srcdir)/compartments.c  $(LDFLAGS) -o compartments
 
 
