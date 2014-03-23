@@ -1,50 +1,17 @@
-# Object files
+# C Crap
 *.o
-*.ko
-
-# Libraries
-*.lib
 *.a
+*.lib
+*.bin
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# C Tags
+.tags
 
-# Executables
-*.exe
-*.out
-*.app
+# Doxy
+html/
 
-# logs
-*.log
+# Fuse crap
+.fuse*
 
-# Binaries folder
-bin/
-
-# Object folder
-obj/
-
-# Library folder
-lib/
-
-# Eclipse junk
-.cproject
-.settings/
-.project
-
-# Build directory
-build/
-
-# Autotools junk
-autom4te.cache/
-configure
-config.status
-install-sh
-config.h
-config.h.in
-
-# Non-autotools Makefiles
-Makefile
-src/Makefile
+# Emacs crap
+\#*
