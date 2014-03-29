@@ -11,6 +11,7 @@ extern "C"
 
 #include "MyriadObject.cuh"
 #include "Mechanism.cuh"
+#include "Compartment.cuh"
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
@@ -41,7 +42,7 @@ static int cuda_basic_test()
     #ifndef __clang__
     check_obj_kernel<<<dimGrid, dimBlock>>>(cuda_obj); // Not an error
     #endif
-
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
 
     cudaDeviceReset();
@@ -105,7 +106,7 @@ static int cuda_address_test()
     #ifndef __clang__
     fancy_addr_check<<<dimGrid, dimBlock>>>(); // Not an error
     #endif
-
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
 
     cudaDeviceReset();
@@ -144,7 +145,7 @@ static int cuda_oop()
     #ifndef __clang__
     cuda_oop_test<<<dimGrid, dimBlock>>>(my_cuda_obj); // Not an error
     #endif
-
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
 
     cudaDeviceReset();
@@ -197,12 +198,63 @@ static int mechanism_test()
     #ifndef __clang__
     cuda_mechansim_test<<<dimGrid, dimBlock>>>(dev_mech_obj); // Not an error
     #endif
-
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
 
     cudaDeviceReset();
 
     return EXIT_SUCCESS;
+}
+
+//////////////////////
+// Test Compartment //
+//////////////////////
+
+__global__ void cuda_compartment_test(void* obj)
+{
+	struct Compartment* self = (struct Compartment*) obj;
+	struct CompartmentClass* self_c = (struct CompartmentClass*) cuda_myriad_class_of(self);
+	printf("\tMy ptr: %p\n", self);
+	printf("\tMy ID: %i\n", self->id);
+	printf("\tMy class: %p\n", self->_.m_class);
+	printf("\tGPU, my size: %lu\n", cuda_myriad_size_of(obj));
+	printf("\tCompartment fxn: %p\n", self_c->m_comp_fxn);
+	printf("\tCompartment fxn invocation: "); self_c->m_comp_fxn(self, NULL, 0.0, 0.0, 0);
+	printf("\tCompartent fxn indirect call: "); cuda_simul_fxn(self, NULL, 0.0, 0.0, 0);
+}
+
+static int compartment_test()
+{
+	initCUDAObjects();
+	initCompartment(1);
+
+	void* comp_obj = NULL, *dev_comp_obj = NULL;
+
+	comp_obj = myriad_new(Compartment, 1);
+
+	UNIT_TEST_VAL_EQ(myriad_size_of(comp_obj), sizeof(struct Compartment));
+
+	simul_fxn(comp_obj, NULL, 0.0, 0.0, 0);
+
+	dev_comp_obj = myriad_cudafy(comp_obj, 0);
+
+    // BLAH
+    const int nThreads = 1; // NUM_CUDA_THREADS;
+    const int nBlocks = 1;
+
+    dim3 dimGrid(nBlocks);
+    dim3 dimBlock(nThreads);
+
+    // Test
+    #ifndef __clang__
+    cuda_compartment_test<<<dimGrid, dimBlock>>>(dev_comp_obj); // Not an error
+    #endif
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+    CUDA_CHECK_RETURN(cudaGetLastError());
+
+    cudaDeviceReset();
+
+	return EXIT_SUCCESS;
 }
 
 //////////////////////////////
@@ -235,7 +287,7 @@ static int cuda_symbol_malloc()
     #ifndef __clang__
     cuda_dev_malloc_test<<<dimGrid, dimBlock>>>(); // Not an error
     #endif
-
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
 
     cudaDeviceReset();
@@ -251,11 +303,12 @@ int main(int argc, char const *argv[])
     puts("Hello World!\n");
 
     // UNIT_TEST_FUN(initCUDAObjects);
-	UNIT_TEST_FUN(cuda_basic_test);
+	// UNIT_TEST_FUN(cuda_basic_test);
     UNIT_TEST_FUN(cuda_address_test);
     UNIT_TEST_FUN(cuda_oop);
 	UNIT_TEST_FUN(cuda_symbol_malloc);
 	UNIT_TEST_FUN(mechanism_test);
+	UNIT_TEST_FUN(compartment_test);
 
     puts("\nDone.");
 

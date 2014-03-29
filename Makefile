@@ -47,7 +47,7 @@ MYRIAD_LIB_OBJS 	:= myriad_debug.o
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME	:= cudamyriad
 CUDA_MYRIAD_LIB			:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
-CUDA_MYRIAD_LIB_OBJS	:= MyriadObject.o Mechanism.o
+CUDA_MYRIAD_LIB_OBJS	:= MyriadObject.o Mechanism.o Compartment.o
 # CUDA_MYRIAD_LINK_OBJ:= CUDA_MyriadObject_Link.o
 
 # LD Flags
