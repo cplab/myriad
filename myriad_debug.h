@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <assert.h>
 
 #ifdef UNIT_TEST
     // Allows for unit testing arbitrary functions as long as they follow the
@@ -21,5 +22,21 @@
     #define UNIT_TEST_FUN(...) do {} while(0)
     #define UNIT_TEST_VAL_EQ(...) do {} while(0)
 #endif
+
+#ifdef DEBUG
+    #define DEBUG_PRINTF(str, ...) do {  \
+	    fprintf(stdout, "DEBUG @ "__FILE__":"__LINE__": "#str, __VA_ARGS__) \
+	} while(0)
+#else
+    #define DEBUG_PRINTF(...) do {} while (0)
+#endif
+
+#define CUDA_CHECK_RETURN(value) {                                          \
+    cudaError_t _m_cudaStat = value;                                        \
+    if (_m_cudaStat != cudaSuccess) {                                       \
+        fprintf(stderr, "Error %s at line %d in file %s\n",                 \
+                cudaGetErrorString(_m_cudaStat), __LINE__, __FILE__);       \
+        exit(EXIT_FAILURE);                                                 \
+    } }
 
 #endif

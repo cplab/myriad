@@ -116,7 +116,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 {
 	void* result = NULL;
 	
-    // We know that we're actually a compartment class
+    // We know what class we are
 	struct CompartmentClass* my_class = (struct CompartmentClass*) _self;
 
 	// Make a temporary copy-class because we need to change shit
@@ -134,7 +134,8 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 			)
 		);
 	copy_class->m_comp_fxn = my_comp_fun;
-	printf("Copy Class comp fxn: %p\n", my_comp_fun);
+	
+	DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 	
 	// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 	// By default we clobber the copy_class_class' superclass with

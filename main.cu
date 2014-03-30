@@ -4,10 +4,14 @@
 #include <string.h>
 
 // Myriad C API Headers
+#ifdef __CPP__
 extern "C"
 {
     #include "myriad_debug.h"
 }
+#else
+#include "myriad_debug.h"
+#endif
 
 #include "MyriadObject.cuh"
 #include "Mechanism.cuh"
@@ -15,40 +19,6 @@ extern "C"
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-
-/////////////////////////////////////
-//! Tests basic CUDA functionality //
-/////////////////////////////////////
-__global__ void check_obj_kernel(void* cuda_obj)
-{
-    const struct MyriadObject* o = (const struct MyriadObject*) cuda_obj;
-    printf("\tcuda_obj->m_class: %p\n", o->m_class);
-}
-
-static int cuda_basic_test()
-{
-    void* cuda_obj = myriad_new(MyriadObject);
-	assert(cuda_obj);
-
-    printf("\tMyriadObject: %p\n", MyriadObject);
-
-    const int nThreads = 1; // NUM_CUDA_THREADS;
-    const int nBlocks = 1;
-
-    dim3 dimGrid(nBlocks);
-    dim3 dimBlock(nThreads);
-
-    // Test
-    #ifndef __clang__
-    check_obj_kernel<<<dimGrid, dimBlock>>>(cuda_obj); // Not an error
-    #endif
-	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
-    CUDA_CHECK_RETURN(cudaGetLastError());
-
-    cudaDeviceReset();
-
-    return EXIT_SUCCESS;
-}
 
 //////////////////////////////////////////
 // Test fancy get address functionality //

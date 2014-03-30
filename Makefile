@@ -30,7 +30,7 @@ CPPFLAGS		:= $(CCOMMON_FLAGS) -fpermissive
 
 # NVCC & related flags
 NVCC_HOSTCC_FLAGS = -ccbin $(CPP) $(addprefix -Xcompiler , $(CPPFLAGS))
-NVCCFLAGS := -m64 -g -G
+NVCCFLAGS := -m64 -g -G -pg
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 
