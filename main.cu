@@ -17,72 +17,9 @@ extern "C"
 #include "Mechanism.cuh"
 #include "Compartment.cuh"
 
+#include <vector_types.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-
-//////////////////////////////////////////
-// Test fancy get address functionality //
-//////////////////////////////////////////
-
-__device__ struct MyriadObject c_dev_obj = {NULL};
-__device__ struct MyriadClass c_dev_class = {
-            {NULL},
-            NULL,
-            0,
-            NULL,
-			NULL,
-			NULL,
-        };
-
-__global__ void fancy_addr_check()
-{
-    printf("\tsize(GPU): %lu\n", c_dev_class.size);
-}
-
-static int cuda_address_test()
-{
-    void* addr_of_object = NULL, *addr_of_class = NULL;
-    CUDA_CHECK_RETURN(cudaGetSymbolAddress(&addr_of_object, c_dev_obj));
-    CUDA_CHECK_RETURN(cudaGetSymbolAddress(&addr_of_class, c_dev_class));
-
-    struct MyriadClass c_class = {
-        {(const struct MyriadClass*) addr_of_class},
-        (const struct MyriadClass*) addr_of_class,
-        (const struct MyriadClass*) addr_of_class,
-        sizeof(struct MyriadClass),
-		NULL,
-		NULL,
-    };
-
-    printf("\tsize(CPU): %lu\n",c_class.size);
-
-    CUDA_CHECK_RETURN(
-        cudaMemcpyToSymbol(
-            c_dev_class,
-            &c_class,
-            sizeof(struct MyriadClass),
-            0,
-            cudaMemcpyHostToDevice
-        )
-    );
-
-    const int nThreads = 1; // NUM_CUDA_THREADS;
-    const int nBlocks = 1;
-
-    dim3 dimGrid(nBlocks);
-    dim3 dimBlock(nThreads);
-
-    // Test
-    #ifndef __clang__
-    fancy_addr_check<<<dimGrid, dimBlock>>>(); // Not an error
-    #endif
-	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
-    CUDA_CHECK_RETURN(cudaGetLastError());
-
-    cudaDeviceReset();
-
-    return EXIT_SUCCESS;
-}
 
 ///////////////////
 // Test CUDA OOP //
@@ -272,9 +209,6 @@ int main(int argc, char const *argv[])
 {
     puts("Hello World!\n");
 
-    // UNIT_TEST_FUN(initCUDAObjects);
-	// UNIT_TEST_FUN(cuda_basic_test);
-    UNIT_TEST_FUN(cuda_address_test);
     UNIT_TEST_FUN(cuda_oop);
 	UNIT_TEST_FUN(cuda_symbol_malloc);
 	UNIT_TEST_FUN(mechanism_test);

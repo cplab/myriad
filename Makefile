@@ -26,11 +26,11 @@ OS_ARCH = x86_64
 # CC & related flags
 CCOMMON_FLAGS	:= -g3 -O0 -Wall
 CCFLAGS			:= $(CCOMMON_FLAGS) -std=c99
-CPPFLAGS		:= $(CCOMMON_FLAGS) -fpermissive
+CUFLAGS			:= $(CCOMMON_FLAGS)
 
 # NVCC & related flags
-NVCC_HOSTCC_FLAGS = -ccbin $(CPP) $(addprefix -Xcompiler , $(CPPFLAGS))
-NVCCFLAGS := -m64 -g -G -pg
+NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
+NVCCFLAGS := -m$(OS_SIZE) -g -G -pg
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 
@@ -48,7 +48,7 @@ MYRIAD_LIB_OBJS 	:= myriad_debug.o
 CUDA_MYRIAD_LIB_LDNAME	:= cudamyriad
 CUDA_MYRIAD_LIB			:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
 CUDA_MYRIAD_LIB_OBJS	:= MyriadObject.o Mechanism.o Compartment.o
-# CUDA_MYRIAD_LINK_OBJ:= CUDA_MyriadObject_Link.o
+
 
 # LD Flags
 LD_FLAGS 			:= -L. -l$(MYRIAD_LIB_LDNAME) -l$(CUDA_MYRIAD_LIB_LDNAME)
