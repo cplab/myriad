@@ -1,4 +1,3 @@
-
 ###############################
 #     CUDA Binaries & Libs    #
 ###############################
@@ -26,6 +25,7 @@ OS_ARCH = x86_64
 # CC & related flags
 CCOMMON_FLAGS	:= -g3 -O0 -Wall
 CCFLAGS			:= $(CCOMMON_FLAGS) -std=c99
+CPPFLAGS		:= 
 CUFLAGS			:= $(CCOMMON_FLAGS)
 
 # NVCC & related flags
@@ -35,7 +35,7 @@ GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 
 ###############################
-#  Libraries & Linker Flags   #
+#        Libraries            #
 ###############################
 
 # Static Libraries
@@ -43,14 +43,19 @@ EXTRA_NVCC_FLAGS := -rdc=true
 # CPU Myriad Library
 MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 			:= lib$(MYRIAD_LIB_LDNAME).a
-MYRIAD_LIB_OBJS 	:= myriad_debug.o
+MYRIAD_LIB_OBJS 	:= myriad_debug.c.o MyriadObject.c.o Mechanism.c.o Compartment.c.o
+
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME	:= cudamyriad
 CUDA_MYRIAD_LIB			:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
-CUDA_MYRIAD_LIB_OBJS	:= MyriadObject.o Mechanism.o Compartment.o
+CUDA_MYRIAD_LIB_OBJS	:= MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o
 
+# Shared Libraries
 
-# LD Flags
+###############################
+#      Linker (LD) Flags      #
+###############################
+
 LD_FLAGS 			:= -L. -l$(MYRIAD_LIB_LDNAME) -l$(CUDA_MYRIAD_LIB_LDNAME)
 CUDART_LD_FLAGS		:= -L$(CUDA_LIB_PATH) -lcudart
 CUDA_BIN_LDFLAGS	:= $(CUDART_LD_FLAGS) $(LD_FLAGS)
@@ -66,6 +71,7 @@ CUDA_BIN_DEFINES ?= -DUNIT_TEST
 ###############################
 
 CUDA_INCLUDES := -I$(CUDA_INC_PATH)
+INCLUDES := $(CUDA_INCLUDES) -I.
 
 ###############################
 #        Make Targets         #
@@ -84,41 +90,13 @@ BINARIES	:= $(wildcard *.bin)
 #         Make Rules          #
 ###############################
 
+# ------- Build Rules -------
+
 .PHONY: clean all build run remake rebuild
 
 build: all
 
 all: $(SIMUL_MAIN_BIN)
-
-# CPU Myriad Library
-$(MYRIAD_LIB): $(MYRIAD_LIB_OBJS)
-	$(AR) rcs $@ $^
-
-$(MYRIAD_LIB_OBJS): %.o : %.c
-	$(CC) $(CCFLAGS) -o $@ -c $<
-###################################
-
-
-# CUDA Myriad Library
-$(CUDA_MYRIAD_LIB): $(CUDA_MYRIAD_LIB_OBJS)
-	$(NVCC) -lib $^ -o $(CUDA_MYRIAD_LIB)
-
-$(CUDA_MYRIAD_LIB_OBJS): %.o : %.cu
-	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(CUDA_INCLUDES) -o $@ -dc $<
-
-###################################
-
-# Linker object necessary for main binary seperate compilation
-$(CUDA_LINK_OBJ): $(SIMUL_MAIN_OBJ) $(CUDA_MYRIAD_LIB)
-	$(NVCC) $(GENCODE_FLAGS) -dlink $^ -o $(CUDA_LINK_OBJ)
-
-# Main binary object
-$(SIMUL_MAIN_OBJ): %.o : %.cu
-	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
-
-# Can use host linker to generate binary instead of nvcc
-$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB) $(CUDA_MYRIAD_LIB)
-	$(CC) -o $@ $+ $(CUDA_BIN_LDFLAGS)
 
 run: $(SIMUL_MAIN_BIN)
 	./$<
@@ -129,3 +107,34 @@ clean:
 remake: clean build
 
 rebuild: remake
+
+# ------- CPU Myriad Library -------
+
+$(MYRIAD_LIB): $(MYRIAD_LIB_OBJS)
+	$(AR) rcs $@ $^
+
+$(MYRIAD_LIB_OBJS): %.c.o : %.c
+	$(CC) $(CCFLAGS) $(INCLUDES) -o $@ -c $<
+
+# ------- CUDA Myriad Library -------
+
+$(CUDA_MYRIAD_LIB): $(CUDA_MYRIAD_LIB_OBJS)
+	$(NVCC) -lib $^ -o $(CUDA_MYRIAD_LIB)
+
+$(CUDA_MYRIAD_LIB_OBJS): %.cu.o : %.cu
+	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(CUDA_INCLUDES) -o $@ -dc $<
+
+# ------- Linker Object -------
+
+$(CUDA_LINK_OBJ): $(SIMUL_MAIN_OBJ) $(CUDA_MYRIAD_LIB)
+	$(NVCC) $(GENCODE_FLAGS) -dlink $^ -o $(CUDA_LINK_OBJ) # Necessary for main binary seperate compilation
+
+# ------- Main binary object -------
+
+$(SIMUL_MAIN_OBJ): %.o : %.cu
+	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
+
+# ------- Host Linker Generated Binary -------
+
+$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB) $(CUDA_MYRIAD_LIB)
+	$(CC) -I. -o $@ $+ $(CUDA_BIN_LDFLAGS)

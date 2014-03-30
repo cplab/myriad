@@ -3,23 +3,22 @@
 #include <assert.h>
 #include <string.h>
 
+#include <vector_types.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+
 // Myriad C API Headers
-#ifdef __CPP__
 extern "C"
 {
-    #include "myriad_debug.h"
+	#include "myriad_debug.h"
+    #include "MyriadObject.h"
+	#include "Mechanism.h"
+	#include "Compartment.h"
 }
-#else
-#include "myriad_debug.h"
-#endif
 
 #include "MyriadObject.cuh"
 #include "Mechanism.cuh"
 #include "Compartment.cuh"
-
-#include <vector_types.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
 
 ///////////////////
 // Test CUDA OOP //
