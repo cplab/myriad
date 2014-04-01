@@ -25,25 +25,6 @@ static void* Mechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static int Mechanism_dtor(void* _self)
-{
-	// Don't need to free anything ourselves, just pass along to super
-	return super_dtor(MyriadObject, _self);
-}
-
-static void* Mechanism_cudafy(void* _self, int clobber)
-{
-	//TODO: What value of clobber for non-class objects?
-	return super_cudafy(Mechanism, _self, clobber); 
-}
-
-static void Mechanism_decudafy(void* _self, void* cuda_class)
-{
-	// Do nothing; assume source ID hasn't changed
-	super_decudafy(MyriadObject, _self, cuda_class);
-	return;
-}
-
 //////////////////////////
 // Native Mechanism Fxn //
 //////////////////////////
@@ -116,12 +97,6 @@ static void* MechanismClass_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static int MechanismClass_dtor(void* _self)
-{
-	// Undefined behavior, let superclass handle it
-	return super_dtor(MyriadClass, _self);
-}
-
 static void* MechanismClass_cudafy(void* _self, int clobber)
 {
 	void* result = NULL;
@@ -145,7 +120,7 @@ static void* MechanismClass_cudafy(void* _self, int clobber)
 			)
 		);
 	copy_class.m_mech_fxn = my_mech_fun;
-	printf("Copy Class mech fxn: %p\n", my_mech_fun);
+	DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 	
 	// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 	// By default we clobber the copy_class_class' superclass with
@@ -165,13 +140,6 @@ static void* MechanismClass_cudafy(void* _self, int clobber)
 	return result;
 }
 
-static void MechanismClass_decudafy(void* _self, void* cuda_class)
-{
-	// Undefined; let superclass worry about it
-	super_decudafy(MyriadClass, _self, cuda_class);
-	return;
-}
-
 /////////////////////////////////////
 // Reference Object Initialization //
 /////////////////////////////////////
@@ -188,9 +156,7 @@ void initMechanism(int init_cuda)
 				   MyriadClass,
 				   sizeof(struct MechanismClass),
 				   myriad_ctor, MechanismClass_ctor,
-				   myriad_dtor, MechanismClass_dtor,
 				   myriad_cudafy, MechanismClass_cudafy,
-				   myriad_decudafy, MechanismClass_decudafy,
 				   0
 			);
 		struct MyriadObject* mech_class_obj = NULL; mech_class_obj = (struct MyriadObject*) MechanismClass;
@@ -221,10 +187,7 @@ void initMechanism(int init_cuda)
 				   MyriadObject,
 				   sizeof(struct Mechanism),
 				   myriad_ctor, Mechanism_ctor,
-				   myriad_dtor, Mechanism_dtor,
-				   myriad_cudafy, Mechanism_cudafy,
 				   mechanism_fxn, Mechanism_mechanism_fxn,
-				   myriad_decudafy, Mechanism_decudafy,
 				   0
 			);
 

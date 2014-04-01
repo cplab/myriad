@@ -25,27 +25,6 @@ static void* Compartment_ctor(void* _self, va_list* app)
 	return self;
 }
 
-//TODO: We might not actually need all these overrides if they're No-Ops; saves us a fxn call
-
-static int Compartment_dtor(void* _self)
-{
-	// Passthrough to super since we didn't allocate anything ourselves
-	return super_dtor(MyriadObject, _self);
-}
-
-static void* Compartment_cudafy(void* _self, int clobber)
-{
-	//TODO: What value of clobber for non-class objects?
-	return super_cudafy(Compartment, _self, clobber); 
-}
-
-static void Compartment_decudafy(void* _self, void* cuda_self)
-{
-	// Passthrough to super; we don't need to do anything
-	super_decudafy(MyriadObject, _self, cuda_self);
-	return;
-}
-
 //////////////////////////////////////
 // Native Functions Implementations //
 //////////////////////////////////////
@@ -116,12 +95,6 @@ static void* CompartmentClass_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static int CompartmentClass_dtor(void* _self)
-{
-	// Technically this is undefined behavior but the superclass can handle that
-	return super_dtor(MyriadClass, _self);
-}
-
 static void* CompartmentClass_cudafy(void* _self, int clobber)
 {
 	void* result = NULL;
@@ -166,13 +139,6 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 	return result;
 }
 
-static void CompartmentClass_decudafy(void* _self, void* cuda_self)
-{
-	// Undefined; let the superclass yell at them
-	super_decudafy(MyriadClass, _self, cuda_self);
-	return;
-}
-
 ///////////////////////////
 // Object Initialization //
 ///////////////////////////
@@ -189,9 +155,7 @@ void initCompartment(int init_cuda)
 				   MyriadClass,
 				   sizeof(struct CompartmentClass),
 				   myriad_ctor, CompartmentClass_ctor,
-				   myriad_dtor, CompartmentClass_dtor,
 				   myriad_cudafy, CompartmentClass_cudafy,
-				   myriad_decudafy, CompartmentClass_decudafy,
 				   0
 			);
 		struct MyriadObject* mech_class_obj = (struct MyriadObject*) CompartmentClass;
@@ -222,10 +186,7 @@ void initCompartment(int init_cuda)
 				   MyriadObject,
 				   sizeof(struct Compartment),
 				   myriad_ctor, Compartment_ctor,
-				   myriad_dtor, Compartment_dtor,
-				   myriad_cudafy, Compartment_cudafy,
 				   simul_fxn, Compartment_simul_fxn,
-   				   myriad_decudafy, Compartment_decudafy,
 				   0
 			);
 
