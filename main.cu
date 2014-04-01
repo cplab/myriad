@@ -53,10 +53,14 @@ static int cuda_oop()
     #endif
 	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
+	
+	printf("\tCPU Size (again): %lu\n", myriad_size_of(my_obj));
+
+	// Free
+	CUDA_CHECK_RETURN(cudaFree(my_cuda_obj));
+    assert(myriad_dtor(my_obj) == EXIT_SUCCESS);
 
     cudaDeviceReset();
-
-    printf("\tCPU Size (again): %lu\n", myriad_size_of(my_obj));
 
     return EXIT_SUCCESS;
 }
@@ -106,6 +110,10 @@ static int mechanism_test()
     #endif
 	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
+
+	// Free
+	CUDA_CHECK_RETURN(cudaFree(dev_mech_obj));
+	assert(!myriad_dtor(mech_obj));
 
     cudaDeviceReset();
 
@@ -157,6 +165,10 @@ static int compartment_test()
     #endif
 	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     CUDA_CHECK_RETURN(cudaGetLastError());
+
+	// Free
+	CUDA_CHECK_RETURN(cudaFree(dev_comp_obj));
+	assert(!myriad_dtor(comp_obj));
 
     cudaDeviceReset();
 

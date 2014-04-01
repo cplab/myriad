@@ -19,10 +19,19 @@
 
 //! Generic function pointer type
 typedef void (* voidf) ();
+
 //! Constructor function pointer type
 typedef void* (* ctor_t) (void* self, va_list* app);
-//! Cudafy function pointer type
+
+//! Destructor function pointer type
+typedef int (* dtor_t) (void* self);
+
+//! CUDAfy function pointer type
 typedef void* (* cudafy_t) (void* self, int clobber);
+
+//! De-CUDAfy function pointer type
+typedef void (* de_cudafy_t) (void* self, void* cuda_self);
+
 
 /////////////////////////////////
 // Struct forward declarations //
@@ -44,11 +53,20 @@ extern int initCUDAObjects();
 
 extern void* myriad_new(const void* _class, ...);
 
-extern const void* myriad_class_of (const void* _self);
+extern const void* myriad_class_of(const void* _self);
 
 extern size_t myriad_size_of(const void* self);
 
 extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
+
+extern int myriad_is_of(
+	const void* _self,
+    const struct MyriadClass* m_class
+);
+
+///////////////////////////////////////
+// Generic Object Function Delegates //
+///////////////////////////////////////
 
 /** Calls constructor for the given class.
  *
@@ -56,19 +74,18 @@ extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
  * it's necessary for it to exit to have a reference point for the selector in 
  * the MyriadClass_ctor.
  * 
- * @param[in,out]  self_obj     
- * @param[in]  _self
+ * @param[in]  self
  * @param[in]  app
- * @return
+ * @returns newly created object as a generic void pointer
  */
-extern void* myriad_ctor (void* self, va_list * app);
+extern void* myriad_ctor(void* self, va_list * app);
+
+extern int myriad_dtor(void* self);
 
 extern void* myriad_cudafy(void* _self, int clobber);
 
-extern int myriad_is_of(
-	const void* _self,
-    const struct MyriadClass* m_class
-);
+extern void myriad_decudafy(void* _self, void* cuda_self);
+
 
 ///////////////////////////////
 // Super and related methods //
@@ -78,8 +95,11 @@ extern const void* myriad_super(const void* _self);
 
 extern void* super_ctor(const void* _class, void* _self, va_list* app);
 
+extern int super_dtor(const void* _class, void* _self);
+
 extern void* super_cudafy(const void* _class, void* _self, int clobber);
 
+extern void super_decudafy(const void* _class, void* _self, void* cuda_self);
 
 ////////////////////////////////////////
 // Object & Class Struct declarations //
@@ -97,7 +117,9 @@ struct MyriadClass
     const struct MyriadClass* device_class;    //! On-device class
     size_t size;                               //! Object size
     ctor_t my_ctor;                            //! Constructor
-	cudafy_t my_cudafy;                        //! CUDA-fication
+	dtor_t my_dtor;                            //! Destructor
+	cudafy_t my_cudafy;                        //! CUDAfier
+	de_cudafy_t my_decudafy;                   //! De-CUDAficator
 };
 
 #endif
