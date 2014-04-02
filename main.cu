@@ -14,6 +14,7 @@ extern "C"
     #include "MyriadObject.h"
 	#include "Mechanism.h"
 	#include "Compartment.h"
+	#include "HHSomaCompartment.h"
 }
 
 #include "MyriadObject.cuh"
@@ -144,7 +145,7 @@ static int compartment_test()
 
 	void* comp_obj = NULL, *dev_comp_obj = NULL;
 
-	comp_obj = myriad_new(Compartment, 1);
+	comp_obj = myriad_new(Compartment, 5, 42, NULL);
 
 	UNIT_TEST_VAL_EQ(myriad_size_of(comp_obj), sizeof(struct Compartment));
 
@@ -213,6 +214,61 @@ static int cuda_symbol_malloc()
     return EXIT_SUCCESS;
 }
 
+///////////////////////
+// HHCompartmentTest //
+///////////////////////
+
+__global__ void cuda_hh_compartment_test(void* hh_comp_obj)
+{
+	struct Compartment* self = (struct Compartment*) hh_comp_obj;
+	struct CompartmentClass* self_c = (struct CompartmentClass*) cuda_myriad_class_of(self);
+	printf("\tMy ptr: %p\n", self);
+	printf("\tMy ID: %i\n", self->id);
+	printf("\tMy class: %p\n", self->_.m_class);
+	printf("\tGPU, my size: %lu\n", cuda_myriad_size_of(hh_comp_obj));
+	printf("\tCompartment fxn: %p\n", self_c->m_comp_fxn);
+	printf("\tCompartment fxn invocation: "); self_c->m_comp_fxn(self, NULL, 0.0, 0.0, 0);
+	printf("\tCompartent fxn indirect call: "); cuda_simul_fxn(self, NULL, 0.0, 0.0, 0);
+}
+
+static int HHCompartmentTest()
+{
+	initCUDAObjects();
+	initCompartment(1);
+	initHHSomaCompartment(1);
+
+	void* hh_comp_obj = NULL;
+	void* dev_hh_comp_obj = NULL;
+
+	hh_comp_obj = myriad_new(HHSomaCompartment, 5, 42, NULL, 50, NULL);
+
+	simul_fxn(hh_comp_obj, NULL, 0.0, 0.0, 0);
+
+	dev_hh_comp_obj = myriad_cudafy(hh_comp_obj, 0);
+	
+    // BLAH
+    const int nThreads = 1; // NUM_CUDA_THREADS;
+    const int nBlocks = 1;
+
+    dim3 dimGrid(nBlocks);
+    dim3 dimBlock(nThreads);
+
+    // Test
+    #ifndef __clang__
+    cuda_hh_compartment_test<<<dimGrid, dimBlock>>>(dev_hh_comp_obj); // Not an error
+    #endif
+	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+    CUDA_CHECK_RETURN(cudaGetLastError());
+
+	// Free
+	assert(EXIT_SUCCESS == myriad_dtor(hh_comp_obj));
+
+
+    cudaDeviceReset();
+
+    return EXIT_SUCCESS;
+}
+
 ///////////////////
 // Main function //
 ///////////////////
@@ -224,6 +280,7 @@ int main(int argc, char const *argv[])
 	UNIT_TEST_FUN(cuda_symbol_malloc);
 	UNIT_TEST_FUN(mechanism_test);
 	UNIT_TEST_FUN(compartment_test);
+	UNIT_TEST_FUN(HHCompartmentTest);
 
     puts("\nDone.");
 

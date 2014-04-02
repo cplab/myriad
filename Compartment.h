@@ -2,6 +2,7 @@
 #define COMPARTMENT_H
 
 #include "MyriadObject.h"
+#include "Mechanism.h"
 
 // Compartment simulate function definition
 typedef void (* compartment_simul_fxn_t) (
@@ -28,6 +29,10 @@ struct Compartment
 {
 	const struct MyriadObject _; // Compartment : MyriadObject
 	unsigned int id;
+	unsigned int num_mechs;
+	//TOOD: Array of pointers vs Array of structs; which is better for performance?
+	struct Mechanism** my_mechs;
+	
 };
 
 struct CompartmentClass

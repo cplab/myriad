@@ -99,6 +99,9 @@ static void MyriadObject_decudafy(void* _self, void* cuda_self)
 {
 	// We assume (for now) that the class hasn't changed on the GPU.
 	// This makes this effectively a no-op since nothing gets copied back
+
+	//TODO: Free on decudafy?
+
 	return;
 }
 

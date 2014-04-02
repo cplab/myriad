@@ -21,6 +21,8 @@ static void* Compartment_ctor(void* _self, va_list* app)
 	struct Compartment* self = (struct Compartment*) super_ctor(Compartment, _self, app);
 	
 	self->id = va_arg(*app, unsigned int);
+	self->num_mechs = va_arg(*app, unsigned int);
+	self->my_mechs = va_arg(*app, struct Mechanism**);
 
 	return self;
 }
@@ -39,6 +41,7 @@ static void Compartment_simul_fxn(
 {
 	const struct Compartment* self = (const struct Compartment*) _self;
 	printf("My id is %u\n", self->id);
+	printf("My num_mechs is %u\n", self->num_mechs);
 	return;
 }
 
@@ -106,20 +109,6 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 	struct CompartmentClass copy_class = *my_class;
 	struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 
-	// TODO: Find a better way to get function pointers for on-card functions
-	compartment_simul_fxn_t my_comp_fun = NULL;
-	CUDA_CHECK_RETURN(
-		cudaMemcpyFromSymbol(
-			(void**) &my_comp_fun,
-			(const void*) &Compartment_cuda_compartment_fxn_t,
-			sizeof(void*),
-			0,
-			cudaMemcpyDeviceToHost
-			)
-		);
-	copy_class.m_comp_fxn = my_comp_fun;
-	
-	DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 	
 	// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 	// By default we clobber the copy_class_class' superclass with
@@ -128,6 +117,21 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 	// clobbered it), the clobber flag should be 0.
 	if (clobber)
 	{
+		// TODO: Find a better way to get function pointers for on-card functions
+		compartment_simul_fxn_t my_comp_fun = NULL;
+		CUDA_CHECK_RETURN(
+			cudaMemcpyFromSymbol(
+				(void**) &my_comp_fun,
+				(const void*) &Compartment_cuda_compartment_fxn_t,
+				sizeof(void*),
+				0,
+				cudaMemcpyDeviceToHost
+				)
+			);
+		copy_class.m_comp_fxn = my_comp_fun;
+		
+		DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
+		
 		const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
 		memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
 	}

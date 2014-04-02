@@ -25,6 +25,7 @@ __device__ void Compartment_cuda_simul_fxn(
 {
 	const struct Compartment* self = (const struct Compartment*) _self;
 	printf("My id is %u\n", self->id);
+	printf("My num_mechs is %u\n", self->num_mechs);
 	return;
 }
 
