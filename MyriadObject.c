@@ -414,6 +414,7 @@ int initCUDAObjects()
 	const size_t obj_size = sizeof(struct MyriadObject);
 	const size_t class_size = sizeof(struct MyriadClass);
 
+	// Allocate class and object structs on the GPU.
 	CUDA_CHECK_RETURN(cudaMalloc((void**)&obj_addr, class_size)); 
 	CUDA_CHECK_RETURN(cudaMalloc((void**)&class_addr, class_size));
 
