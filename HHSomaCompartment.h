@@ -9,8 +9,9 @@ extern const void* HHSomaCompartmentClass;
 struct HHSomaCompartment
 {
 	struct Compartment _;    // HHSomaCompartment : Compartment
-	double* soma_vm;         // Membrane voltage
+	double* soma_vm;         // Membrane voltage - mV
 	unsigned int soma_vm_len;// Length of soma_vm array
+	double cm;               // Capacitance - nF
 };
 
 struct HHSomaCompartmentClass

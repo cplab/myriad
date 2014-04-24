@@ -2,9 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-
 #include "myriad_debug.h"
 
 #include "MyriadObject.h"
@@ -21,6 +18,7 @@ static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 	
 	self->soma_vm_len = va_arg(*app, unsigned int);
 	self->soma_vm = va_arg(*app, double*);
+	self->cm = va_arg(*app, double);
 
 	// If the given length is non-zero but the pointer is NULL,
 	// we do the allocation ourselves.
@@ -34,8 +32,9 @@ static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 
 static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
+	#ifdef CUDA
+
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-	
 	struct HHSomaCompartment self_copy = *self;
 
 	// Make mirror on-GPU array 
@@ -57,10 +56,14 @@ static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 		);
 
 	return super_cudafy(Compartment, (void*) &self_copy, 0);
+	#else
+	return NULL;
+	#endif
 }
 
 static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 {
+	#ifdef CUDA
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
 
 	double* from_gpu_soma = NULL;
@@ -83,6 +86,8 @@ static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 		);
 
 	super_decudafy(Compartment, self, cuda_self);
+	#endif
+
 	return;
 }
 
@@ -100,11 +105,27 @@ static void HHSomaCompartment_simul_fxn(
 	void** network,
 	const double dt,
 	const double global_time,
-	const unsigned int curr_time
+	const unsigned int curr_step
 	)
 {
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-	printf("I'm HH %u, and I have %u mechanisms. My vm_len is %u\n", self->_.id, self->_.num_mechs, self->soma_vm_len);
+
+	double I_sum = 0.0;
+
+	//	Calculate mechanism contribution to current term
+	for (unsigned int i = 0; i < self->_.num_mechs; i++)
+	{
+		struct Mechanism* curr_mech = self->_.my_mechs[i];
+		struct Compartment* pre_comp = network[curr_mech->source_id];
+
+		//TODO: Make this conditional on specific Mechanism types
+		//if (curr_mech->fx_type == CURRENT_FXN)
+		I_sum += mechanism_fxn(curr_mech, pre_comp, self, dt, global_time, curr_step);
+	}
+
+	//	Calculate new membrane voltage: (dVm) + prev_vm
+	self->soma_vm[curr_step] = (dt * (I_sum) / (self->cm)) + self->soma_vm[curr_step - 1];
+
 	return;
 }
 
@@ -114,6 +135,8 @@ static void HHSomaCompartment_simul_fxn(
 
 static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 {
+	#ifdef CUDA
+
 	// We know what class we are
 	struct HHSomaCompartmentClass* my_class = (struct HHSomaCompartmentClass*) _self;
 
@@ -151,6 +174,12 @@ static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 	// semi-static superclass definition, not it's ->super attribute.
 	// Note that we don't want to clobber, so we set it to 0.
 	return super_cudafy(CompartmentClass, (void*) &copy_class, 0);
+	
+	#else
+	// Can't cudafy if there's no CUDA
+	return NULL;
+
+	#endif
 }
 
 ////////////////////////////
@@ -175,6 +204,7 @@ void initHHSomaCompartment(int init_cuda)
 				0
 			);
 
+		#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_comp_c_t = myriad_cudafy((void*)HHSomaCompartmentClass, 1);
@@ -189,6 +219,7 @@ void initHHSomaCompartment(int init_cuda)
 					)
 				);
 		}
+		#endif
 	}
 
 	if (!HHSomaCompartment)
@@ -206,6 +237,7 @@ void initHHSomaCompartment(int init_cuda)
 				0
 			);
 
+		#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)HHSomaCompartment, 1);
@@ -220,5 +252,6 @@ void initHHSomaCompartment(int init_cuda)
 					)
 				);
 		}
+		#endif
 	}
 }

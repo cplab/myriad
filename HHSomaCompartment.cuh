@@ -1,6 +1,8 @@
 #ifndef HHSOMACOMPARTMENT_CUH
 #define HHSOMACOMPARTMENT_CUH
 
+#ifdef CUDA
+
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
@@ -23,6 +25,6 @@ extern __device__ void HHSomaCompartment_cuda_simul_fxn(
 	const double global_time,
 	const unsigned int curr_step
 );
-
+#endif
 
 #endif

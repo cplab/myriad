@@ -1,7 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
 
 #include <cuda_runtime.h>
 
@@ -14,7 +11,6 @@ extern "C"
 }
 
 #include "HHSomaCompartment.cuh"
-
 
 __device__ void HHSomaCompartment_cuda_simul_fxn(
 	void* _self,

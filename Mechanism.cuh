@@ -12,6 +12,8 @@
 #ifndef MECHANISM_CUH
 #define MECHANISM_CUH
 
+#ifdef CUDA
+
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
@@ -51,5 +53,5 @@ extern __device__ double cuda_mechanism_fxn(
 	const unsigned int curr_step
 );
 
-
+#endif
 #endif

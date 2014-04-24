@@ -12,6 +12,8 @@
 #ifndef MYRIADOBJECT_CUH
 #define MYRIADOBJECT_CUH
 
+#ifdef CUDA
+
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
@@ -53,5 +55,7 @@ extern __device__ int cuda_myriad_is_of(
 
 //! On-GPU implementation of myriad_super @see myriad_super
 extern __device__ const void* cuda_myriad_super(const void* _self);
+
+#endif
 
 #endif

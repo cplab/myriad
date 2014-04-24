@@ -13,6 +13,11 @@
 #ifndef MYRIAD_DEBUG_H
 #define MYRIAD_DEBUG_H
 
+#ifdef CUDA
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -52,6 +57,7 @@
 #endif
 
 //! Checks the return value of a CUDA library call for errors, exits if error
+#ifdef CUDA
 #define CUDA_CHECK_RETURN(value) {                                          \
     cudaError_t _m_cudaStat = value;                                        \
     if (_m_cudaStat != cudaSuccess) {                                       \
@@ -59,5 +65,6 @@
                 cudaGetErrorString(_m_cudaStat), __LINE__, __FILE__);       \
         exit(EXIT_FAILURE);                                                 \
     } }
+#endif
 
 #endif

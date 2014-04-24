@@ -12,6 +12,8 @@
 #ifndef COMPARTMENT_CUH
 #define COMPARTMENT_CUH
 
+#ifdef CUDA
+
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
@@ -47,5 +49,7 @@ extern __device__ void cuda_simul_fxn(
 	const double global_time,
 	const unsigned int curr_step
 	);
+
+#endif
 
 #endif

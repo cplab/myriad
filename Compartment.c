@@ -3,9 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-
 #include "myriad_debug.h"
 
 #include "MyriadObject.h"
@@ -30,6 +27,8 @@ static void* Compartment_ctor(void* _self, va_list* app)
 //////////////////////////////////////
 // Native Functions Implementations //
 //////////////////////////////////////
+
+// Simulate function
 
 static void Compartment_simul_fxn(
 	void* _self,
@@ -56,7 +55,7 @@ void simul_fxn(
 	const struct CompartmentClass* m_class = 
 		(const struct CompartmentClass*) myriad_class_of((void*) _self);
 	assert(m_class->m_comp_fxn);
-	return m_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+	m_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
 }
 
 void super_simul_fxn(
@@ -70,7 +69,49 @@ void super_simul_fxn(
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
 	assert(_self && s_class->m_comp_fxn);
-	return s_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+	s_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+}
+
+// Add mechanism function
+
+static int Compartment_add_mech(void* _self, void* mechanism)
+{
+	if (_self == NULL || mechanism == NULL)
+	{
+		DEBUG_PRINTF("Cannot add NULL mechanism/add to NULL compartment.\n");
+		return EXIT_FAILURE;
+	}
+
+	struct Compartment* self = (struct Compartment*) _self;
+	struct Mechanism* mech = (struct Mechanism*) mechanism;
+	
+	self->num_mechs++;
+	self->my_mechs = (struct Mechanism**) realloc(self->my_mechs, self->num_mechs);
+
+	if (self->my_mechs == NULL)
+	{
+		DEBUG_PRINTF("Could not reallocate mechanisms array.\n");
+		return EXIT_FAILURE;
+	}
+
+	self->my_mechs[self->num_mechs-1] = mech;
+
+	return EXIT_SUCCESS;
+}
+
+int add_mechanism(void* _self, void* mechanism)
+{
+	const struct CompartmentClass* m_class = 
+		(const struct CompartmentClass*) myriad_class_of((void*) _self);
+	assert(m_class->m_add_mech_fun);
+	return m_class->m_add_mech_fun(_self, mechanism);
+}
+
+int super_add_mechanism(const void* _class, void* _self, void* mechanism)
+{
+	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
+	assert(_self && s_class->m_add_mech_fun);
+	return s_class->m_add_mech_fun(_self, mechanism);
 }
 
 //////////////////////////////////////
@@ -90,6 +131,8 @@ static void* CompartmentClass_ctor(void* _self, va_list* app)
 		if (selector == (voidf) simul_fxn)
 		{
 			*(voidf *) &self->m_comp_fxn = method;
+		} else if (selector == (voidf) add_mechanism) {
+			*(voidf *) &self->m_add_mech_fun = method;
 		}
 
 		selector = va_arg(*app, voidf);
@@ -102,6 +145,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 {
 	void* result = NULL;
 	
+	#ifdef CUDA
     // We know what class we are
 	struct CompartmentClass* my_class = (struct CompartmentClass*) _self;
 
@@ -140,6 +184,8 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 	// semi-static superclass definition, not it's ->super attribute.
 	result = super_cudafy(CompartmentClass, (void*) &copy_class, 0);
 	
+	#endif
+
 	return result;
 }
 
@@ -149,7 +195,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 
 const void *CompartmentClass, *Compartment;
 
-void initCompartment(int init_cuda)
+void initCompartment(const int init_cuda)
 {
 	if (!CompartmentClass)
 	{
@@ -165,7 +211,7 @@ void initCompartment(int init_cuda)
 		struct MyriadObject* mech_class_obj = (struct MyriadObject*) CompartmentClass;
 		memcpy( (void**) &mech_class_obj->m_class, &CompartmentClass, sizeof(void*));
 
-		// TODO: Additional checks for CUDA initialization
+		#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_comp_c_t = myriad_cudafy((void*)CompartmentClass, 1);
@@ -180,6 +226,7 @@ void initCompartment(int init_cuda)
 					)
 				);
 		}
+		#endif
 	}
 	
 	if (!Compartment)
@@ -191,9 +238,11 @@ void initCompartment(int init_cuda)
 				   sizeof(struct Compartment),
 				   myriad_ctor, Compartment_ctor,
 				   simul_fxn, Compartment_simul_fxn,
+				   add_mechanism, Compartment_add_mech,
 				   0
 			);
 
+		#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)Compartment, 1);
@@ -209,6 +258,7 @@ void initCompartment(int init_cuda)
 				);
 
 		}
+		#endif
 	}
 	
 }

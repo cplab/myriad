@@ -3,9 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-
 #include "myriad_debug.h"
 
 #include "MyriadObject.h"
@@ -99,45 +96,49 @@ static void* MechanismClass_ctor(void* _self, va_list* app)
 
 static void* MechanismClass_cudafy(void* _self, int clobber)
 {
-	void* result = NULL;
-	
-    // We know that we're actually a mechanism class
-	struct MechanismClass* my_class = (struct MechanismClass*) _self;
-
-	// Make a temporary copy-class because we need to change shit
-	struct MechanismClass copy_class = *my_class; // Assignment to stack avoids calloc/memcpy
-	struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
-
-	// TODO: Find a better way to get function pointers for on-card functions
-	mech_fun_t my_mech_fun = NULL;
-	CUDA_CHECK_RETURN(
-		cudaMemcpyFromSymbol(
-			(void**) &my_mech_fun,
-			(const void*) &Mechanism_cuda_mechanism_fxn_t,
-			sizeof(void*),
-			0,
-			cudaMemcpyDeviceToHost
-			)
-		);
-	copy_class.m_mech_fxn = my_mech_fun;
-	DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
-	
-	// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
-	// By default we clobber the copy_class_class' superclass with
-	// the superclass' device_class' on-GPU address value. 
-	// To avoid cloberring this value (e.g. if an underclass has already
-	// clobbered it), the clobber flag should be 0.
-	if (clobber)
+	#ifdef CUDA
 	{
-		const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
-		memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
-	}
+		// We know that we're actually a mechanism class
+		struct MechanismClass* my_class = (struct MechanismClass*) _self;
 
-	// This works because super methods rely on the given class'
-	// semi-static superclass definition, not it's ->super attribute.
-	result = super_cudafy(MechanismClass, (void*) &copy_class, 0);
+		// Make a temporary copy-class because we need to change shit
+		struct MechanismClass copy_class = *my_class; // Assignment to stack avoids calloc/memcpy
+		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+
+		// TODO: Find a better way to get function pointers for on-card functions
+		mech_fun_t my_mech_fun = NULL;
+		CUDA_CHECK_RETURN(
+			cudaMemcpyFromSymbol(
+				(void**) &my_mech_fun,
+				(const void*) &Mechanism_cuda_mechanism_fxn_t,
+				sizeof(void*),
+				0,
+				cudaMemcpyDeviceToHost
+				)
+			);
+		copy_class.m_mech_fxn = my_mech_fun;
+		DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 	
-	return result;
+		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
+		// By default we clobber the copy_class_class' superclass with
+		// the superclass' device_class' on-GPU address value. 
+		// To avoid cloberring this value (e.g. if an underclass has already
+		// clobbered it), the clobber flag should be 0.
+		if (clobber)
+		{
+			const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
+			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
+		}
+
+		// This works because super methods rely on the given class'
+		// semi-static superclass definition, not it's ->super attribute.
+		return super_cudafy(MechanismClass, (void*) &copy_class, 0);
+	}
+	#else
+	{
+		return NULL;
+	}
+	#endif
 }
 
 /////////////////////////////////////
@@ -162,7 +163,7 @@ void initMechanism(int init_cuda)
 		struct MyriadObject* mech_class_obj = NULL; mech_class_obj = (struct MyriadObject*) MechanismClass;
 		memcpy( (void**) &mech_class_obj->m_class, &MechanismClass, sizeof(void*));
 
-		// TODO: Additional checks for CUDA initialization
+		#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_mech_c_t = myriad_cudafy((void*)MechanismClass, 1);
@@ -177,6 +178,7 @@ void initMechanism(int init_cuda)
 					)
 				);
 		}
+		#endif
 	}
 	
 	if (!Mechanism)
@@ -191,6 +193,7 @@ void initMechanism(int init_cuda)
 				   0
 			);
 
+		#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)Mechanism, 1);
@@ -206,6 +209,7 @@ void initMechanism(int init_cuda)
 				);
 
 		}
+		#endif
 	}
 	
 }
