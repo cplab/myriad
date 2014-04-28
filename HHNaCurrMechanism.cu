@@ -66,5 +66,3 @@ __device__ double HHNaCurrMechanism_cuda_mech_fun(
 }
 
 __device__ mech_fun_t HHNaCurrMechanism_mech_fxn_t = HHNaCurrMechanism_cuda_mech_fun;
-
-#endif

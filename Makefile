@@ -9,10 +9,10 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 ###############################
 #      Compilers & Tools      #
 ###############################
-NVCC	:= $(CUDA_BIN_PATH)/nvcc
+NVCC	?= $(CUDA_BIN_PATH)/nvcc
 CC	:= gcc
 CPP	:= g++
-AR	:= ar
+AR	?= ar
 CTAGS ?= ctags-exuberant
 
 ###############################
@@ -24,13 +24,13 @@ OS_SIZE = 64
 OS_ARCH = x86_64
 
 # CC & related flags
-CCOMMON_FLAGS	:= -g3 -O0 -Wall -Wpedantic
-CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99
+CCOMMON_FLAGS	:= -g3 -O0 -Wall
+CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99 -Wpedantic
 CPPFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
 CUFLAGS		:= $(CCOMMON_FLAGS)
 
 # NVCC & related flags
-vNVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
+NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
 NVCCFLAGS := -m$(OS_SIZE) -g -G -pg
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
@@ -72,7 +72,13 @@ CUDA_BIN_LDFLAGS	:= $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS)
 #       Definition Flags      #
 ###############################
 
-CUDA_BIN_DEFINES ?= -DUNIT_TEST
+DEFINES := -DUNIT_TEST
+ifdef CUDA
+DEFINES += -DCUDA
+endif
+
+CUDA_DEFINES := $(DEFINES)
+CUDA_BIN_DEFINES ?= $(DEFINES) 
 
 ###############################
 #    Include Path & Flags     #
@@ -125,7 +131,7 @@ $(MYRIAD_LIB): $(MYRIAD_LIB_OBJS)
 	$(AR) rcs $@ $^
 
 $(MYRIAD_LIB_OBJS): %.c.o : %.c
-	$(CC) $(CCFLAGS) $(INCLUDES) -o $@ -c $<
+	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
 
 # ------- CUDA Myriad Library -------
 
@@ -134,7 +140,7 @@ $(CUDA_MYRIAD_LIB): $(CUDA_MYRIAD_LIB_OBJS)
 
 $(CUDA_MYRIAD_LIB_OBJS): %.cu.o : %.cu
 	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
-	$(CUDA_INCLUDES) -o $@ -dc $<
+	$(CUDA_INCLUDES) $(CUDA_DEFINES) -o $@ -dc $<
 
 # ------- Linker Object -------
 
@@ -148,7 +154,7 @@ ifdef CUDA
 	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
 	$(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
 else
-	$(CPP) $(CPPFLAGS) -x c++ -c $< -o $@
+	$(CPP) $(CPPFLAGS) $(INCLUDES) $(DEFINES) -x c++ -c $< -o $@
 endif
 
 # ------- Host Linker Generated Binary -------

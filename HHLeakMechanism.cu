@@ -53,5 +53,3 @@ __device__ double HHLeakMechanism_cuda_mech_fun(
 }
 
 __device__ mech_fun_t HHLeakMechanism_mech_fxn_t = HHLeakMechanism_cuda_mech_fun;
-
-#endif

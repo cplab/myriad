@@ -12,6 +12,7 @@ extern "C"
     #include "Mechanism.h"
 }
 
+#include "MyriadObject.cuh"
 #include "Mechanism.cuh"
 
 
@@ -40,7 +41,7 @@ __device__ double cuda_mechanism_fxn(
 	const unsigned int curr_step
 	)
 {
-	const struct MechanismClass* m_class=(const struct MechanismClass*) cuda_myriad_class_of(_self);
+	const struct MechanismClass* m_class = (const struct MechanismClass*) cuda_myriad_class_of(_self);
 
 	return m_class->m_mech_fxn(_self, pre_comp, post_comp, dt, global_time, curr_step);
 }
