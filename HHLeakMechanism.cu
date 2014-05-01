@@ -42,6 +42,9 @@ __device__ double HHLeakMechanism_cuda_mech_fun(
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
+	printf("c1->soma_vm %p\n",c1->soma_vm);
+	printf("c1->soma_vm %f\n",c1->soma_vm[0]);
+	
 	//	No extracellular compartment. Current simply "disappears".
 	if (c1 == NULL || c1 == c2)
 	{

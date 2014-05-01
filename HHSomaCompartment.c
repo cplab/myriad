@@ -38,28 +38,35 @@ static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
+		const size_t my_size = myriad_size_of(_self);
 		struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-		struct HHSomaCompartment self_copy = *self;
+		struct HHSomaCompartment* self_copy = (struct HHSomaCompartment*) calloc(1, my_size);
+		
+		memcpy(self_copy, self, my_size);
 
+		double* tmp_alias = NULL;
+		
 		// Make mirror on-GPU array 
 		CUDA_CHECK_RETURN(
 			cudaMalloc(
-				(void**) &self_copy.soma_vm,
-				self_copy.soma_vm_len * sizeof(double)
+				(void**) &tmp_alias,
+				self_copy->soma_vm_len * sizeof(double)
 				)
 			);
 
 		// Copy contents over to GPU
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
-				(void*) self_copy.soma_vm,
+				(void*) tmp_alias,
 				(void*) self->soma_vm,
-				self_copy.soma_vm_len * sizeof(double),
+				self_copy->soma_vm_len * sizeof(double),
 				cudaMemcpyHostToDevice
 				)
 			);
 
-		return super_cudafy(Compartment, (void*) &self_copy, 0);
+		self_copy->soma_vm = tmp_alias;
+
+		return super_cudafy(HHSomaCompartment, self_copy, 0);
 	}
 	#else
 	{

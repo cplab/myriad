@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include <cuda_runtime.h>
+
 #include "myriad_debug.h"
 
 #include "MyriadObject.h"
@@ -22,6 +24,48 @@ static void* Compartment_ctor(void* _self, va_list* app)
 	self->my_mechs = va_arg(*app, struct Mechanism**);
 
 	return self;
+}
+
+static void* Compartment_cudafy(void* _self, int clobber)
+{
+	#ifdef CUDA
+	{
+		struct Compartment* self = (struct Compartment*) _self;
+
+		// Copies entire struct onto independent, static, on-stack copy
+		const size_t my_size = myriad_size_of(_self);
+		struct Compartment* copy_comp = (struct Compartment*) calloc(1, my_size);
+		memcpy(copy_comp, self, my_size);
+
+		if (copy_comp->my_mechs != NULL)
+		{
+			// We'll assume that mechanism pointers already point to stuff on GPU,
+			// we're just copying the values over (i.e. "shallow copy")
+
+			CUDA_CHECK_RETURN(
+				cudaMalloc( 
+					(void**) &copy_comp->my_mechs, 
+					copy_comp->num_mechs * sizeof(struct Compartment*)
+					)
+				);
+
+			CUDA_CHECK_RETURN(
+				cudaMemcpy(
+					copy_comp->my_mechs,
+					self->my_mechs,
+					copy_comp->num_mechs * sizeof(struct Compartment*),
+					cudaMemcpyHostToDevice
+					)
+				);
+		}
+		// @TODO: Should we really be passing a pointer to something on our stack?
+		return super_cudafy(MyriadObject, copy_comp, clobber);
+	}
+	#else
+	{
+		return NULL;
+	}
+	#endif
 }
 
 //////////////////////////////////////
@@ -143,8 +187,6 @@ static void* CompartmentClass_ctor(void* _self, va_list* app)
 
 static void* CompartmentClass_cudafy(void* _self, int clobber)
 {
-	void* result = NULL;
-	
 	#ifdef CUDA
     // We know what class we are
 	struct CompartmentClass* my_class = (struct CompartmentClass*) _self;
@@ -178,15 +220,18 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 		
 		const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
 		memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
-	}
+    }
 
 	// This works because super methods rely on the given class'
 	// semi-static superclass definition, not it's ->super attribute.
-	result = super_cudafy(CompartmentClass, (void*) &copy_class, 0);
-	
+	return super_cudafy(CompartmentClass, (void*) &copy_class, 0);
+
+	#else
+
+    return NULL;
+
 	#endif
 
-	return result;
 }
 
 ///////////////////////////
@@ -237,6 +282,7 @@ void initCompartment(const int init_cuda)
 				   MyriadObject,
 				   sizeof(struct Compartment),
 				   myriad_ctor, Compartment_ctor,
+				   myriad_cudafy, Compartment_cudafy,
 				   simul_fxn, Compartment_simul_fxn,
 				   add_mechanism, Compartment_add_mech,
 				   0

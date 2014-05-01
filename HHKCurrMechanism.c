@@ -27,12 +27,6 @@ static void* HHKCurrMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static void* HHKCurrMechanism_cudafy(void* _self, int clobber)
-{
-	//@TODO: Implement me!
-	return;
-}
-
 static double HHKCurrMechanism_mech_fun(
     void* _self,
 	void* pre_comp,
@@ -169,7 +163,6 @@ void initHHKCurrMechanism(int init_cuda)
 				Mechanism,
 				sizeof(struct HHKCurrMechanism),
 				myriad_ctor, HHKCurrMechanism_ctor,
-				myriad_cudafy, HHKCurrMechanism_cudafy,
 				mechanism_fxn, HHKCurrMechanism_mech_fun,
 				0
 			);

@@ -242,17 +242,39 @@ static int cuda_symbol_malloc()
 ///////////////////////
 
 #ifdef CUDA
-__global__ void cuda_hh_compartment_test(void* hh_comp_obj)
+__global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 {
-	struct Compartment* self = (struct Compartment*) hh_comp_obj;
-	struct CompartmentClass* self_c = (struct CompartmentClass*) cuda_myriad_class_of(self);
-	printf("\tMy ptr: %p\n", self);
-	printf("\tMy ID: %i\n", self->id);
-	printf("\tMy class: %p\n", self->_.m_class);
-	printf("\tGPU, my size: %lu\n", cuda_myriad_size_of(hh_comp_obj));
+	const int SIMUL_LEN = 50;
+	const double DT = 0.001;
+
+	void* dev_arr[1];
+	dev_arr[0] = network;
+
+	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
+	struct Compartment* super_curr_comp = (struct Compartment*) hh_comp_obj;
+
+	printf("curr_comp->soma_vm[0]: %f\n", curr_comp->soma_vm[0]);
+
+	/*
+	printf("\tMy ptr: %p\n", curr_comp);
+	printf("\tMy ID: %i\n", super_curr_comp->id);
+	printf("\tMy class: %p\n", super_curr_comp->_.m_class);
+	printf("\tGPU, my size: %lu\n", cuda_myriad_size_of(curr_comp));
 	printf("\tCompartment fxn: %p\n", self_c->m_comp_fxn);
 	printf("\tCompartment fxn invocation: "); self_c->m_comp_fxn(self, NULL, 0.0, 0.0, 0);
 	printf("\tCompartent fxn indirect call: "); cuda_simul_fxn(self, NULL, 0.0, 0.0, 0);
+	*/
+	double curr_time = DT;
+	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
+	{
+		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
+		curr_time += DT;
+	}
+
+	for (unsigned int i = 0; i < curr_comp->soma_vm_len; i++)
+	{
+		printf("VM at step %i is %f\n", i, curr_comp->soma_vm[i]);
+	}	
 }
 #endif
 
@@ -296,12 +318,19 @@ static int HHCompartmentTest()
 	void* hh_leak_mech = myriad_new(HHLeakMechanism, 0, G_LEAK, E_REV);
 	void* hh_na_curr_mech = myriad_new(HHNaCurrMechanism, 0, G_NA, E_NA, HH_M, HH_H);
 
-	network[0] = hh_comp_obj;
-	
+	void* cuda_na_mech = myriad_cudafy(hh_na_curr_mech, 0);
+	void* cuda_leak_mech = myriad_cudafy(hh_leak_mech, 0);
+
 	// Add mechanism to compartment
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_leak_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_na_curr_mech));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_leak_mech));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_na_mech));
+
+	void* cuda_comp_obj = myriad_cudafy(hh_comp_obj, 0);
+
+	network[0] = cuda_comp_obj;
 	
+	
+	/*
 	double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
 	{
@@ -314,18 +343,17 @@ static int HHCompartmentTest()
 	{
 		printf("VM at step %i is %f\n", i, hh_comp_obj_s->soma_vm[i]);
 	}
+	*/
 
 	#ifdef CUDA
 	{
-    	void* dev_hh_comp_obj = myriad_cudafy(hh_comp_obj, 0);
-    
         const int nThreads = 1; // NUM_CUDA_THREADS;
         const int nBlocks = 1;
 
         dim3 dimGrid(nBlocks);
         dim3 dimBlock(nThreads);
 
-        cuda_hh_compartment_test<<<dimGrid, dimBlock>>>(dev_hh_comp_obj);
+        cuda_hh_compartment_test<<<dimGrid, dimBlock>>>(cuda_comp_obj, network[0]);
 	    CUDA_CHECK_RETURN(cudaDeviceSynchronize());
         CUDA_CHECK_RETURN(cudaGetLastError());
 
@@ -353,8 +381,6 @@ int main(int argc, char const *argv[])
 	UNIT_TEST_FUN(mechanism_test);
 	UNIT_TEST_FUN(compartment_test);
 	UNIT_TEST_FUN(HHCompartmentTest);
-
-	HHCompartmentTest();
 
     puts("\nDone.");
 
