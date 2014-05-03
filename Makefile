@@ -11,7 +11,7 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 ###############################
 NVCC	?= $(CUDA_BIN_PATH)/nvcc
 CC	:= gcc
-CPP	:= g++
+CXX	:= g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
 VALGRIND ?= valgrind
@@ -28,7 +28,7 @@ OS_ARCH = x86_64
 # CC & related flags
 CCOMMON_FLAGS	:= -g3 -O0 -Wall
 CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99 -Wpedantic
-CPPFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
+CXXFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
 CUFLAGS		:= $(CCOMMON_FLAGS)
 
 # NVCC & related flags
@@ -41,7 +41,7 @@ EXTRA_NVCC_FLAGS := -rdc=true
 AR_FLAGS := rcs
 
 # Ctags flags
-CTAGS_FLAGS := -e -R --langmap=c:.cu.cuh
+CTAGS_FLAGS := -f TAGS --verbose -R --exclude=doc --langmap=c++:.cu.cuh,c:.h -h +.cuh --fields="+afikKlmnsSzt"
 
 # Valgrind flags
 VALGRIND_SUPP ?= minimal.supp
@@ -170,7 +170,7 @@ ifdef CUDA
 	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
 	$(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
 else
-	$(CPP) $(CPPFLAGS) $(INCLUDES) $(DEFINES) -x c++ -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(DEFINES) -x c++ -c $< -o $@
 endif
 
 # ------- Host Linker Generated Binary -------
@@ -190,7 +190,6 @@ doxygen:
 # ------- Ctags Generation -------
 ctags:
 	$(CTAGS) $(CTAGS_FLAGS)
-#	$(CTAGS) --verbose -R --langmap=c:.cu.cuh --fields="+afikKlmnsSzt"
 
 # ------- Valgrind Memcheck -------
 valgrind: $(SIMUL_MAIN_BIN)

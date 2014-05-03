@@ -252,15 +252,6 @@ __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
 
-	/*
-	printf("\tMy ptr: %p\n", curr_comp);
-	printf("\tMy ID: %i\n", super_curr_comp->id);
-	printf("\tMy class: %p\n", super_curr_comp->_.m_class);
-	printf("\tGPU, my size: %lu\n", cuda_myriad_size_of(curr_comp));
-	printf("\tCompartment fxn: %p\n", self_c->m_comp_fxn);
-	printf("\tCompartment fxn invocation: "); self_c->m_comp_fxn(self, NULL, 0.0, 0.0, 0);
-	printf("\tCompartent fxn indirect call: "); cuda_simul_fxn(self, NULL, 0.0, 0.0, 0);
-	*/
 	double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
 	{
@@ -337,6 +328,12 @@ static int HHCompartmentTest()
         cudaDeviceReset();
 	}
 	#endif
+
+	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
+	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
+	{
+		printf("\tVm at step %u is %f.\n",curr_step, curr_comp->soma_vm[curr_step]);
+	}
 
 	// Free
 	assert(EXIT_SUCCESS == myriad_dtor(hh_leak_mech));
