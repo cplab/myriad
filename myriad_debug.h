@@ -46,7 +46,6 @@
 #endif
 
 #ifdef DEBUG
-
 	//! Prints debug information string to stdout with file and line info.
     #define DEBUG_PRINTF(str, ...) do {  \
 	    fprintf(stdout, "DEBUG @ "__FILE__":"__LINE__": "#str, __VA_ARGS__) \
@@ -56,8 +55,9 @@
     #define DEBUG_PRINTF(...) do {} while (0)
 #endif
 
-//! Checks the return value of a CUDA library call for errors, exits if error
+
 #ifdef CUDA
+//! Checks the return value of a CUDA library call for errors, exits if error
 #define CUDA_CHECK_RETURN(value) {                                          \
     cudaError_t _m_cudaStat = value;                                        \
     if (_m_cudaStat != cudaSuccess) {                                       \

@@ -9,8 +9,8 @@
 TAGS
 tags
 
-# Doxy
-html/
+# Doxygen
+doc/
 
 # Fuse crap
 .fuse*

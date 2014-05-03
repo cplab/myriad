@@ -14,6 +14,8 @@ CC	:= gcc
 CPP	:= g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
+VALGRIND ?= valgrind
+DOXYGEN ?= doxygen
 
 ###############################
 #       COMPILER FLAGS        #
@@ -34,6 +36,19 @@ NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
 NVCCFLAGS := -m$(OS_SIZE) -g -G -pg
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
+
+# AR flags
+AR_FLAGS := rcs
+
+# Ctags flags
+CTAGS_FLAGS := -e -R --langmap=c:.cu.cuh
+
+# Valgrind flags
+VALGRIND_SUPP ?= minimal.supp
+VALGRIND_FLAGS := --leak-check=full --show-reachable=yes --error-limit=no --suppressions=$(VALGRIND_SUPP)
+
+# Doxygen flags
+DOXYGEN_CONF ?= Doxyfile.conf
 
 ###############################
 #        Libraries            #
@@ -129,7 +144,7 @@ rebuild: remake
 # ------- CPU Myriad Library -------
 
 $(MYRIAD_LIB): $(MYRIAD_LIB_OBJS)
-	$(AR) rcs $@ $^
+	$(AR) $(AR_FLAGS) $@ $^
 
 $(MYRIAD_LIB_OBJS): %.c.o : %.c
 	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
@@ -167,7 +182,16 @@ else
 	$(CC) -I. -o $@ $+ $(LD_FLAGS)
 endif
 
-# ------- Bonus Ctags Generation -------
+
+# ------- Doxygen Documentation Generation -------
+doxygen:
+	$(DOXYGEN) $(DOXYGEN_CONF)
+
+# ------- Ctags Generation -------
 ctags:
-	$(CTAGS) -e -R --langmap=c:.cu.cuh
+	$(CTAGS) $(CTAGS_FLAGS)
 #	$(CTAGS) --verbose -R --langmap=c:.cu.cuh --fields="+afikKlmnsSzt"
+
+# ------- Valgrind Memcheck -------
+valgrind: $(SIMUL_MAIN_BIN)
+	$(VALGRIND) $(VALGRIND_FLAGS) ./$+
