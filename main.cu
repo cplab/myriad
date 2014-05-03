@@ -251,9 +251,6 @@ __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 	dev_arr[0] = network;
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
-	struct Compartment* super_curr_comp = (struct Compartment*) hh_comp_obj;
-
-	printf("curr_comp->soma_vm[0]: %f\n", curr_comp->soma_vm[0]);
 
 	/*
 	printf("\tMy ptr: %p\n", curr_comp);
@@ -270,11 +267,6 @@ __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
 		curr_time += DT;
 	}
-
-	for (unsigned int i = 0; i < curr_comp->soma_vm_len; i++)
-	{
-		printf("VM at step %i is %f\n", i, curr_comp->soma_vm[i]);
-	}	
 }
 #endif
 
@@ -310,7 +302,6 @@ static int HHCompartmentTest()
 	const double INIT_VM = -70.0;
 
 	const int SIMUL_LEN = 50;
-	const double DT = 0.001;
 
 	void** network = (void**) calloc(1, sizeof(void*));
 
@@ -328,22 +319,6 @@ static int HHCompartmentTest()
 	void* cuda_comp_obj = myriad_cudafy(hh_comp_obj, 0);
 
 	network[0] = cuda_comp_obj;
-	
-	
-	/*
-	double curr_time = DT;
-	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
-	{
-		simul_fxn(hh_comp_obj, network, DT, curr_time, curr_step);
-		curr_time += DT;
-	}
-
-	struct HHSomaCompartment* hh_comp_obj_s = (struct HHSomaCompartment*) hh_comp_obj;
-	for (unsigned int i = 0; i < hh_comp_obj_s->soma_vm_len; i++)
-	{
-		printf("VM at step %i is %f\n", i, hh_comp_obj_s->soma_vm[i]);
-	}
-	*/
 
 	#ifdef CUDA
 	{
@@ -357,6 +332,8 @@ static int HHCompartmentTest()
 	    CUDA_CHECK_RETURN(cudaDeviceSynchronize());
         CUDA_CHECK_RETURN(cudaGetLastError());
 
+		// Decudafy stuff
+		myriad_decudafy(hh_comp_obj, cuda_comp_obj);
         cudaDeviceReset();
 	}
 	#endif
