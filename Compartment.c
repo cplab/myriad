@@ -130,7 +130,7 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 	struct Mechanism* mech = (struct Mechanism*) mechanism;
 	
 	self->num_mechs++;
-	self->my_mechs = (struct Mechanism**) realloc(self->my_mechs, self->num_mechs);
+	self->my_mechs = (struct Mechanism**) realloc(self->my_mechs, sizeof(struct Mechanism*) * self->num_mechs);
 
 	if (self->my_mechs == NULL)
 	{

@@ -243,19 +243,19 @@ static int cuda_symbol_malloc()
 // HHCompartmentTest //
 ///////////////////////
 
+#define SIMUL_LEN 50000
+#define DT 0.1
+
 #ifdef CUDA
 __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 {
-	const int SIMUL_LEN = 50000;
-	const double DT = 0.1;
-
 	void* dev_arr[1];
 	dev_arr[0] = network;
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
 
 	double curr_time = DT;
-	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
+	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
 	{
 		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
 		curr_time += DT;
@@ -281,9 +281,6 @@ static int HHCompartmentTest()
 	initHHKCurrMechanism(cuda_init);
 	initCompartment(cuda_init);
 	initHHSomaCompartment(cuda_init);
-
-	// Simulation Length
-	const unsigned int SIMUL_LEN = 50000;
 
 	// Leak params
 	const double G_LEAK = 0.8;
@@ -312,23 +309,25 @@ static int HHCompartmentTest()
 	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, 0, G_K, E_K, HH_N);
 	void* dc_curr_mech = myriad_new(DCCurrentMech, 0, 10000, 30000, 1.0);
 
-	void* cuda_na_mech = myriad_cudafy(hh_na_curr_mech, 0);
-	void* cuda_leak_mech = myriad_cudafy(hh_leak_mech, 0);
-	void* cuda_k_mech = myriad_cudafy(hh_k_curr_mech, 0);
-	void* cuda_dc_mech = myriad_cudafy(dc_curr_mech, 0);
 
-	// Add mechanism to compartment
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_leak_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_na_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_k_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_dc_mech));
-
-	void* cuda_comp_obj = myriad_cudafy(hh_comp_obj, 0);
-
-	network[0] = cuda_comp_obj;
 
 	#ifdef CUDA
 	{
+		void* cuda_na_mech = myriad_cudafy(hh_na_curr_mech, 0);
+		void* cuda_leak_mech = myriad_cudafy(hh_leak_mech, 0);
+		void* cuda_k_mech = myriad_cudafy(hh_k_curr_mech, 0);
+		void* cuda_dc_mech = myriad_cudafy(dc_curr_mech, 0);
+
+		// Add mechanism to compartment
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_leak_mech));
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_na_mech));
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_k_mech));
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_dc_mech));
+
+		void* cuda_comp_obj = myriad_cudafy(hh_comp_obj, 0);
+
+		network[0] = cuda_comp_obj;
+
         const int nThreads = 1; // NUM_CUDA_THREADS;
         const int nBlocks = 1;
 
@@ -343,6 +342,21 @@ static int HHCompartmentTest()
 		myriad_decudafy(hh_comp_obj, cuda_comp_obj);
         cudaDeviceReset();
 	}
+	#else
+	{
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_leak_mech));
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_na_curr_mech));
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_k_curr_mech));
+		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, dc_curr_mech));
+
+     	network[0] = hh_comp_obj;
+		double curr_time = DT;
+		for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
+		{
+	        simul_fxn(hh_comp_obj, network, DT, curr_time, curr_step);
+        	curr_time += DT;
+        }
+    }
 	#endif
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
