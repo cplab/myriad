@@ -19,6 +19,8 @@ extern "C"
 	#include "HHSomaCompartment.h"
 	#include "HHLeakMechanism.h"
 	#include "HHNaCurrMechanism.h"
+	#include "HHKCurrMechanism.h"
+    #include "DCCurrentMech.h"
 }
 
 #ifdef CUDA
@@ -244,8 +246,8 @@ static int cuda_symbol_malloc()
 #ifdef CUDA
 __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 {
-	const int SIMUL_LEN = 50;
-	const double DT = 0.001;
+	const int SIMUL_LEN = 50000;
+	const double DT = 0.1;
 
 	void* dev_arr[1];
 	dev_arr[0] = network;
@@ -273,10 +275,15 @@ static int HHCompartmentTest()
 	#endif
 
 	initMechanism(cuda_init);
+	initDCCurrMech(cuda_init);
 	initHHLeakMechanism(cuda_init);
 	initHHNaCurrMechanism(cuda_init);
+	initHHKCurrMechanism(cuda_init);
 	initCompartment(cuda_init);
 	initHHSomaCompartment(cuda_init);
+
+	// Simulation Length
+	const unsigned int SIMUL_LEN = 50000;
 
 	// Leak params
 	const double G_LEAK = 0.8;
@@ -288,24 +295,33 @@ static int HHCompartmentTest()
 	const double HH_M = 0.5;
 	const double HH_H = 0.1;
 
+	// Potassium params
+	const double G_K = 9.0;
+	const double E_K = -90.0;
+	const double HH_N = 0.1;
+
 	// Compartment Params
 	const double CM = 600.0;
 	const double INIT_VM = -70.0;
-
-	const int SIMUL_LEN = 50;
 
 	void** network = (void**) calloc(1, sizeof(void*));
 
 	void* hh_comp_obj = myriad_new(HHSomaCompartment, 0, 0, NULL, SIMUL_LEN, NULL, INIT_VM, CM);
 	void* hh_leak_mech = myriad_new(HHLeakMechanism, 0, G_LEAK, E_REV);
 	void* hh_na_curr_mech = myriad_new(HHNaCurrMechanism, 0, G_NA, E_NA, HH_M, HH_H);
+	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, 0, G_K, E_K, HH_N);
+	void* dc_curr_mech = myriad_new(DCCurrentMech, 0, 10000, 30000, 1.0);
 
 	void* cuda_na_mech = myriad_cudafy(hh_na_curr_mech, 0);
 	void* cuda_leak_mech = myriad_cudafy(hh_leak_mech, 0);
+	void* cuda_k_mech = myriad_cudafy(hh_k_curr_mech, 0);
+	void* cuda_dc_mech = myriad_cudafy(dc_curr_mech, 0);
 
 	// Add mechanism to compartment
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_leak_mech));
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_na_mech));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_k_mech));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, cuda_dc_mech));
 
 	void* cuda_comp_obj = myriad_cudafy(hh_comp_obj, 0);
 
@@ -330,14 +346,14 @@ static int HHCompartmentTest()
 	#endif
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
-	for (unsigned int curr_step = 1; curr_step <= SIMUL_LEN; curr_step++)
-	{
-		printf("\tVm at step %u is %f.\n",curr_step, curr_comp->soma_vm[curr_step]);
-	}
+	FILE* p_file = fopen("output.dat","wb");
+	fwrite(curr_comp->soma_vm, sizeof(double), curr_comp->soma_vm_len, p_file);
+	fclose(p_file);
 
 	// Free
 	assert(EXIT_SUCCESS == myriad_dtor(hh_leak_mech));
 	assert(EXIT_SUCCESS == myriad_dtor(hh_na_curr_mech));
+	assert(EXIT_SUCCESS == myriad_dtor(hh_k_curr_mech));
 	assert(EXIT_SUCCESS == myriad_dtor(hh_comp_obj));
 
     return EXIT_SUCCESS;

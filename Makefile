@@ -60,7 +60,8 @@ DOXYGEN_CONF ?= Doxyfile.conf
 MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
 MYRIAD_LIB_OBJS 	:= myriad_debug.c.o MyriadObject.c.o Mechanism.c.o Compartment.c.o \
-	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o
+	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
+	DCCurrentMech.c.o
 
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME	:= cudamyriad
@@ -71,7 +72,7 @@ ifdef CUDA
 CUDA_MYRIAD_LIB		:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
 CUDA_MYRIAD_LIB_OBJS	+= MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 	HHSomaCompartment.cu.o HHLeakMechanism.cu.o HHNaCurrMechanism.cu.o \
-	HHKCurrMechanism.cu.o
+	HHKCurrMechanism.cu.o DCCurrentMech.cu.o
 endif
 
 # Shared Libraries

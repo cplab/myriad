@@ -17,3 +17,4 @@ doc/
 
 # Emacs crap
 \#*
+/output.dat
