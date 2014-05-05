@@ -42,10 +42,11 @@ static double HHKCurrMechanism_mech_fun(
 
 	//	Channel dynamics calculation
 	const double pre_vm = c1->soma_vm[curr_step-1];
-    const double alpha_n = (-0.01 * (pre_vm + 10.0)) / (exp((pre_vm+10.0)/-10.0) - 1.0);
-    const double beta_n  = 0.125 * exp(pre_vm/-80.);
 
-    self->hh_n = dt*(alpha_n*(1-self->hh_n) - beta_n*self->hh_n) + self->hh_n;
+    const double alpha_n = (-0.01 * (pre_vm + 34.)) / (exp((pre_vm+34.0)/-1.) - 1.);
+    const double beta_n  = 0.125 * exp((pre_vm + 44.)/-80.);
+
+    self->hh_n += dt*5.*(alpha_n*(1.-self->hh_n) - beta_n*self->hh_n);
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)
@@ -53,6 +54,7 @@ static double HHKCurrMechanism_mech_fun(
 		//	I_K = g_K * hh_n^4 * (Vm[t-1] - e_K)
 		return -self->g_k * self->hh_n * self->hh_n * self->hh_n *
 				self->hh_n * (pre_vm - self->e_k);
+
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
 		return NAN;

@@ -41,23 +41,25 @@ static double HHNaCurrMechanism_mech_fun(
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
-	// Channel dynamics calculation
+	//	Channel dynamics calculation
 	const double pre_vm = c1->soma_vm[curr_step-1];
 
-	// @TODO: Magic numbers should be extracted out as defines
-	const double alpha_m = (0.32*(pre_vm+45.0)) / (1 - exp(-(pre_vm+45.0)/4.0));
-	const double beta_m =  (-0.28*(pre_vm+18.0)) / (1 - exp((pre_vm + 18.0)/5.0));
+	const double alpha_m = (-0.1*(pre_vm + 35.)) / (exp(-0.1*(pre_vm+35.)) - 1.) ;
+	const double beta_m =  4. * exp((pre_vm + 60.) / -18.);
 	const double alpha_h = (0.128) / (exp((pre_vm+41.0)/18.0));
 	const double beta_h = 4.0 / (1 + exp(-(pre_vm + 18.0)/5.0));
 
-    self->hh_m = dt*( (alpha_m*(1.0-self->hh_m)) - beta_m*self->hh_m) + self->hh_m;
-    self->hh_h = dt*( (alpha_h*(1.0-self->hh_h)) - beta_h*self->hh_h) + self->hh_h;
+	const double minf = (alpha_m/(alpha_m + beta_m));
+	self->hh_h += dt* 5. *(alpha_h*(1. - self->hh_h) - (beta_h * self->hh_h));
 
-	// No extracellular compartment. Current simply "disappears".
+	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)
 	{
-		// I = g_Na * hh_m^3 * hh_h * (Vm[t-1] - e_rev)
-		return -self->g_na * self->hh_m*self->hh_m*self->hh_m * self->hh_h* (pre_vm - self->e_na);
+		//	I = g_Na * minf^3 * hh_h * (Vm[t-1] - e_rev)
+		const double I_Na = -self->g_na * minf * minf * minf *	self->hh_h *
+				(pre_vm - self->e_na);
+		return I_Na;
+
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
 		return NAN;

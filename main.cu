@@ -243,8 +243,9 @@ static int cuda_symbol_malloc()
 // HHCompartmentTest //
 ///////////////////////
 
-#define SIMUL_LEN 50000
-#define DT 0.1
+//50000
+#define SIMUL_LEN 1000000 
+#define DT 0.001
 
 #ifdef CUDA
 __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
@@ -283,7 +284,7 @@ static int HHCompartmentTest()
 	initHHSomaCompartment(cuda_init);
 
 	// Leak params
-	const double G_LEAK = 0.8;
+	const double G_LEAK = 1.0;
 	const double E_REV = -65.0;
 
 	// Sodium params
@@ -298,8 +299,8 @@ static int HHCompartmentTest()
 	const double HH_N = 0.1;
 
 	// Compartment Params
-	const double CM = 600.0;
-	const double INIT_VM = -70.0;
+	const double CM = 1.0;
+	const double INIT_VM = -65.0;
 
 	void** network = (void**) calloc(1, sizeof(void*));
 
@@ -307,7 +308,7 @@ static int HHCompartmentTest()
 	void* hh_leak_mech = myriad_new(HHLeakMechanism, 0, G_LEAK, E_REV);
 	void* hh_na_curr_mech = myriad_new(HHNaCurrMechanism, 0, G_NA, E_NA, HH_M, HH_H);
 	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, 0, G_K, E_K, HH_N);
-	void* dc_curr_mech = myriad_new(DCCurrentMech, 0, 10000, 30000, 1.0);
+	void* dc_curr_mech = myriad_new(DCCurrentMech, 0, 200000, 999000, 9.0);
 
 
 
