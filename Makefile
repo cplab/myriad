@@ -61,18 +61,18 @@ MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
 MYRIAD_LIB_OBJS 	:= myriad_debug.c.o MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
-	DCCurrentMech.c.o
+	DCCurrentMech.c.o HHGABAAMechanism.c.o
 
 # CUDA Myriad Library
-CUDA_MYRIAD_LIB_LDNAME	:= cudamyriad
-CUDA_MYRIAD_LIB		:= 
-CUDA_MYRIAD_LIB_OBJS	:= 
+CUDA_MYRIAD_LIB_LDNAME := cudamyriad
+CUDA_MYRIAD_LIB	:= 
+CUDA_MYRIAD_LIB_OBJS := 
 
 ifdef CUDA
-CUDA_MYRIAD_LIB		:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
-CUDA_MYRIAD_LIB_OBJS	+= MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
+CUDA_MYRIAD_LIB	:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
+CUDA_MYRIAD_LIB_OBJS += MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 	HHSomaCompartment.cu.o HHLeakMechanism.cu.o HHNaCurrMechanism.cu.o \
-	HHKCurrMechanism.cu.o DCCurrentMech.cu.o
+	HHKCurrMechanism.cu.o DCCurrentMech.cu.o HHGABAAMechanism.cu.o
 endif
 
 # Shared Libraries
@@ -81,9 +81,9 @@ endif
 #      Linker (LD) Flags      #
 ###############################
 
-LD_FLAGS 		:= -L. -l$(MYRIAD_LIB_LDNAME) -lm
-CUDART_LD_FLAGS		:= -L$(CUDA_LIB_PATH) -lcudart
-CUDA_BIN_LDFLAGS	:= $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS)
+LD_FLAGS            := -L. -l$(MYRIAD_LIB_LDNAME) -lm
+CUDART_LD_FLAGS     := -L$(CUDA_LIB_PATH) -lcudart
+CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS)
 
 ###############################
 #       Definition Flags      #
