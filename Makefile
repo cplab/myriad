@@ -41,7 +41,7 @@ EXTRA_NVCC_FLAGS := -rdc=true
 AR_FLAGS := rcs
 
 # Ctags flags
-CTAGS_FLAGS := -f TAGS --verbose -R --exclude=doc --langmap=c++:.cu.cuh,c:.h -h +.cuh --fields="+afikKlmnsSzt"
+CTAGS_FLAGS := -e -f TAGS --verbose -R --exclude=doc --langmap=c++:.cu.cuh,c:.c.h -h +.cuh --fields="+afikKlmnsSzt"
 
 # Valgrind flags
 VALGRIND_SUPP ?= minimal.supp
