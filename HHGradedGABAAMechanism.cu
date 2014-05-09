@@ -20,16 +20,16 @@ extern "C"
     #include "Compartment.h"
 	#include "HHSomaCompartment.h"
 	#include "Mechanism.h"
-	#include "HHGABAAMechanism.h"
+	#include "HHGradedGABAAMechanism.h"
 }
 
 #include "HHSomaCompartment.cuh"
-#include "HHGABAAMechanism.cuh"
+#include "HHGradedGABAAMechanism.cuh"
 
-__device__ __constant__ struct HHGABAAMechanism* HHGABAAMechanism_dev_t;
-__device__ __constant__ struct HHGABAAMechanismClass* HHGABAAMechanismClass_dev_t;
+__device__ __constant__ struct HHGradedGABAAMechanism* HHGradedGABAAMechanism_dev_t;
+__device__ __constant__ struct HHGradedGABAAMechanismClass* HHGradedGABAAMechanismClass_dev_t;
 
-__device__ double HHGABAAMechanism_cuda_mech_fun(
+__device__ double HHGradedGABAAMechanism_cuda_mech_fun(
     void* _self,
 	void* pre_comp,
 	void* post_comp,
@@ -38,7 +38,7 @@ __device__ double HHGABAAMechanism_cuda_mech_fun(
 	const unsigned int curr_step
 	)
 {
-	struct HHGABAAMechanism* self = (struct HHGABAAMechanism*) _self;
+	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
@@ -53,4 +53,4 @@ __device__ double HHGABAAMechanism_cuda_mech_fun(
 	return -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
 }
 
-__device__ mech_fun_t HHGABAAMechanism_mech_fxn_t = HHGABAAMechanism_cuda_mech_fun;
+__device__ mech_fun_t HHGradedGABAAMechanism_mech_fxn_t = HHGradedGABAAMechanism_cuda_mech_fun;

@@ -8,17 +8,17 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 #include "HHSomaCompartment.h"
-#include "HHGABAAMechanism.h"
-#include "HHGABAAMechanism.cuh"
+#include "HHGradedGABAAMechanism.h"
+#include "HHGradedGABAAMechanism.cuh"
 
 ///////////////////////////////////////
-// HHGABAAMechanism Super Overrides //
+// HHGradedGABAAMechanism Super Overrides //
 ///////////////////////////////////////
 
-static void* HHGABAAMechanism_ctor(void* _self, va_list* app)
+static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 {
-	struct HHGABAAMechanism* self = 
-		(struct HHGABAAMechanism*) super_ctor(HHGABAAMechanism, _self, app);
+	struct HHGradedGABAAMechanism* self = 
+		(struct HHGradedGABAAMechanism*) super_ctor(HHGradedGABAAMechanism, _self, app);
 
 	const double g_s_init = va_arg(*app, double);
 	self->g_s = va_arg(*app, double*);
@@ -44,7 +44,7 @@ static void* HHGABAAMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHGABAAMechanism_mech_fun(
+static double HHGradedGABAAMechanism_mech_fun(
     void* _self,
 	void* pre_comp,
 	void* post_comp,
@@ -53,7 +53,7 @@ static double HHGABAAMechanism_mech_fun(
 	const unsigned int curr_step
 	)
 {
-	struct HHGABAAMechanism* self = (struct HHGABAAMechanism*) _self;
+	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
@@ -69,13 +69,13 @@ static double HHGABAAMechanism_mech_fun(
 	return I_GABA;
 }
 
-static void* HHGABAAMechanism_cudafy(void* _self, int clobber)
+static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		const size_t my_size = myriad_size_of(_self);
-		struct HHGABAAMechanism* self = (struct HHGABAAMechanism*) _self;
-		struct HHGABAAMechanism* self_copy = (struct HHGABAAMechanism*) calloc(1, my_size);
+		struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
+		struct HHGradedGABAAMechanism* self_copy = (struct HHGradedGABAAMechanism*) calloc(1, my_size);
 		
 		memcpy(self_copy, self, my_size);
 
@@ -111,18 +111,18 @@ static void* HHGABAAMechanism_cudafy(void* _self, int clobber)
 }
 
 ////////////////////////////////////////////
-// HHGABAAMechanismClass Super Overrides //
+// HHGradedGABAAMechanismClass Super Overrides //
 ////////////////////////////////////////////
 
-static void* HHGABAAMechanismClass_cudafy(void* _self, int clobber)
+static void* HHGradedGABAAMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct HHGABAAMechanismClass* my_class = (struct HHGABAAMechanismClass*) _self;
+		struct HHGradedGABAAMechanismClass* my_class = (struct HHGradedGABAAMechanismClass*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct HHGABAAMechanismClass copy_class = *my_class;
+		struct HHGradedGABAAMechanismClass copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -137,7 +137,7 @@ static void* HHGABAAMechanismClass_cudafy(void* _self, int clobber)
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &HHGABAAMechanism_mech_fxn_t,
+					(const void*) &HHGradedGABAAMechanism_mech_fxn_t,
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -167,35 +167,35 @@ static void* HHGABAAMechanismClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHGABAAMechanism;
-const void* HHGABAAMechanismClass;
+const void* HHGradedGABAAMechanism;
+const void* HHGradedGABAAMechanismClass;
 
-void initHHGABAAMechanism(int init_cuda)
+void initHHGradedGABAAMechanism(int init_cuda)
 {
-	if (!HHGABAAMechanismClass)
+	if (!HHGradedGABAAMechanismClass)
 	{
-		HHGABAAMechanismClass =
+		HHGradedGABAAMechanismClass =
 			myriad_new(
 				MechanismClass,
 				MechanismClass,
-				sizeof(struct HHGABAAMechanismClass),
-				myriad_cudafy, HHGABAAMechanismClass_cudafy,
+				sizeof(struct HHGradedGABAAMechanismClass),
+				myriad_cudafy, HHGradedGABAAMechanismClass_cudafy,
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHGABAAMechanismClass, 1);
+			void* tmp_mech_c_t = myriad_cudafy((void*)HHGradedGABAAMechanismClass, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHGABAAMechanismClass)->device_class = 
+			((struct MyriadClass*) HHGradedGABAAMechanismClass)->device_class = 
 				(struct MyriadClass*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHGABAAMechanismClass_dev_t,
+					(const void*) &HHGradedGABAAMechanismClass_dev_t,
 					&tmp_mech_c_t,
-					sizeof(struct HHGABAAMechanismClass*),
+					sizeof(struct HHGradedGABAAMechanismClass*),
 					0,
 					cudaMemcpyHostToDevice
 					)
@@ -204,32 +204,32 @@ void initHHGABAAMechanism(int init_cuda)
 		#endif
 	}
 
-	if (!HHGABAAMechanism)
+	if (!HHGradedGABAAMechanism)
 	{
-		HHGABAAMechanism =
+		HHGradedGABAAMechanism =
 			myriad_new(
-				HHGABAAMechanismClass,
+				HHGradedGABAAMechanismClass,
 				Mechanism,
-				sizeof(struct HHGABAAMechanism),
-				myriad_ctor, HHGABAAMechanism_ctor,
-				myriad_cudafy, HHGABAAMechanism_cudafy,
-				mechanism_fxn, HHGABAAMechanism_mech_fun,
+				sizeof(struct HHGradedGABAAMechanism),
+				myriad_ctor, HHGradedGABAAMechanism_ctor,
+				myriad_cudafy, HHGradedGABAAMechanism_cudafy,
+				mechanism_fxn, HHGradedGABAAMechanism_mech_fun,
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHGABAAMechanism, 1);
+			void* tmp_mech_t = myriad_cudafy((void*)HHGradedGABAAMechanism, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHGABAAMechanism)->device_class = 
+			((struct MyriadClass*) HHGradedGABAAMechanism)->device_class = 
 				(struct MyriadClass*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHGABAAMechanism_dev_t,
+					(const void*) &HHGradedGABAAMechanism_dev_t,
 					&tmp_mech_t,
-					sizeof(struct HHGABAAMechanism*),
+					sizeof(struct HHGradedGABAAMechanism*),
 					0,
 					cudaMemcpyHostToDevice
 					)

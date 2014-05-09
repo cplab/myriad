@@ -20,7 +20,7 @@ extern "C"
 	#include "HHLeakMechanism.h"
 	#include "HHNaCurrMechanism.h"
 	#include "HHKCurrMechanism.h"
-	#include "HHGABAAMechanism.h"
+	#include "HHGradedGABAAMechanism.h"
     #include "DCCurrentMech.h"
 }
 
@@ -100,7 +100,7 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 			void* hh_GABA_a_curr_mech = 
 				myriad_new
 				(
-					HHGABAAMechanism,
+					HHGradedGABAAMechanism,
 					connect_to[i],
 					GABA_INIT,
 					NULL,
@@ -129,7 +129,7 @@ static int dsac()
 	initHHLeakMechanism(cuda_init);
 	initHHNaCurrMechanism(cuda_init);
 	initHHKCurrMechanism(cuda_init);
-	initHHGABAAMechanism(cuda_init);
+	initHHGradedGABAAMechanism(cuda_init);
 	initCompartment(cuda_init);
 	initHHSomaCompartment(cuda_init);
 

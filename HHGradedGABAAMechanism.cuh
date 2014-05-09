@@ -1,5 +1,5 @@
 /**
-   @file    HHGABAAMechanism.cuh
+   @file    HHGradedGABAAMechanism.cuh
  
    @brief   Hodgkin-Huxley Sodium Mechanism CUDA definition file.
  
@@ -22,20 +22,20 @@
 
 #include "MyriadObject.h"
 #include "Mechanism.h"
-#include "HHGABAAMechanism.h"
+#include "HHGradedGABAAMechanism.h"
 
 //! On-GPU reference pointer to Mechanism class prototype
-extern __device__ __constant__ struct HHGABAAMechanism* HHGABAAMechanism_dev_t;
+extern __device__ __constant__ struct HHGradedGABAAMechanism* HHGradedGABAAMechanism_dev_t;
 
 //! On-GPU reference pointer to MechanismClass class prototype
-extern __device__ __constant__ struct HHGABAAMechanismClass* HHGABAAMechanismClass_dev_t;
+extern __device__ __constant__ struct HHGradedGABAAMechanismClass* HHGradedGABAAMechanismClass_dev_t;
 
 // ----------------------------------------
 
 //! On-GPU reference pointer to Mechanism function implementation
-extern __device__ mech_fun_t HHGABAAMechanism_mech_fxn_t;
+extern __device__ mech_fun_t HHGradedGABAAMechanism_mech_fxn_t;
 
-extern __device__ double HHGABAAMechanism_cuda_mech_fun(
+extern __device__ double HHGradedGABAAMechanism_cuda_mech_fun(
     void* _self,
 	void* pre_comp,
 	void* post_comp,

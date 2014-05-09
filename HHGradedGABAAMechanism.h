@@ -1,5 +1,5 @@
 /**
-   @file    HHGABAAMechanism.h
+   @file    HHGradedGABAAMechanism.h
  
    @brief   Hodgkin-Huxley GABA-a Mechanism class definition file.
  
@@ -17,17 +17,17 @@
 
 // Generic pointers for new/class-of purposes
 
-extern const void* HHGABAAMechanism;
-extern const void* HHGABAAMechanismClass;
+extern const void* HHGradedGABAAMechanism;
+extern const void* HHGradedGABAAMechanismClass;
 
 /**
-   HHGABAAMechanism mechanism for Hodgkin-Huxley GABA-a synapse.
+   HHGradedGABAAMechanism mechanism for Hodgkin-Huxley GABA-a synapse.
 
    @see Mechanism
  */
-struct HHGABAAMechanism
+struct HHGradedGABAAMechanism
 {
-	struct Mechanism _;     //! HHGABAAMechanism : Mechanism
+	struct Mechanism _;     //! HHGradedGABAAMechanism : Mechanism
 	double* g_s;			//! Synaptic gating variable (unitless, >=0, <=1)
 	unsigned int g_s_len;	//! Length of the synaptic gating variable array (0 -> MAXINT)
 	double g_max;			//! Maximum synaptic conductance - nS
@@ -38,11 +38,11 @@ struct HHGABAAMechanism
 	double gaba_rev;		//! Synaptic reversal potential - mV
 };
 
-struct HHGABAAMechanismClass
+struct HHGradedGABAAMechanismClass
 {
-	struct MechanismClass _; //! HHGABAAMechanismClass : MechanismClass
+	struct MechanismClass _; //! HHGradedGABAAMechanismClass : MechanismClass
 };
 
-void initHHGABAAMechanism(int cuda_init);
+void initHHGradedGABAAMechanism(int cuda_init);
 
 #endif
