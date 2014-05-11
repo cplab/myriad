@@ -1,3 +1,8 @@
+/**
+   @author Alex J Davies
+ */
+
+
 #ifndef MECHANISM_META_H
 #define MECHANISM_META_H
 
