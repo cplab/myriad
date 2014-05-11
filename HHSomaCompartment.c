@@ -8,14 +8,17 @@
 #include "HHSomaCompartment.h"
 #include "HHSomaCompartment.cuh"
 
+#include "HHSomaCompartment_meta.h"
+
 ///////////////////////////////////////
 // HHSomaCompartment Super Overrides //
 ///////////////////////////////////////
 
-static void* HHSomaCompartment_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, OBJECT_NAME, CTOR_FUN_NAME)
+//static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 {
-	struct HHSomaCompartment* self = 
-		(struct HHSomaCompartment*) super_ctor(HHSomaCompartment, _self, app);
+	struct OBJECT_NAME_POINTER SELF_NAME = 
+		(struct OBJECT_NAME_POINTER) super_ctor(OBJECT_NAME, _SELF_NAME, app);
 	
 	self->soma_vm_len = va_arg(*app, unsigned int);
 	self->soma_vm = va_arg(*app, double*);
@@ -34,15 +37,16 @@ static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static void* HHSomaCompartment_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, OBJECT_NAME, CUDAFY_FUN_NAME)
+//static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		const size_t my_size = myriad_size_of(_self);
-		struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-		struct HHSomaCompartment* self_copy = (struct HHSomaCompartment*) calloc(1, my_size);
+		struct OBJECT_NAME_POINTER SELF_NAME = (struct OBJECT_NAME_POINTER) _SELF_NAME;
+		struct OBJECT_NAME_POINTER self_copy = (struct OBJECT_NAME_POINTER) calloc(1, my_size);
 		
-		memcpy(self_copy, self, my_size);
+		memcpy(self_copy, OBJECT_NAME, my_size);
 
 		double* tmp_alias = NULL;
 		
@@ -66,7 +70,7 @@ static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 
 		self_copy->soma_vm = tmp_alias;
 
-		return super_cudafy(HHSomaCompartment, self_copy, 0);
+		return super_cudafy(OBJECT_NAME, self_copy, 0);
 	}
 	#else
 	{

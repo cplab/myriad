@@ -10,19 +10,24 @@
 #include "HHLeakMechanism.h"
 #include "HHLeakMechanism.cuh"
 
+#include "HHLeakMechanism_meta.h"
+
 /////////////////////////////////////
 // HHLeakMechanism Super Overrides //
 /////////////////////////////////////
 
-static void* HHLeakMechanism_ctor(void* _self, va_list* app)
+static MYRIAD
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, OBJECT_NAME, CTOR_FUN_NAME)
+// also not concatenating ^
+//static void* HHLeakMechanism_ctor(void* _self, va_list* app)
 {
-	struct HHLeakMechanism* self = 
-		(struct HHLeakMechanism*) super_ctor(HHLeakMechanism, _self, app);
+	struct OBJECT_NAME_POINTER SELF_NAME = 
+		(struct OBJECT_NAME_POINTER) super_ctor(OBJECT_NAME, _SELF_NAME, app);
     
-	self->g_leak = va_arg(*app, double);
-    self->e_rev = va_arg(*app, double);
+	SELF_NAME->g_leak = va_arg(*app, double);
+    SELF_NAME->e_rev = va_arg(*app, double);
 	
-	return self;
+	return SELF_NAME;
 }
 
 static double HHLeakMechanism_mech_fun(
@@ -51,6 +56,7 @@ static double HHLeakMechanism_mech_fun(
 //////////////////////////////////////////
 // HHLeakMechanismClass Super Overrides //
 //////////////////////////////////////////
+
 
 static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
 {
