@@ -16,18 +16,17 @@
 // HHLeakMechanism Super Overrides //
 /////////////////////////////////////
 
-static MYRIAD
 static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, OBJECT_NAME, CTOR_FUN_NAME)
 // also not concatenating ^
 //static void* HHLeakMechanism_ctor(void* _self, va_list* app)
 {
-	struct OBJECT_NAME_POINTER SELF_NAME = 
-		(struct OBJECT_NAME_POINTER) super_ctor(OBJECT_NAME, _SELF_NAME, app);
+	struct OBJECT_NAME_POINTER _self = 
+		(struct OBJECT_NAME_POINTER) super_ctor(OBJECT_NAME, self, app);
     
-	SELF_NAME->g_leak = va_arg(*app, double);
-    SELF_NAME->e_rev = va_arg(*app, double);
+	_self->g_leak = va_arg(*app, double);
+	_self->e_rev = va_arg(*app, double);
 	
-	return SELF_NAME;
+	return self;
 }
 
 static double HHLeakMechanism_mech_fun(

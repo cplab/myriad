@@ -10,3 +10,7 @@
 
 #define MYRIAD_FXN_METHOD_HEADER_GEN(ret, args, objname, suffix) \
     ret _MYRIAD_CAT(objname, _MYRIAD_CAT(_,suffix)) (args)
+
+#define MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(ret, args, funname) \
+    ret funname (args)
+

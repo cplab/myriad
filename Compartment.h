@@ -15,25 +15,33 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
+#include "Compartment_meta.h"
+
 //! Compartment simulate function pointer
+/*
 typedef void (* compartment_simul_fxn_t) (
 	void* _self,
-	void** network,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
+	void** NETWORK,
+	const double TIMESTEP,
+	const double GLOBAL_TIME,
+	const unsigned int CURR_STEP
 	);
+*/
+typedef MYRIAD_FXN_TYPEDEF_GEN(SIMUL_FXN_NAME, SIMUL_FXN_ARGS, SIMUL_FXN_RET);
 
 //! Method for adding mechanisms to a compartment
+/*
 typedef int (* compartment_add_mech_t) (
 	void* _self,
 	void* mechanism
 	);
+*/
+typedef MYRIAD_FXN_TYPEDEF_GEN(ADD_MECH_FXN_NAME, ADD_MECH_FXN_ARGS, ADD_MECH_FXN_RET);
 
 // Generic pointers for new/class-of purposes
 
-extern const void* Compartment;
-extern const void* CompartmentClass;
+extern const void* COMPARTMENT_OBJECT_NAME;
+extern const void* COMPARTMENT_CLASS_NAME;
 
 /**
    Generic simulation function delegator.
@@ -44,13 +52,7 @@ extern const void* CompartmentClass;
    @param[in]    global_time  current global time of the simulation
    @param[in]    curr_step    current global time step of the simulation
  */
-extern void simul_fxn(
-	void* _self,
-	void** network,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	);
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(SIMUL_FXN_RET, SIMUL_FXN_ARGS, simul_fxn);
 
 /**
    Generic mechanism adder delegator.
@@ -60,24 +62,24 @@ extern void simul_fxn(
    
    @returns EXIT_SUCCESS if addition completed, EXIT_FAILURE otherwise.
 */
-extern int add_mechanism(void* _self, void* mechanism);
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(ADD_MECH_FXN_RET, ADD_MECH_FXN_ARGS, add_mechanism);
 
 //TOOD: Array of pointers for mechanisms vs Array of structs; better for performance?
 //! Generic Compartment structure definition
-struct Compartment
+struct COMPARTMENT_OBJECT_NAME
 {
-	const struct MyriadObject _; //! Compartment : MyriadObject
-	unsigned int id;             //! This compartment's unique ID number
-	unsigned int num_mechs;      //! Number of mechanisms in this compartment
-	struct Mechanism** my_mechs; //! List of mechanisms in this compartment
+	const struct COMPARTMENT_OBJECT_SUPERCLASS _; //! Compartment : MyriadObject
+	unsigned int ID;             //! This compartment's unique ID number
+	unsigned int NUM_MECHS;      //! Number of mechanisms in this compartment
+	struct Mechanism** MY_MECHS; //! List of mechanisms in this compartment
 };
 
 //! Generic CompartmentClass structure definition
-struct CompartmentClass
+struct COMPARTMENT_CLASS_NAME
 {
-	const struct MyriadClass _;            //! CompartmentClass : MyriadClass
-	compartment_simul_fxn_t m_comp_fxn;    //! Defines compartment simulation
-	compartment_add_mech_t m_add_mech_fun; //! Allows for adding mechanisms to compartment
+	const struct COMPARTMENT_CLASS_SUPERCLASS _;            //! CompartmentClass : MyriadClass
+	SIMUL_FXN_NAME MY_COMPARTMENT_SIMUL_FXN;    //! Defines compartment simulation
+	ADD_MECH_FXN_NAME MY_COMPARTMENT_ADD_MECH_FXN; //! Allows for adding mechanisms to compartment
 };
 
 /**
