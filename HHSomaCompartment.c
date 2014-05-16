@@ -8,45 +8,44 @@
 #include "HHSomaCompartment.h"
 #include "HHSomaCompartment.cuh"
 
-#include "HHSomaCompartment_meta.h"
 
 ///////////////////////////////////////
 // HHSomaCompartment Super Overrides //
 ///////////////////////////////////////
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, OBJECT_NAME, CTOR_FUN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, CTOR_FUN_NAME)
 //static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 {
-	struct OBJECT_NAME* _self = 
-		(struct OBJECT_NAME*) super_ctor(OBJECT_NAME, self, app);
+	struct HHSOMACOMPARTMENT_OBJECT* _self = 
+		(struct HHSOMACOMPARTMENT_OBJECT*) super_ctor(HHSOMACOMPARTMENT_OBJECT, self, app);
 	
-	_self->MEMBRANE_VOLTAGE_LENGTH = va_arg(*app, unsigned int);
-	_self->MEMBRANE_VOLTAGE = va_arg(*app, double*);
+	_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH = va_arg(*app, unsigned int);
+	_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE = va_arg(*app, double*);
 	const double init_vm = va_arg(*app, double);
-	_self->CAPACITANCE = va_arg(*app, double);
+	_self->HHSOMACOMPARTMENT_CAPACITANCE = va_arg(*app, double);
 
 	// If the given length is non-zero but the pointer is NULL,
 	// we do the allocation ourselves.
-	if (_self->MEMBRANE_VOLTAGE == NULL && _self->MEMBRANE_VOLTAGE_LENGTH > 0)
+	if (_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE == NULL && _self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH > 0)
 	{
-		_self->MEMBRANE_VOLTAGE = (double*) calloc(_self->MEMBRANE_VOLTAGE_LENGTH, sizeof(double));
-		assert(_self->MEMBRANE_VOLTAGE && "Failed to allocate soma membrane voltage array");
-		_self->MEMBRANE_VOLTAGE[0] = init_vm;
+		_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE = (double*) calloc(_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH, sizeof(double));
+		assert(_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE && "Failed to allocate soma membrane voltage array");
+		_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[0] = init_vm;
 	}
 
 	return _self;
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, OBJECT_NAME, CUDAFY_FUN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, CUDAFY_FUN_NAME)
 //static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		const size_t my_size = myriad_size_of(_self);
-		struct OBJECT_NAME* self = (struct OBJECT_NAME*) _self;
-		struct OBJECT_NAME* self_copy = (struct OBJECT_NAME*) calloc(1, my_size);
+		struct HHSOMACOMPARTMENT_OBJECT* self = (struct HHSOMACOMPARTMENT_OBJECT*) _self;
+		struct HHSOMACOMPARTMENT_OBJECT* self_copy = (struct HHSOMACOMPARTMENT_OBJECT*) calloc(1, my_size);
 		
-		memcpy(self_copy, OBJECT_NAME, my_size);
+		memcpy(self_copy, HHSOMACOMPARTMENT_OBJECT, my_size);
 
 		double* tmp_alias = NULL;
 		
@@ -54,7 +53,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, OBJECT_NAME
 		CUDA_CHECK_RETURN(
 			cudaMalloc(
 				(void**) &tmp_alias,
-				self_copy->MEMBRANE_VOLTAGE_LENGTH * sizeof(double)
+				self_copy->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH * sizeof(double)
 				)
 			);
 
@@ -63,14 +62,14 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, OBJECT_NAME
 			cudaMemcpy(
 				(void*) tmp_alias,
 				(void*) self->soma_vm,
-				self_copy->MEMBRANE_VOLTAGE_LENGTH * sizeof(double),
+				self_copy->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH * sizeof(double),
 				cudaMemcpyHostToDevice
 				)
 			);
 
-		self_copy->MEMBRANE_VOLTAGE = tmp_alias;
+		self_copy->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE = tmp_alias;
 
-		return super_cudafy(OBJECT_NAME, self_copy, 0);
+		return super_cudafy(HHSOMACOMPARTMENT_OBJECT, self_copy, 0);
 	}
 	#else
 	{
@@ -79,18 +78,18 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, OBJECT_NAME
 	#endif
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, OBJECT_NAME, DECUDAFY_FUN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, DECUDAFY_FUN_NAME)
 //static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 {
 	#ifdef CUDA
 	{
-		struct OBJECT_NAME* self = (struct OBJECT_NAME*) _self;
+		struct HHSOMACOMPARTMENT_OBJECT* self = (struct HHSOMACOMPARTMENT_OBJECT*) _self;
 
 		double* from_gpu_soma = NULL;
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
 				(void*) &from_gpu_soma,
-				(void*) cuda_self + offsetof(struct OBJECT_NAME, MEMBRANE_VOLTAGE),
+				(void*) cuda_self + offsetof(struct HHSOMACOMPARTMENT_OBJECT, HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE),
 				sizeof(double*),
 				cudaMemcpyDeviceToHost
 				)
@@ -98,9 +97,9 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, OBJECT_
 
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
-				(void*) self->MEMBRANE_VOLTAGE,
+				(void*) self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE,
 				(void*) from_gpu_soma,
-				self->MEMBRANE_VOLTAGE_LENGTH * sizeof(double),
+				self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH * sizeof(double),
 				cudaMemcpyDeviceToHost
 				)
 			);
@@ -112,12 +111,12 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, OBJECT_
 	return;
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, OBJECT_NAME, DTOR_FUN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, DTOR_FUN_NAME)
 //static int HHSomaCompartment_dtor(void* _self)
 {
-	struct OBJECT_NAME* _self = (struct OBJECT_NAME*) self;
+	struct HHSOMACOMPARTMENT_OBJECT* _self = (struct HHSOMACOMPARTMENT_OBJECT*) self;
 
-	free(_self->MEMBRANE_VOLTAGE);
+	free(_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE);
 
 	return super_dtor(Compartment, self);
 }
@@ -130,7 +129,7 @@ static void HHSomaCompartment_simul_fxn(
 	const unsigned int curr_step
 	)
 {
-	struct OBJECT_NAME* self = (struct OBJECT_NAME*) _self;
+	struct HHSOMACOMPARTMENT_OBJECT* self = (struct HHSOMACOMPARTMENT_OBJECT*) _self;
 
 	double I_sum = 0.0;
 
@@ -146,7 +145,7 @@ static void HHSomaCompartment_simul_fxn(
 	}
 
 	//	Calculate new membrane voltage: (dVm) + prev_vm
-	self->MEMBRANE_VOLTAGE[curr_step] = (dt * (I_sum) / (self->cm)) + self->MEMBRANE_VOLTAGE[curr_step - 1];
+	self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step] = (dt * (I_sum) / (self->cm)) + self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step - 1];
 
 	return;
 }
@@ -155,16 +154,16 @@ static void HHSomaCompartment_simul_fxn(
 // HHSomaCompartmentClass Super Overrides //
 ////////////////////////////////////////////
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, CLASS_NAME, CUDAFY_FUN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPARTMENT_CLASS, CUDAFY_FUN_NAME)
 //static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct CLASS_NAME* my_class = (struct CLASS_NAME*) _self;
+		struct HHSOMACOMPARTMENT_CLASS* my_class = (struct HHSOMACOMPARTMENT_CLASS*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct CLASS_NAME copy_class = *my_class;
+		struct HHSOMACOMPARTMENT_CLASS copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -210,8 +209,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, CLASS_NAME,
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* OBJECT_NAME;
-const void* CLASS_NAME;
+const void* HHSOMACOMPARTMENT_OBJECT;
+const void* HHSOMACOMPARTMENT_CLASS;
 
 void initHHSomaCompartment(int init_cuda)
 {

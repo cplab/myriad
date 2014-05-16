@@ -16,15 +16,14 @@
 // HHLeakMechanism Super Overrides //
 /////////////////////////////////////
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, OBJECT_NAME, CTOR_FUN_NAME)
-// also not concatenating ^
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHLEAKMECHANISM_OBJECT, CTOR_FUN_NAME)
 //static void* HHLeakMechanism_ctor(void* _self, va_list* app)
 {
-	struct OBJECT_NAME_POINTER _self = 
-		(struct OBJECT_NAME_POINTER) super_ctor(OBJECT_NAME, self, app);
+	struct HHLEAKMECHANISM_OBJECT* _self = 
+		(struct HHLEAKMECHANISM_OBJECT*) super_ctor(HHLEAKMECHANISM_OBJECT, self, app);
     
-	_self->g_leak = va_arg(*app, double);
-	_self->e_rev = va_arg(*app, double);
+	_self->HHLEAKMECHANISM_G_LEAK = va_arg(*app, double);
+	_self->HHLEAKMECHANISM_E_REV = va_arg(*app, double);
 	
 	return self;
 }
@@ -56,16 +55,16 @@ static double HHLeakMechanism_mech_fun(
 // HHLeakMechanismClass Super Overrides //
 //////////////////////////////////////////
 
-
-static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHANISM_CLASS, CUDAFY_FUN_NAME)
+//static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct HHLeakMechanismClass* my_class = (struct HHLeakMechanismClass*) _self;
+		struct HHLEAKMECHANISM_CLASS* my_class = (struct HHLEAKMECHANISM_CLASS*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct HHLeakMechanismClass copy_class = *my_class;
+		struct HHLEAKMECHANISM_CLASS copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -110,8 +109,8 @@ static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHLeakMechanism;
-const void* HHLeakMechanismClass;
+const void* HHLEAKMECHANISM_OBJECT;
+const void* HHLEAKMECHANISM_CLASS;
 
 void initHHLeakMechanism(int init_cuda)
 {

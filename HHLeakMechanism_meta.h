@@ -3,12 +3,15 @@
 
 #include "myriad_metaprogramming.h"
 
-// Generics 
-#define SELF_NAME self
-#define SELF_TYPE void*
-#define _SELF_NAME _MYRIAD_CAT(_,SELF_NAME)
-#define OBJECT_NAME HHLeakMechanism
-#define OBJECT_NAME_POINTER HHLeakMechanism*
+// Generics
+#define HHLEAKMECHANISM_OBJECT HHLeakMechanism
+#define HHLEAKMECHANISM_CLASS HHLeakMechanismClass
+
+// Attributes
+#define HHLEAKMECHANISM_OBJECT_NAME _
+#define HHLEAKMECHANISM_CLASS_NAME _
+#define HHLEAKMECHANISM_G_LEAK g_leak
+#define HHLEAKMECHANISM_E_REV e_rev
 
 
 #endif

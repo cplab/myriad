@@ -8,17 +8,15 @@
 #include "myriad_metaprogramming.h"
 
 // Generics
-#define SELF_NAME self
-#define SELF_TYPE void*
-#define _SELF_NAME _MYRIAD_CAT(_,SELF_NAME)
-#define OBJECT_NAME HHSomaCompartment
-#define CLASS_NAME HHSomaCompartmentClass
+#define HHSOMACOMPARTMENT_OBJECT HHSomaCompartment
+#define HHSOMACOMPARTMENT_CLASS HHSomaCompartmentClass
 
 // Attributes
-#define COMPARTMENT_NAME _
-#define MEMBRANE_VOLTAGE soma_vm
-#define MEMBRANE_VOLTAGE_LENGTH soma_vm_len
-#define CAPACITANCE cm
+#define HHSOMACOMPARTMENT_NAME _
+#define HHSOMACOMPARTMENT_CLASS_NAME _
+#define HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE soma_vm
+#define HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH soma_vm_len
+#define HHSOMACOMPARTMENT_CAPACITANCE cm
 
 
 #endif
