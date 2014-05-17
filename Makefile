@@ -72,7 +72,7 @@ ifdef CUDA
 CUDA_MYRIAD_LIB	:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
 CUDA_MYRIAD_LIB_OBJS += MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 	HHSomaCompartment.cu.o HHLeakMechanism.cu.o HHNaCurrMechanism.cu.o \
-	HHKCurrMechanism.cu.o DCCurrentMech.cu.o HHGABAAMechanism.cu.o
+	HHKCurrMechanism.cu.o DCCurrentMech.cu.o HHGradedGABAAMechanism.cu.o
 endif
 
 # Shared Libraries
@@ -108,7 +108,7 @@ INCLUDES := $(CUDA_INCLUDES) -I.
 #        Make Targets         #
 ###############################
 
-SIMUL_MAIN := dsac
+SIMUL_MAIN := main
 SIMUL_MAIN_OBJ := $(addsuffix .o, $(SIMUL_MAIN))
 SIMUL_MAIN_BIN := $(addsuffix .bin, $(SIMUL_MAIN))
 

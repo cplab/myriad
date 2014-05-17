@@ -15,7 +15,7 @@
 #define COMPARTMENT_OBJECT_SUPERCLASS MyriadObject
 #define COMPARTMENT_CLASS_SUPERCLASS MyriadClass
 #define ID id
-#define NUMBER_MECHS num_mechs
+#define NUM_MECHS num_mechs
 #define MY_MECHS my_mechs
 
 

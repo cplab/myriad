@@ -12,8 +12,8 @@ extern "C"
     #include "Compartment.h"
 }
 
+#include "MyriadObject.cuh"
 #include "Compartment.cuh"
-
 
 __device__ void Compartment_cuda_simul_fxn(
 	void* _self,
@@ -25,7 +25,7 @@ __device__ void Compartment_cuda_simul_fxn(
 {
 	const struct Compartment* self = (const struct Compartment*) _self;
 	printf("My id is %u\n", self->id);
-	printf("My num_mechs is %u\n", self->num_mechs);
+	printf("My num_mechs is %u\n", self->NUM_MECHS);
 	return;
 }
 

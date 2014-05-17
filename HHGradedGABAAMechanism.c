@@ -85,7 +85,7 @@ static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 		CUDA_CHECK_RETURN(
 			cudaMalloc(
 				(void**) &tmp_alias,
-				self_copy->g_s * sizeof(double)
+				self_copy->g_s_len * sizeof(double)
 				)
 			);
 
@@ -93,7 +93,7 @@ static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
 				(void*) tmp_alias,
-				(void*) self->soma_vm,
+				(void*) self->g_s,
 				self_copy->g_s_len * sizeof(double),
 				cudaMemcpyHostToDevice
 				)
