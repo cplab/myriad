@@ -9,17 +9,22 @@
 #include "Mechanism.h"
 #include "Mechanism.cuh"
 
+#include "Mechanism_meta.h"
+
+
 ///////////////////////////////
 // Mechanism Super Overrides //
 ///////////////////////////////
 
-static void* Mechanism_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, OBJECT_NAME, CTOR_FUN_NAME)
+// for some reason, the above macro is not concatenating correctly
+//static void* Mechanism_ctor(void* _self, va_list* app)
 {
-	struct Mechanism* self = (struct Mechanism*) super_ctor(Mechanism, _self, app);
+	struct Mechanism* _self = (struct Mechanism*) super_ctor(Mechanism, self, app);
 	
-	self->source_id = va_arg(*app, unsigned int);
+	_self->source_id = va_arg(*app, unsigned int);
 
-	return self;
+	return _self;
 }
 
 //////////////////////////
@@ -72,6 +77,7 @@ double super_mechanism_fxn(
 ////////////////////////////////////
 // MechanismClass Super Overrides //
 ////////////////////////////////////
+
 
 static void* MechanismClass_ctor(void* _self, va_list* app)
 {

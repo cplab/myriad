@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include <cuda_runtime.h>
 
 #include "myriad_debug.h"
 
@@ -19,9 +18,9 @@ static void* Compartment_ctor(void* _self, va_list* app)
 {
 	struct Compartment* self = (struct Compartment*) super_ctor(Compartment, _self, app);
 	
-	self->id = va_arg(*app, unsigned int);
-	self->num_mechs = va_arg(*app, unsigned int);
-	self->my_mechs = va_arg(*app, struct Mechanism**);
+	self->ID = va_arg(*app, unsigned int);
+	self->NUM_MECHS = va_arg(*app, unsigned int);
+	self->MY_MECHS = va_arg(*app, struct Mechanism**);
 
 	return self;
 }
@@ -83,8 +82,8 @@ static void Compartment_simul_fxn(
 	)
 {
 	const struct Compartment* self = (const struct Compartment*) _self;
-	printf("My id is %u\n", self->id);
-	printf("My num_mechs is %u\n", self->num_mechs);
+	printf("My id is %u\n", self->ID);
+	printf("My num_mechs is %u\n", self->NUM_MECHS);
 	return;
 }
 
@@ -129,8 +128,8 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 	struct Compartment* self = (struct Compartment*) _self;
 	struct Mechanism* mech = (struct Mechanism*) mechanism;
 	
-	self->num_mechs++;
-	self->my_mechs = (struct Mechanism**) realloc(self->my_mechs, sizeof(struct Mechanism*) * self->num_mechs);
+	self->NUM_MECHS++;
+	self->MY_MECHS = (struct Mechanism**) realloc(self->MY_MECHS, sizeof(struct Mechanism*) * self->NUM_MECHS);
 
 	if (self->my_mechs == NULL)
 	{
@@ -138,7 +137,7 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 		return EXIT_FAILURE;
 	}
 
-	self->my_mechs[self->num_mechs-1] = mech;
+	self->MY_MECHS[self->NUM_MECHS-1] = mech;
 
 	return EXIT_SUCCESS;
 }
