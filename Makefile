@@ -108,7 +108,7 @@ INCLUDES := $(CUDA_INCLUDES) -I.
 #        Make Targets         #
 ###############################
 
-SIMUL_MAIN := main
+SIMUL_MAIN := dsac
 SIMUL_MAIN_OBJ := $(addsuffix .o, $(SIMUL_MAIN))
 SIMUL_MAIN_BIN := $(addsuffix .bin, $(SIMUL_MAIN))
 

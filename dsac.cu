@@ -7,23 +7,11 @@
 #include <vector_types.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-
-#include "MyriadObject.cuh"
-#include "Mechanism.cuh"
-#include "Compartment.cuh"
-#include "HHSomaCompartment.cuh"
-#include "HHLeakMechanism.cuh"
-#include "HHNaCurrMechanism.cuh"
-#include "HHKCurrMechanism.cuh"
-#include "HHGradedGABAAMechanism.cuh"
-#include "DCCurrentMech.cuh"
 #endif
 
 // Myriad C API Headers
-#ifdef CUDA
 extern "C"
 {
-#endif
 	#include "myriad_debug.h"
     #include "MyriadObject.h"
 	#include "Mechanism.h"
@@ -32,11 +20,16 @@ extern "C"
 	#include "HHLeakMechanism.h"
 	#include "HHNaCurrMechanism.h"
 	#include "HHKCurrMechanism.h"
-	#include "HHGradedGABAAMechanism.h"
+    #include "HHGradedGABAAMechanism.h"
     #include "DCCurrentMech.h"
-#ifdef CUDA
 }
+
+#ifdef CUDA
+#include "MyriadObject.cuh"
+#include "Mechanism.cuh"
+#include "Compartment.cuh"
 #endif
+
 
 ////////////////
 // DSAC Model //
