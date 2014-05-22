@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef CUDA
 #include <vector_types.h>
@@ -20,7 +21,8 @@ extern "C"
 	#include "HHLeakMechanism.h"
 	#include "HHNaCurrMechanism.h"
 	#include "HHKCurrMechanism.h"
-    #include "HHGradedGABAAMechanism.h"
+//    #include "HHGradedGABAAMechanism.h"
+    #include "HHSpikeGABAAMechanism.h"
     #include "DCCurrentMech.h"
 }
 
@@ -55,10 +57,8 @@ extern "C"
 #define CM 1.0
 #define INIT_VM -65.0
 // GABA-a Params
-#define GABA_INIT 0.2
+#define GABA_VM_THRESH 0.0
 #define GABA_G_MAX 0.1
-#define GABA_THETA 0.0			
-#define GABA_SIGMA 2.0			
 #define GABA_TAU_ALPHA 0.08333333333333333
 #define GABA_TAU_BETA 10.0
 #define GABA_REV -75.0
@@ -107,17 +107,14 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 			void* hh_GABA_a_curr_mech = 
 				myriad_new
 				(
-					HHGradedGABAAMechanism,
+					HHSpikeGABAAMechanism,
 					connect_to[i],
-					GABA_INIT,
-					NULL,
-					SIMUL_LEN,
-					GABA_G_MAX,
-					GABA_THETA,
-					GABA_SIGMA,
-					GABA_TAU_ALPHA,
-					GABA_TAU_BETA,
-					GABA_REV
+                    GABA_VM_THRESH,
+                    -INFINITY,
+                    GABA_G_MAX,
+                    GABA_TAU_ALPHA,
+                    GABA_TAU_BETA,
+                    GABA_REV
 				);
 			assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
 			printf("Made GABA synapse starting at cell %i ending at cell %i\n", connect_to[i], id);
@@ -136,7 +133,7 @@ static int dsac()
 	initHHLeakMechanism(cuda_init);
 	initHHNaCurrMechanism(cuda_init);
 	initHHKCurrMechanism(cuda_init);
-	initHHGradedGABAAMechanism(cuda_init);
+	initHHSpikeGABAAMechanism(cuda_init);
 	initCompartment(cuda_init);
 	initHHSomaCompartment(cuda_init);
 

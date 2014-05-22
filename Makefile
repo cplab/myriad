@@ -61,7 +61,7 @@ MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
 MYRIAD_LIB_OBJS 	:= myriad_debug.c.o MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
-	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o
+	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o
 
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME := cudamyriad
