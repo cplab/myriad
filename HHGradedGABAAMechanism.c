@@ -15,36 +15,38 @@
 // HHGradedGABAAMechanism Super Overrides //
 ///////////////////////////////////////
 
-static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHGRADEDGABAAMECHANISM_OBJECT, CTOR_FUN_NAME)
+//static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 {
-	struct HHGradedGABAAMechanism* self = 
-		(struct HHGradedGABAAMechanism*) super_ctor(HHGradedGABAAMechanism, _self, app);
+	struct HHGRADEDGABAAMECHANISM_OBJECT* _self = 
+		(struct HHGRADEDGABAAMECHANISM_OBJECT*) super_ctor(HHGRADEDGABAAMECHANISM_OBJECT, self, app);
 
-	const double g_s_init = va_arg(*app, double);
-	self->g_s = va_arg(*app, double*);
-	self->g_s_len = va_arg(*app, unsigned int);
+	const double HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_INIT = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING = va_arg(*app, double*);
+	_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH = va_arg(*app, unsigned int);
 
-	if (self->g_s == NULL && self->g_s_len > 0)
+	if (_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING == NULL && _self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH > 0)
 	{
-		self->g_s = (double*) calloc(self->g_s_len, sizeof(double));
+		_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING = (double*) calloc(_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH, sizeof(double));
 	}
 	
-	if (self->g_s != NULL)
+	if (_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING != NULL)
 	{
-		self->g_s[0] = g_s_init;
+		_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING[0] = HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_INIT;
 	}
 
-	self->g_max = va_arg(*app, double);
-	self->theta = va_arg(*app, double);
-	self->sigma = va_arg(*app, double);
-	self->tau_alpha = va_arg(*app, double);
-	self->tau_beta = va_arg(*app, double);
-	self->gaba_rev = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_MAX_SYN_CONDUCTANCE = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_HALF_ACTIVATION_POTENTIAL = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_MAXIMAL_SLOPE = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_CHANNEL_OPENING_TIME = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_CHANNEL_CLOSING_TIME = va_arg(*app, double);
+	_self->HHGRADEDGABAAMECHANISM_REVERSAL_POTENTIAL = va_arg(*app, double);
 
 	return self;
 }
 
-static double HHGradedGABAAMechanism_mech_fun(
+static MYRIAD_FXN_METHOD_HEADER_GEN(HHGRADEDGABAAMECHANISM_MECH_FXN_RET, HHGRADEDGABAAMECHANISM_MECH_FXN_ARGS, HHGRADEDGABAAMECHANISM_OBJECT, HHGRADEDGABAAMECHANISM_MECH_FXN_NAME)
+/* static double HHGradedGABAAMechanism_mech_fun(
     void* _self,
 	void* pre_comp,
 	void* post_comp,
@@ -52,13 +54,14 @@ static double HHGradedGABAAMechanism_mech_fun(
 	const double global_time,
 	const unsigned int curr_step
 	)
+*/
 {
-	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
+	struct HHGRADEDGABAAMECHANISM_OBJECT* self = (struct HHGRADEDGABAAMECHANISM_OBJECT*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1];
+	const double pre_vm = c1->soma_vm[curr_step-1]; //TODO: genericise this!
 	const double post_vm = c2->soma_vm[curr_step-1];
 	const double prev_g_s = self->g_s[curr_step-1];
 
@@ -66,16 +69,17 @@ static double HHGradedGABAAMechanism_mech_fun(
 	self->g_s[curr_step] += dt * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
 
 	const double I_GABA = -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
-	return I_GABA;
+	return I_GABA;//TOTO: genericise this!
 }
 
-static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGABAAMECHANISM_OBJECT, CUDAFY_FUN_NAME)
+//static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		const size_t my_size = myriad_size_of(_self);
-		struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
-		struct HHGradedGABAAMechanism* self_copy = (struct HHGradedGABAAMechanism*) calloc(1, my_size);
+		struct HHGRADEDGABAAMECHANISM_OBJECT* self = (struct HHGRADEDGABAAMECHANISM_OBJECT*) _self;
+		struct HHGRADEDGABAAMECHANISM_OBJECT* self_copy = (struct HHGRADEDGABAAMECHANISM_OBJECT*) calloc(1, my_size);
 		
 		memcpy(self_copy, self, my_size);
 
@@ -85,7 +89,7 @@ static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 		CUDA_CHECK_RETURN(
 			cudaMalloc(
 				(void**) &tmp_alias,
-				self_copy->g_s_len * sizeof(double)
+				self_copy->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH * sizeof(double)
 				)
 			);
 
@@ -93,13 +97,13 @@ static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
 				(void*) tmp_alias,
-				(void*) self->g_s,
-				self_copy->g_s_len * sizeof(double),
+				(void*) self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING,
+				self_copy->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH * sizeof(double),
 				cudaMemcpyHostToDevice
 				)
 			);
 
-		self_copy->g_s = tmp_alias;
+		self_copy->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING = tmp_alias;
 
 		return super_cudafy(HHSomaCompartment, self_copy, 0);
 	}
@@ -114,15 +118,16 @@ static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 // HHGradedGABAAMechanismClass Super Overrides //
 ////////////////////////////////////////////
 
-static void* HHGradedGABAAMechanismClass_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGABAAMECHANISM_CLASS, CUDAFY_FUN_NAME)
+//static void* HHGradedGABAAMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct HHGradedGABAAMechanismClass* my_class = (struct HHGradedGABAAMechanismClass*) _self;
+		struct HHGRADEDGABAAMECHANISM_CLASS* my_class = (struct HHGRADEDGABAAMECHANISM_CLASS*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct HHGradedGABAAMechanismClass copy_class = *my_class;
+		struct HHGRADEDGABAAMECHANISM_CLASS copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -167,8 +172,8 @@ static void* HHGradedGABAAMechanismClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHGradedGABAAMechanism;
-const void* HHGradedGABAAMechanismClass;
+const void* HHGRADEDGABAAMECHANISM_OBJECT;
+const void* HHGRADEDGABAAMECHANISM_CLASS;
 
 void initHHGradedGABAAMechanism(int init_cuda)
 {

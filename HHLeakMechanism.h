@@ -36,7 +36,7 @@ struct HHLEAKMECHANISM_OBJECT
 
 struct HHLEAKMECHANISM_CLASS
 {
-	struct MechanismClass HHLEAKMECHANISM_CLASS_NAME; //! HHLeakMechanismClass : MechanismClass
+	struct MechanismClass SUPERCLASS_HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanismClass : MechanismClass
 };
 
 void initHHLeakMechanism(int cuda_init);

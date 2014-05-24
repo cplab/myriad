@@ -15,32 +15,34 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
+#include "HHGradedGABAAMechanism_meta.h"
+
 // Generic pointers for new/class-of purposes
 
-extern const void* HHGradedGABAAMechanism;
-extern const void* HHGradedGABAAMechanismClass;
+extern const void* HHGRADEDGABAAMECHANISM_OBJECT;
+extern const void* HHGRADEDGABAAMECHANISM_CLASS;
 
 /**
    HHGradedGABAAMechanism mechanism for Hodgkin-Huxley GABA-a synapse.
 
    @see Mechanism
  */
-struct HHGradedGABAAMechanism
+struct HHGRADEDGABAAMECHANISM_OBJECT
 {
-	struct Mechanism _;     //! HHGradedGABAAMechanism : Mechanism
-	double* g_s;			//! Synaptic gating variable (unitless, >=0, <=1)
-	unsigned int g_s_len;	//! Length of the synaptic gating variable array (0 -> MAXINT)
-	double g_max;			//! Maximum synaptic conductance - nS
-	double theta;			//! Half-activation potential - mV
-	double sigma;			//! Maximal slope of the sigmoidal synaptic function
-	double tau_alpha; 		//! Channel opening time constant - ms
-	double tau_beta;		//! Channel closing time constant - ms
-	double gaba_rev;		//! Synaptic reversal potential - mV
+	struct Mechanism SUPERCLASS_HHGRADEDGABAAMECHANISM_OBJECT_NAME;     //! HHGradedGABAAMechanism : Mechanism
+	double* HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING;			//! Synaptic gating variable (unitless, >=0, <=1)
+	unsigned int HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH;	//! Length of the synaptic gating variable array (0 -> MAXINT)
+	double HHGRADEDGABAAMECHANISM_MAX_SYN_CONDUCTANCE;			//! Maximum synaptic conductance - nS
+	double HHGRADEDGABAAMECHANISM_HALF_ACTIVATION_POTENTIAL;			//! Half-activation potential - mV
+	double HHGRADEDGABAAMECHANISM_MAXIMAL_SLOPE;			//! Maximal slope of the sigmoidal synaptic function
+	double HHGRADEDGABAAMECHANISM_CHANNEL_OPENING_TIME; 		//! Channel opening time constant - ms
+	double HHGRADEDGABAAMECHANISM_CHANNEL_CLOSING_TIME;		//! Channel closing time constant - ms
+	double HHGRADEDGABAAMECHANISM_REVERSAL_POTENTIAL;		//! Synaptic reversal potential - mV
 };
 
-struct HHGradedGABAAMechanismClass
+struct HHGRADEDGABAAMECHANISM_CLASS
 {
-	struct MechanismClass _; //! HHGradedGABAAMechanismClass : MechanismClass
+	struct MechanismClass SUPERCLASS_HHGRADEDGABAAMECHANISM_CLASS_NAME; //! HHGradedGABAAMechanismClass : MechanismClass
 };
 
 void initHHGradedGABAAMechanism(int cuda_init);

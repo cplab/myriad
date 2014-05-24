@@ -13,45 +13,51 @@
 // DCCurrentMech Super Overrides //
 /////////////////////////////////////
 
-static void* DCCurrentMech_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, DCCURRENTMECHANISM_OBJECT, CTOR_FUN_NAME)
+//static void* DCCurrentMech_ctor(void* _self, va_list* app)
 {
-	struct DCCurrentMech* self = 
-		(struct DCCurrentMech*) super_ctor(DCCurrentMech, _self, app);
+	struct DCCurrentMech* _self = 
+		(struct DCCurrentMech*) super_ctor(DCCurrentMech, self, app);
     
-	self->t_start = va_arg(*app, unsigned int);
-	self->t_stop = va_arg(*app, unsigned int);
-    self->amplitude = va_arg(*app, double);
+	_self->t_start = va_arg(*app, unsigned int);
+	_self->t_stop = va_arg(*app, unsigned int);
+	_self->amplitude = va_arg(*app, double);
 	
 	return self;
 }
 
-static double DCCurrentMech_mech_fun(
-    void* _self,
+static MYRIAD_FXN_METHOD_HEADER_GEN(DCCURRENTMECHANISM_MECH_FXN_RET, DCCURRENTMECHANISM_MECH_FXN_ARGS, DCCURRENTMECHANISM_OBJECT, DCCURRENTMECHANISM_MECH_FXN_NAME)
+/*
+ static double DCCurrentMech_mech_fun(
+	void* _self,
 	void* pre_comp,
 	void* post_comp,
 	const double dt,
 	const double global_time,
 	const unsigned int curr_step
 	)
-{
-	const struct DCCurrentMech* self = (const struct DCCurrentMech*) _self;
+*/
 
-	return (curr_step >= self->t_start && curr_step <= self->t_stop) ? self->amplitude : 0.0;
+{
+	const struct DCCURRENTMECHANISM_OBJECT* self = (const struct DCCURRENTMECHANISM_OBJECT*) _self;
+
+	return (curr_step >= self->DCCURRENTMECHANISM_T_START && curr_step <= self->DCCURRENTMECHANISM_T_STOP) ? self->DCCURRENTMECHANISM_AMPLITUDE : 0.0;
 }
 
 //////////////////////////////////////////
 // DCCurrentMechClass Super Overrides //
 //////////////////////////////////////////
 
-static void* DCCurrentMechClass_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTMECHANISM_CLASS, CUDAFY_FUN_NAME)
+//static void* DCCurrentMechClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct DCCurrentMechClass* my_class = (struct DCCurrentMechClass*) _self;
+		struct DCCURRENTMECHANISM_CLASS* my_class = (struct DCCURRENTMECHANISM_CLASS*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct DCCurrentMechClass copy_class = *my_class;
+		struct DCCURRENTMECHANISM_CLASS copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -96,8 +102,8 @@ static void* DCCurrentMechClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* DCCurrentMech;
-const void* DCCurrentMechClass;
+const void* DCCURRENTMECHANISM_OBJECT;
+const void* DCCURRENTMECHANISM_CLASS;
 
 void initDCCurrMech(const int init_cuda)
 {

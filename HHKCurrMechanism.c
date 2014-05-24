@@ -15,33 +15,36 @@
 // HHKCurrMechanism Super Overrides //
 ///////////////////////////////////////
 
-static void* HHKCurrMechanism_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHKCURRMECHANISM_OBJECT, CTOR_FUN_NAME)
+//static void* HHKCurrMechanism_ctor(void* _self, va_list* app)
 {
-	struct HHKCurrMechanism* self = 
-		(struct HHKCurrMechanism*) super_ctor(HHKCurrMechanism, _self, app);
+	struct HHKCURRMECHANISM_OBJECT* _self = 
+		(struct HHKCURRMECHANISM_OBJECT*) super_ctor(HHKCURRMECHANISM_OBJECT, self, app);
     
-	self->g_k = va_arg(*app, double);
-	self->e_k = va_arg(*app, double);
-	self->hh_n = va_arg(*app, double);
+	_self->HHKCURRMECHANISM_CHANNEL_CONDUCTANCE = va_arg(*app, double);
+	_self->HHKCURRMECHANISM_REVERE_POTENTIAL = va_arg(*app, double);
+	_self->HHKCURRMECHANISM_HH_N = va_arg(*app, double);
 
 	return self;
 }
 
-static double HHKCurrMechanism_mech_fun(
-    void* _self,
+static MYRIAD_FXN_METHOD_HEADER_GEN(HHKCURRMECHANISM_MECH_FXN_RET, HHKCURRMECHANISM_MECH_FXN_ARGS, HHKCURRMECHANISM_OBJECT, HHKCURRMECHANISM_MECH_FXN_NAME)
+/* static double HHKCurrMechanism_mech_fun(
+	void* _self,
 	void* pre_comp,
 	void* post_comp,
 	const double dt,
 	const double global_time,
 	const unsigned int curr_step
 	)
+*/
 {
-	struct HHKCurrMechanism* self = (struct HHKCurrMechanism*) _self;
+	struct HHKCURRMECHANISM_OBJECT* self = (struct HHKCURRMECHANISM_OBJECT*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1];
+	const double pre_vm = c1->soma_vm[curr_step-1]; //TODO: genericise this!
 
     const double alpha_n = (-0.01 * (pre_vm + 34.)) / (exp((pre_vm+34.0)/-1.) - 1.);
     const double beta_n  = 0.125 * exp((pre_vm + 44.)/-80.);
@@ -57,7 +60,7 @@ static double HHKCurrMechanism_mech_fun(
 
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
-		return NAN;
+		return NAN; //TODO: genericise this!
 	}
 }
 
@@ -65,15 +68,16 @@ static double HHKCurrMechanism_mech_fun(
 // HHKCurrMechanismClass Super Overrides //
 ////////////////////////////////////////////
 
-static void* HHKCurrMechanismClass_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECHANISM_CLASS, CUDAFY_FUN_NAME)
+//static void* HHKCurrMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct HHKCurrMechanismClass* my_class = (struct HHKCurrMechanismClass*) _self;
+		struct HHKCURRMECHANISM_CLASS* my_class = (struct HHKCURRMECHANISM_CLASS*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct HHKCurrMechanismClass copy_class = *my_class;
+		struct HHKCURRMECHANISM_CLASS copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -118,8 +122,8 @@ static void* HHKCurrMechanismClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHKCurrMechanism;
-const void* HHKCurrMechanismClass;
+const void* HHKCURRMECHANISM_OBJECT;
+const void* HHKCURRMECHANISM_CLASS;
 
 void initHHKCurrMechanism(int init_cuda)
 {

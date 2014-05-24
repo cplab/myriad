@@ -15,10 +15,12 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
+#include "DCCurrentMech_meta.h"
+
 // Generic pointers for new/class-of purposes
 
-extern const void* DCCurrentMech;
-extern const void* DCCurrentMechClass;
+extern const void* DCCURRENTMECHANISM_OBJECT;
+extern const void* DCCURRENTMECHANISM_CLASS;
 
 // -----------------------------------------
 
@@ -29,12 +31,12 @@ extern const void* DCCurrentMechClass;
 
    @see Mechanism
  */
-struct DCCurrentMech
+struct DCCURRENTMECHANISM_OBJECT
 {
-	const struct Mechanism _; //! DCCurrentMech : Mechanism
-	unsigned int t_start;     //! Time step at which current starts flowing
-	unsigned int t_stop;      //! Time step at which current stops flowing
-	double amplitude;         //! Current amplitude in nA
+	const struct Mechanism SUPERCLASS_DCCURRENTMECHANISM_OBJECT_NAME; //! DCCurrentMech : Mechanism
+	unsigned int DCCURRENTMECHANISM_T_START;     //! Time step at which current starts flowing
+	unsigned int DCCURRENTMECHANISM_T_STOP;      //! Time step at which current stops flowing
+	double DCCURRENTMECHANISM_AMPLITUDE;         //! Current amplitude in nA
 };
 
 /**
@@ -44,9 +46,9 @@ struct DCCurrentMech
 
    @see MechanismClass
  */
-struct DCCurrentMechClass
+struct DCCURRENTMECHANISM_CLASS
 {
-	struct MechanismClass _; //! MechanismClass : MyriadClass
+	struct MechanismClass SUPERCLASS_DCCURRENTMECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
 };
 
 // -------------------------------------

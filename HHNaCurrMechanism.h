@@ -15,28 +15,30 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
+#include "HHNaCurrMechanism_meta.h"
+
 // Generic pointers for new/class-of purposes
 
-extern const void* HHNaCurrMechanism;
-extern const void* HHNaCurrMechanismClass;
+extern const void* HHNACURRMECHANISM_OBJECT;
+extern const void* HHNACURRMECHANISM_CLASS;
 
 /**
    HHNaCurrMechanism mechanism for Hodgkin-Huxley sodium channel.
 
    @see Mechanism
  */
-struct HHNaCurrMechanism
+struct HHNACURRMECHANISM_OBJECT
 {
-	struct Mechanism _; //! HHNaCurrMechanism : Mechanism
-	double g_na;	    //! Sodium channel conductance - nS
-	double e_na;	    //! Sodium reversal potential - mV
-	double hh_m;	    //! @TODO Figure out what hh_m is actually called
-	double hh_h;	    //! @TODO Figure out what hh_h is actually called
+	struct Mechanism SUPERCLASS_HHNACURRMECHANISM_OBJECT_NAME; //! HHNaCurrMechanism : Mechanism
+	double HHNACURRMECHANISM_CHANNEL_CONDUCTANCE;	    //! Sodium channel conductance - nS
+	double HHNACURRMECHANISM_REVERSAL_POTENTIAL;	    //! Sodium reversal potential - mV
+	double HHNACURRMECHANISM_HH_M;	    //! @TODO Figure out what hh_m is actually called
+	double HHNACURRMECHANISM_HH_H;	    //! @TODO Figure out what hh_h is actually called
 };
 
-struct HHNaCurrMechanismClass
+struct HHNACURRMECHANISM_CLASS
 {
-	struct MechanismClass _; //! HHNaCurrMechanismClass : MechanismClass
+	struct MechanismClass SUPERCLASS_HHNACURRMECHANISM_CLASS_NAME; //! HHNaCurrMechanismClass : MechanismClass
 };
 
 void initHHNaCurrMechanism(int cuda_init);

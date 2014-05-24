@@ -121,13 +121,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, HHSOMACOMPARTME
 	return super_dtor(Compartment, self);
 }
 
-static void HHSomaCompartment_simul_fxn(
-	void* _self,
-	void** network,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static MYRIAD_FXN_METHOD_HEADER_GEN(HHSOMACOMPARTMENT_SIMUL_FXN_RET, HHSOMACOMPARTMENT_SIMUL_FXN_ARGS, HHSOMACOMPARTMENT_OBJECT, HHSOMACOMPARTMENT_SIMUL_FXN_NAME)
 {
 	struct HHSOMACOMPARTMENT_OBJECT* self = (struct HHSOMACOMPARTMENT_OBJECT*) _self;
 
@@ -136,7 +130,7 @@ static void HHSomaCompartment_simul_fxn(
 	//	Calculate mechanism contribution to current term
 	for (unsigned int i = 0; i < self->_.NUM_MECHS; i++)
 	{
-		struct Mechanism* curr_mech = self->_.my_mechs[i]; // TODO: GENERICSE DIS
+		struct Mechanism* curr_mech = self->_.my_mechs[i]; // TODO: GENERICiSE DIS
 		struct Compartment* pre_comp = network[curr_mech->source_id];
 
 		//TODO: Make this conditional on specific Mechanism types

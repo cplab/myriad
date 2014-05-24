@@ -28,23 +28,16 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHLEAKMECHANISM
 	return self;
 }
 
-static double HHLeakMechanism_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static MYRIAD_FXN_METHOD_HEADER_GEN(HHLEAKMECHANISM_MECH_FXN_RET, HHLEAKMECHANISM_MECH_FXN_ARGS, HHLEAKMECHANISM_OBJECT, HHLEAKMECHANISM_MECH_FXN_NAME)
 {
-	const struct HHLeakMechanism* self = (const struct HHLeakMechanism*) _self;
-	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
-	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
+	const struct HHLEAKMECHANISM_OBJECT* self = (const struct HHLEAKMECHANISM_OBJECT*) _self;
+	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
+	const struct HHSOMACOMPARTMENT_OBJECT* c2 = (const struct HHSOMACOMPARTMENT_OBJECT*) post_comp;
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c1 == NULL || c1 == c2)
 	{
-		return -self->g_leak * (c1->soma_vm[curr_step-1] - self->e_rev);
+		return -self->HHLEAKMECHANISM_G_LEAK * (c1->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step-1] - self->HHLEAKMECHANISM_E_REV);
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
 		return 0.0;
@@ -65,7 +58,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 
 		// Make a temporary copy-class because we need to change shit
 		struct HHLEAKMECHANISM_CLASS copy_class = *my_class;
-		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class; // TODO: genericise this when MyriadClass is done
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 		// By default we clobber the copy_class_class' superclass with

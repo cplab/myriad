@@ -15,27 +15,29 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
+#include "HHKCurrMechanism_meta.h"
+
 // Generic pointers for new/class-of purposes
 
-extern const void* HHKCurrMechanism;
-extern const void* HHKCurrMechanismClass;
+extern const void* HHKCURRMECHANISM_OBJECT;
+extern const void* HHKCURRMECHANISM_CLASS;
 
 /**
    HHKCurrMechanism mechanism for Hodgkin-Huxley potassium channel.
 
    @see Mechanism
  */
-struct HHKCurrMechanism
+struct HHKCURRMECHANISM_OBJECT
 {
-	struct Mechanism _; //! HHKCurrMechanism : Mechanism
-	double g_k;		    //! Sodium channel conductance - nS
-	double e_k;		    //! Sodium reversal potential - mV
-	double hh_n;	    //! @TODO Figure out what hh_n is actually called
+	struct Mechanism SUPERCLASS_HHKCURRMECHANISM_OBJECT; //! HHKCurrMechanism : Mechanism
+	double HHKCURRMECHANISM_CHANNEL_CONDUCTANCE;		    //! Sodium channel conductance - nS
+	double HHKCURRMECHANISM_REVERE_POTENTIAL;		    //! Sodium reversal potential - mV
+	double HHKCURRMECHANISM_HH_N;	    //! @TODO Figure out what hh_n is actually called
 };
 
-struct HHKCurrMechanismClass
+struct HHKCURRMECHANISM_CLASS
 {
-	struct MechanismClass _; //! HHKCurrMechanismClass : MechanismClass
+	struct MechanismClass SUPERCLASS_HHKCURRMECHANISM_CLASS; //! HHKCurrMechanismClass : MechanismClass
 };
 
 void initHHKCurrMechanism(int cuda_init);
