@@ -24,5 +24,8 @@
 	const unsigned int curr_step
 #define DCCURRENTMECHANISM_MECH_FXN_NAME mech_fun
 
+// Dynamic initialisation
+#define DCCURRENTMECHANISM_INIT_FXN_NAME initDCCurrMech
+
 #endif
 

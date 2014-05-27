@@ -35,4 +35,8 @@
 #define DECUDAFY_FUN_ARGS void* _self, void* cuda_self
 #define DECUDAFY_FUN_RET void
 
+// Dynamic initialisation properties
+#define DYNAMIC_INIT_FXN_RET void
+#define DYNAMIC_INIT_FXN_ARGS const int init_cuda
+
 #endif

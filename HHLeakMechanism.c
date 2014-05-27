@@ -72,7 +72,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &HHLeakMechanism_mech_fxn_t,
+					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, _mech_fxn_t),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -109,30 +109,30 @@ void initHHLeakMechanism(int init_cuda)
 {
 	// initCompartment(init_cuda);
 	
-	if (!HHLeakMechanismClass)
+	if (!HHLEAKMECHANISM_CLASS)
 	{
-		HHLeakMechanismClass =
+		HHLEAKMECHANISM_CLASS =
 			myriad_new(
 				MechanismClass,
 				MechanismClass,
-				sizeof(struct HHLeakMechanismClass),
-				myriad_cudafy, HHLeakMechanismClass_cudafy,
+				sizeof(struct HHLEAKMECHANISM_CLASS),
+				myriad_cudafy, MYRIAD_CAT(HHLEAKMECHANISM_CLASS, _cudafy),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHLeakMechanismClass, 1);
+			void* tmp_mech_c_t = myriad_cudafy((void*)HHLEAKMECHANISM_CLASS, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHLeakMechanismClass)->device_class = 
+			((struct MyriadClass*) HHLEAKMECHANISM_CLASS)->device_class = 
 				(struct MyriadClass*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHLeakMechanismClass_dev_t,
+					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_CLASS, _dev_t),
 					&tmp_mech_c_t,
-					sizeof(struct HHLeakMechanismClass*),
+					sizeof(struct HHLEAKMECHANISM_CLASS*),
 					0,
 					cudaMemcpyHostToDevice
 					)
@@ -141,31 +141,31 @@ void initHHLeakMechanism(int init_cuda)
 		#endif
 	}
 
-	if (!HHLeakMechanism)
+	if (!HHLEAKMECHANISM_OBJECT)
 	{
-		HHLeakMechanism =
+		HHLEAKMECHANISM_OBJECT =
 			myriad_new(
-				HHLeakMechanismClass,
+				HHLEAKMECHANISM_CLASS,
 				Mechanism,
-				sizeof(struct HHLeakMechanism),
-				myriad_ctor, HHLeakMechanism_ctor,
-				mechanism_fxn, HHLeakMechanism_mech_fun,
+				sizeof(struct HHLEAKMECHANISM_OBJECT),
+				myriad_ctor, MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, _ctor),
+				mechanism_fxn, MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, _mech_fun),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHLeakMechanism, 1);
+			void* tmp_mech_t = myriad_cudafy((void*)HHLEAKMECHANISM_OBJECT, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHLeakMechanism)->device_class = 
+			((struct MyriadClass*) HHLEAKMECHANISM_OBJECT)->device_class = 
 				(struct MyriadClass*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHLeakMechanism_dev_t,
+					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, _dev_t),
 					&tmp_mech_t,
-					sizeof(struct HHLeakMechanism*),
+					sizeof(struct HHLEAKMECHANISM_OBJECT*),
 					0,
 					cudaMemcpyHostToDevice
 					)

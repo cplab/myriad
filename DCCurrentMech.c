@@ -16,12 +16,12 @@
 static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, DCCURRENTMECHANISM_OBJECT, CTOR_FUN_NAME)
 //static void* DCCurrentMech_ctor(void* _self, va_list* app)
 {
-	struct DCCurrentMech* _self = 
-		(struct DCCurrentMech*) super_ctor(DCCurrentMech, self, app);
+	struct DCCURRENTMECHANISM_OBJECT* _self = 
+		(struct DCCURRENTMECHANISM_OBJECT*) super_ctor(DCCURRENTMECHANISM_OBJECT, self, app);
     
-	_self->t_start = va_arg(*app, unsigned int);
-	_self->t_stop = va_arg(*app, unsigned int);
-	_self->amplitude = va_arg(*app, double);
+	_self->DCCURRENTMECHANISM_T_START = va_arg(*app, unsigned int);
+	_self->DCCURRENTMECHANISM_T_STOP = va_arg(*app, unsigned int);
+	_self->DCCURRENTMECHANISM_AMPLITUDE = va_arg(*app, double);
 	
 	return self;
 }
@@ -45,7 +45,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DCCURRENTMECHANISM_MECH_FXN_RET, DCCURRENTME
 }
 
 //////////////////////////////////////////
-// DCCurrentMechClass Super Overrides //
+// DCCurrentMechClass Super Overrides ////
 //////////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTMECHANISM_CLASS, CUDAFY_FUN_NAME)
@@ -72,7 +72,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTME
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &DCCurrentMech_mech_fxn_t,
+					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, _mech_fxn_t)
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -109,30 +109,30 @@ void initDCCurrMech(const int init_cuda)
 {
 	// initCompartment(init_cuda);
 	
-	if (!DCCurrentMechClass)
+	if (!DCCURRENTMECHANISM_CLASS)
 	{
-		DCCurrentMechClass =
+		DCCURRENTMECHANISM_CLASS =
 			myriad_new(
 				MechanismClass,
 				MechanismClass,
-				sizeof(struct DCCurrentMechClass),
-				myriad_cudafy, DCCurrentMechClass_cudafy,
+				sizeof(struct DCCURRENTMECHANISM_CLASS),
+				myriad_cudafy, MYRIAD_CAT(DCCURRENTMECHANISM_CLASS, _cudafy),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)DCCurrentMechClass, 1);
+			void* tmp_mech_c_t = myriad_cudafy((void*)DCCURRENTMECHANISM_CLASS, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) DCCurrentMechClass)->device_class = 
+			((struct MyriadClass*) DCCURRENTMECHANISM_CLASS)->device_class = 
 				(struct MyriadClass*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &DCCurrentMechClass_dev_t,
+					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_CLASS, _dev_t),
 					&tmp_mech_c_t,
-					sizeof(struct DCCurrentMechClass*),
+					sizeof(struct DCCURRENTMECHANISM_CLASS*),
 					0,
 					cudaMemcpyHostToDevice
 					)
@@ -141,31 +141,31 @@ void initDCCurrMech(const int init_cuda)
 		#endif
 	}
 
-	if (!DCCurrentMech)
+	if (!DCCURRENTMECHANISM_OBJECT)
 	{
-		DCCurrentMech =
+		DCCURRENTMECHANISM_OBJECT =
 			myriad_new(
-				DCCurrentMechClass,
+				DCCURRENTMECHANISM_CLASS,
 				Mechanism,
-				sizeof(struct DCCurrentMech),
-				myriad_ctor, DCCurrentMech_ctor,
-				mechanism_fxn, DCCurrentMech_mech_fun,
+				sizeof(struct DCCURRENTMECHANISM_OBJECT),
+				myriad_ctor, MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, _ctor),
+				mechanism_fxn, MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, _mech_fun),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_t = myriad_cudafy((void*)DCCurrentMech, 1);
+			void* tmp_mech_t = myriad_cudafy((void*)DCCURRENTMECHANISM_OBJECT, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) DCCurrentMech)->device_class = 
+			((struct MyriadClass*) DCCURRENTMECHANISM_OBJECT)->device_class = 
 				(struct MyriadClass*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &DCCurrentMech_dev_t,
+					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, _dev_t),
 					&tmp_mech_t,
-					sizeof(struct DCCurrentMech*),
+					sizeof(struct DCCURRENTMECHANISM_OBJECT*),
 					0,
 					cudaMemcpyHostToDevice
 					)

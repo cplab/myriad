@@ -40,23 +40,23 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHKCURRMECHANISM_MECH_FXN_RET, HHKCURRMECHAN
 */
 {
 	struct HHKCURRMECHANISM_OBJECT* self = (struct HHKCURRMECHANISM_OBJECT*) _self;
-	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
-	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
+	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
+	const struct HHSOMACOMPARTMENT_OBJECT* c2 = (const struct HHSOMACOMPARTMENT_OBJECT*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1]; //TODO: genericise this!
+	const double pre_vm = c1->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step-1];
 
     const double alpha_n = (-0.01 * (pre_vm + 34.)) / (exp((pre_vm+34.0)/-1.) - 1.);
     const double beta_n  = 0.125 * exp((pre_vm + 44.)/-80.);
 
-    self->hh_n += dt*5.*(alpha_n*(1.-self->hh_n) - beta_n*self->hh_n);
+    self->HHKCURRMECHANISM_HH_N += dt*5.*(alpha_n*(1.-self->HHKCURRMECHANISM_HH_N) - beta_n*self->HHKCURRMECHANISM_HH_N);
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)
 	{
 		//	I_K = g_K * hh_n^4 * (Vm[t-1] - e_K)
-		return -self->g_k * self->hh_n * self->hh_n * self->hh_n *
-				self->hh_n * (pre_vm - self->e_k);
+		return -self->HHKCURRMECHANISM_CHANNEL_CONDUCTANCE * self->HHKCURRMECHANISM_HH_N * self->HHKCURRMECHANISM_HH_N * self->HHKCURRMECHANISM_HH_N *
+				self->HHKCURRMECHANISM_HH_N * (pre_vm - self->HHKCURRMECHANISM_REVERE_POTENTIAL);
 
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
@@ -65,7 +65,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHKCURRMECHANISM_MECH_FXN_RET, HHKCURRMECHAN
 }
 
 ////////////////////////////////////////////
-// HHKCurrMechanismClass Super Overrides //
+// HHKCurrMechanismClass Super Overrides ///
 ////////////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECHANISM_CLASS, CUDAFY_FUN_NAME)
@@ -92,7 +92,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECH
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &HHKCurrMechanism_mech_fxn_t,
+					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _mech_fxn_t),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -129,30 +129,30 @@ void initHHKCurrMechanism(int init_cuda)
 {
 	// initCompartment(init_cuda);
 	
-	if (!HHKCurrMechanismClass)
+	if (!HHKCURRMECHANISM_CLASS)
 	{
-		HHKCurrMechanismClass =
+		HHKCURRMECHANISM_CLASS =
 			myriad_new(
 				MechanismClass,
 				MechanismClass,
-				sizeof(struct HHKCurrMechanismClass),
-				myriad_cudafy, HHKCurrMechanismClass_cudafy,
+				sizeof(struct HHKCURRMECHANISM_CLASS),
+				myriad_cudafy, MYRIAD_CAT(HHKCURRMECHANISM_CLASS, _cudafy),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHKCurrMechanismClass, 1);
+			void* tmp_mech_c_t = myriad_cudafy((void*)HHKCURRMECHANISM_CLASS, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHKCurrMechanismClass)->device_class = 
+			((struct MyriadClass*) HHKCURRMECHANISM_CLASS)->device_class = 
 				(struct MyriadClass*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHKCurrMechanismClass_dev_t,
+					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_CLASS, _dev_t),
 					&tmp_mech_c_t,
-					sizeof(struct HHKCurrMechanismClass*),
+					sizeof(struct HHKCURRMECHANISM_CLASS*),
 					0,
 					cudaMemcpyHostToDevice
 					)
@@ -161,31 +161,31 @@ void initHHKCurrMechanism(int init_cuda)
 		#endif
 	}
 
-	if (!HHKCurrMechanism)
+	if (!HHKCURRMECHANISM_OBJECT)
 	{
-		HHKCurrMechanism =
+		HHKCURRMECHANISM_OBJECT =
 			myriad_new(
-				HHKCurrMechanismClass,
+				HHKCURRMECHANISM_CLASS,
 				Mechanism,
-				sizeof(struct HHKCurrMechanism),
-				myriad_ctor, HHKCurrMechanism_ctor,
-				mechanism_fxn, HHKCurrMechanism_mech_fun,
+				sizeof(struct HHKCURRMECHANISM_OBJECT),
+				myriad_ctor, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _ctor),
+				mechanism_fxn, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _mech_fun),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHKCurrMechanism, 1);
+			void* tmp_mech_t = myriad_cudafy((void*)HHKCURRMECHANISM_OBJECT, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHKCurrMechanism)->device_class = 
+			((struct MyriadClass*) HHKCURRMECHANISM_OBJECT)->device_class = 
 				(struct MyriadClass*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHKCurrMechanism_dev_t,
+					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _dev_t),
 					&tmp_mech_t,
-					sizeof(struct HHKCurrMechanism*),
+					sizeof(struct HHKCURRMECHANISM_OBJECT*),
 					0,
 					cudaMemcpyHostToDevice
 					)

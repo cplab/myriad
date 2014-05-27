@@ -172,7 +172,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_comp_fun,
-					(const void*) &HHSomaCompartment_simul_fxn_t,
+					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _simul_fxn_t),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -210,27 +210,27 @@ void initHHSomaCompartment(int init_cuda)
 {
 	// initCompartment(init_cuda);
 
-	if (!HHSomaCompartmentClass)
+	if (!HHSOMACOMPARTMENT_CLASS)
 	{
-		HHSomaCompartmentClass =
+		HHSOMACOMPARTMENT_CLASS =
 			myriad_new(
 				CompartmentClass,
 				CompartmentClass,
-				sizeof(struct HHSomaCompartmentClass),
-				myriad_cudafy, HHSomaCompartmentClass_cudafy,
+				sizeof(struct HHSOMACOMPARTMENT_CLASS),
+				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, _cudafy),
 				0
 			);
 
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_comp_c_t = myriad_cudafy((void*)HHSomaCompartmentClass, 1);
-			((struct MyriadClass*) HHSomaCompartmentClass)->device_class = (struct MyriadClass*) tmp_comp_c_t;
+			void* tmp_comp_c_t = myriad_cudafy((void*)HHSOMACOMPARTMENT_CLASS, 1);
+			((struct MyriadClass*) HHSOMACOMPARTMENT_CLASS)->device_class = (struct MyriadClass*) tmp_comp_c_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHSomaCompartmentClass_dev_t,
+					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, _dev_t),
 					&tmp_comp_c_t,
-					sizeof(struct HHSomaCompartmentClass*),
+					sizeof(struct HHSOMACOMPARTMENT_CLASS*),
 					0,
 					cudaMemcpyHostToDevice
 					)
@@ -239,31 +239,31 @@ void initHHSomaCompartment(int init_cuda)
 		#endif
 	}
 
-	if (!HHSomaCompartment)
+	if (!HHSOMACOMPARTMENT_OBJECT)
 	{
-		HHSomaCompartment =
+		HHSOMACOMPARTMENT_OBJECT =
 			myriad_new(
-				HHSomaCompartmentClass,
+				HHSOMACOMPARTMENT_CLASS,
 				Compartment,
-				sizeof(struct HHSomaCompartment),
-				myriad_ctor, HHSomaCompartment_ctor,
-				myriad_dtor, HHSomaCompartment_dtor,
-				myriad_cudafy, HHSomaCompartment_cudafy,
-				myriad_decudafy, HHSomaCompartment_decudafy,
-				simul_fxn, HHSomaCompartment_simul_fxn,
+				sizeof(struct HHSOMACOMPARTMENT_OBJECT),
+				myriad_ctor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _ctor),
+				myriad_dtor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _dtor),
+				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _cudafy),
+				myriad_decudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _decudafy),
+				simul_fxn, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _simul_fxn),
 				0
 			);
 
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHSomaCompartment, 1);
-			((struct MyriadClass*) HHSomaCompartment)->device_class = (struct MyriadClass*) tmp_mech_t;
+			void* tmp_mech_t = myriad_cudafy((void*)HHSOMACOMPARTMENT_OBJECT, 1);
+			((struct MyriadClass*) HHSOMACOMPARTMENT_OBJECT)->device_class = (struct MyriadClass*) tmp_mech_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHSomaCompartment_dev_t,
+					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _dev_t),
 					&tmp_mech_t,
-					sizeof(struct HHSomaCompartment*),
+					sizeof(struct HHSOMACOMPARTMENT_OBJECT*),
 					0,
 					cudaMemcpyHostToDevice
 					)

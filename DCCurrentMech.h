@@ -58,6 +58,6 @@ struct DCCURRENTMECHANISM_CLASS
 
    @param[in]    init_cuda    flag for directing CUDA protoype initialization
  */
-extern void initDCCurrMech(const int init_cuda);
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, DCCURRENTMECHANISM_INIT_FXN_NAME);
 
 #endif

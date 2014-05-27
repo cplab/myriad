@@ -41,11 +41,11 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHNACURRMECHANISM_MECH_FXN_RET, HHNACURRMECH
 */
 {
 	struct HHNACURRMECHANISM_OBJECT* self = (struct HHNACURRMECHANISM_OBJECT*) _self;
-	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
-	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
+	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
+	const struct HHSOMACOMPARTMENT_OBJECT* c2 = (const struct HHSOMACOMPARTMENT_OBJECT*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1]; //TODO: GENERICISE THIS!
+	const double pre_vm = c1->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step-1];
 
 	const double alpha_m = (-0.1*(pre_vm + 35.)) / (exp(-0.1*(pre_vm+35.)) - 1.) ;
 	const double beta_m =  4. * exp((pre_vm + 60.) / -18.);
@@ -53,14 +53,14 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHNACURRMECHANISM_MECH_FXN_RET, HHNACURRMECH
 	const double beta_h = 4.0 / (1 + exp(-(pre_vm + 18.0)/5.0));
 
 	const double minf = (alpha_m/(alpha_m + beta_m));
-	self->hh_h += dt* 5. *(alpha_h*(1. - self->hh_h) - (beta_h * self->hh_h));
+	self->HHNACURRMECHANISM_HH_H += dt* 5. *(alpha_h*(1. - self->hh_h) - (beta_h * self->HHNACURRMECHANISM_HH_H));
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)
 	{
 		//	I = g_Na * minf^3 * hh_h * (Vm[t-1] - e_rev)
-		const double I_Na = -self->g_na * minf * minf * minf *	self->hh_h *
-				(pre_vm - self->e_na);
+		const double I_Na = -self->HHNACURRMECHANISM_CHANNEL_CONDUCTANCE * minf * minf * minf *	self->HHNACURRMECHANISM_HH_H *
+				(pre_vm - self->HHNACURRMECHANISM_REVERSAL_POTENTIAL);
 		return I_Na;
 
 	}else{
@@ -97,7 +97,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHNACURRMEC
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &HHNaCurrMechanism_mech_fxn_t,
+					(const void*) &MYRIAD_CAT(HHNACURRMECHANISM_OBJECT, _mech_fxn_t),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -134,30 +134,30 @@ void initHHNaCurrMechanism(int init_cuda)
 {
 	// initCompartment(init_cuda);
 	
-	if (!HHNaCurrMechanismClass)
+	if (!HHNACURRMECHANISM_CLASS)
 	{
-		HHNaCurrMechanismClass =
+		HHNACURRMECHANISM_CLASS =
 			myriad_new(
 				MechanismClass,
 				MechanismClass,
-				sizeof(struct HHNaCurrMechanismClass),
-				myriad_cudafy, HHNaCurrMechanismClass_cudafy,
+				sizeof(struct HHNACURRMECHANISM_CLASS),
+				myriad_cudafy, MYRIAD_CAT(HHNACURRMECHANISM_CLASS, _cudafy),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHNaCurrMechanismClass, 1);
+			void* tmp_mech_c_t = myriad_cudafy((void*)HHNACURRMECHANISM_CLASS, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHNaCurrMechanismClass)->device_class = 
+			((struct MyriadClass*) HHNACURRMECHANISM_CLASS)->device_class = 
 				(struct MyriadClass*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHNaCurrMechanismClass_dev_t,
+					(const void*) &MYRIAD_CAT(HHNACURRMECHANISM_CLASS, _dev_t),
 					&tmp_mech_c_t,
-					sizeof(struct HHNaCurrMechanismClass*),
+					sizeof(struct HHNACURRMECHANISM_CLASS*),
 					0,
 					cudaMemcpyHostToDevice
 					)
@@ -166,31 +166,31 @@ void initHHNaCurrMechanism(int init_cuda)
 		#endif
 	}
 
-	if (!HHNaCurrMechanism)
+	if (!HHNACURRMECHANISM_OBJECT)
 	{
-		HHNaCurrMechanism =
+		HHNACURRMECHANISM_OBJECT =
 			myriad_new(
-				HHNaCurrMechanismClass,
+				HHNACURRMECHANISM_CLASS,
 				Mechanism,
-				sizeof(struct HHNaCurrMechanism),
-				myriad_ctor, HHNaCurrMechanism_ctor,
-				mechanism_fxn, HHNaCurrMechanism_mech_fun,
+				sizeof(struct HHNACURRMECHANISM_OBJECT),
+				myriad_ctor, MYRIAD_CAT(HHNACURRMECHANISM_OBJECT, _ctor),
+				mechanism_fxn, MYRIAD_CAT(HHNACURRMECHANISM_OBJECT, _mech_fun),
 				0
 			);
 		
 		#ifdef CUDA
 		if (init_cuda)
 		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHNaCurrMechanism, 1);
+			void* tmp_mech_t = myriad_cudafy((void*)HHNACURRMECHANISM_OBJECT, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHNaCurrMechanism)->device_class = 
+			((struct MyriadClass*) HHNACURRMECHANISM_OBJECT)->device_class = 
 				(struct MyriadClass*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &HHNaCurrMechanism_dev_t,
+					(const void*) &MYRIAD_CAT(HHNACURRMECHANISM_OBJECT, _dev_t),
 					&tmp_mech_t,
-					sizeof(struct HHNaCurrMechanism*),
+					sizeof(struct HHNACURRMECHANISM_OBJECTs*),
 					0,
 					cudaMemcpyHostToDevice
 					)
