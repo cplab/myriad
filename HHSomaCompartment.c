@@ -14,10 +14,9 @@
 ///////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, CTOR_FUN_NAME)
-//static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 {
 	struct HHSOMACOMPARTMENT_OBJECT* _self = 
-		(struct HHSOMACOMPARTMENT_OBJECT*) super_ctor(HHSOMACOMPARTMENT_OBJECT, self, app);
+		(struct HHSOMACOMPARTMENT_OBJECT*) SUPERCLASS_CTOR(HHSOMACOMPARTMENT_OBJECT, self, app);
 	
 	_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH = va_arg(*app, unsigned int);
 	_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE = va_arg(*app, double*);
@@ -37,7 +36,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHSOMACOMPARTME
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, CUDAFY_FUN_NAME)
-//static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
@@ -61,7 +59,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
 				(void*) tmp_alias,
-				(void*) self->soma_vm,
+				(void*) self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE,
 				self_copy->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH * sizeof(double),
 				cudaMemcpyHostToDevice
 				)
@@ -69,7 +67,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 
 		self_copy->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE = tmp_alias;
 
-		return super_cudafy(HHSOMACOMPARTMENT_OBJECT, self_copy, 0);
+		return SUPERCLASS_CUDAFY(HHSOMACOMPARTMENT_OBJECT, self_copy, 0);
 	}
 	#else
 	{
@@ -79,7 +77,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, DECUDAFY_FUN_NAME)
-//static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 {
 	#ifdef CUDA
 	{
@@ -104,7 +101,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, HHSOMAC
 				)
 			);
 
-		super_decudafy(Compartment, self, cuda_self);
+		SUPERCLASS_CUDAFY(COMPARTMENT_OBJECT, self, cuda_self);
 	}
 	#endif
 
@@ -118,7 +115,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, HHSOMACOMPARTME
 
 	free(_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE);
 
-	return super_dtor(Compartment, self);
+	return SUPERCLASS_DTOR(Compartment, self);
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(HHSOMACOMPARTMENT_SIMUL_FXN_RET, HHSOMACOMPARTMENT_SIMUL_FXN_ARGS, HHSOMACOMPARTMENT_OBJECT, HHSOMACOMPARTMENT_SIMUL_FXN_NAME)
@@ -130,8 +127,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHSOMACOMPARTMENT_SIMUL_FXN_RET, HHSOMACOMPA
 	//	Calculate mechanism contribution to current term
 	for (unsigned int i = 0; i < self->_.NUM_MECHS; i++)
 	{
-		struct Mechanism* curr_mech = self->_.my_mechs[i]; // TODO: GENERICiSE DIS
-		struct Compartment* pre_comp = network[curr_mech->source_id];
+		struct MECHANISM_OBJECT* curr_mech = self->_.MY_MECHS[i]; // TODO: GENERICiSE DIS
+		struct COMPARTMENT_OBJECT* pre_comp = network[curr_mech->COMPARTMENT_PREMECH_SOURCE_ID];
 
 		//TODO: Make this conditional on specific Mechanism types
 		//if (curr_mech->fx_type == CURRENT_FXN)
@@ -139,7 +136,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHSOMACOMPARTMENT_SIMUL_FXN_RET, HHSOMACOMPA
 	}
 
 	//	Calculate new membrane voltage: (dVm) + prev_vm
-	self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step] = (dt * (I_sum) / (self->cm)) + self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step - 1];
+	self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step] = (dt * (I_sum) / (self->HHSOMACOMPARTMENT_CAPACITANCE)) + self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step - 1];
 
 	return;
 }
@@ -149,7 +146,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHSOMACOMPARTMENT_SIMUL_FXN_RET, HHSOMACOMPA
 ////////////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPARTMENT_CLASS, CUDAFY_FUN_NAME)
-//static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
@@ -158,7 +154,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 
 		// Make a temporary copy-class because we need to change shit
 		struct HHSOMACOMPARTMENT_CLASS copy_class = *my_class;
-		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+		struct MYRIADOBJECT_CLASS* copy_class_class = (struct MYRIADOBJECT_CLASS*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 		// By default we clobber the copy_class_class' superclass with
@@ -168,11 +164,11 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			compartment_simul_fxn_t my_comp_fun = NULL;
+			SIMUL_FXN_NAME my_comp_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_comp_fun,
-					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _simul_fxn_t),
+					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, SIMUL_FXN_NAME)),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -182,14 +178,14 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 		
 			DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 		
-			const struct MyriadClass* super_class = (const struct MyriadClass*) CompartmentClass;
-			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
+			const struct MYRIADOBJECT_CLASS* super_class = (const struct MYRIADOBJECT_CLASS*) COMPARTMENT_CLASS;
+			memcpy((void**) &copy_class_class->SUPERCLASS, &super_class->ONDEVICE_CLASS, sizeof(void*));
 		}
 
 		// This works because super methods rely on the given class'
 		// semi-static superclass definition, not it's ->super attribute.
 		// Note that we don't want to clobber, so we set it to 0.
-		return super_cudafy(CompartmentClass, (void*) &copy_class, 0);
+		return SUPERCLASS_CUDAFY(COMPARTMENT_CLASS, (void*) &copy_class, 0);
 	}
 	#else
 	{
@@ -214,10 +210,10 @@ void initHHSomaCompartment(int init_cuda)
 	{
 		HHSOMACOMPARTMENT_CLASS =
 			myriad_new(
-				CompartmentClass,
-				CompartmentClass,
+				COMPARTMENT_CLASS,
+				COMPARTMENT_CLASS,
 				sizeof(struct HHSOMACOMPARTMENT_CLASS),
-				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, _cudafy),
+				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
 				0
 			);
 
@@ -225,7 +221,7 @@ void initHHSomaCompartment(int init_cuda)
 		if (init_cuda)
 		{
 			void* tmp_comp_c_t = myriad_cudafy((void*)HHSOMACOMPARTMENT_CLASS, 1);
-			((struct MyriadClass*) HHSOMACOMPARTMENT_CLASS)->device_class = (struct MyriadClass*) tmp_comp_c_t;
+			((struct MYRIADOBJECT_CLASS*) HHSOMACOMPARTMENT_CLASS)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_comp_c_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
 					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, _dev_t),
@@ -244,12 +240,12 @@ void initHHSomaCompartment(int init_cuda)
 		HHSOMACOMPARTMENT_OBJECT =
 			myriad_new(
 				HHSOMACOMPARTMENT_CLASS,
-				Compartment,
+				COMPARTMENT_OBJECT,
 				sizeof(struct HHSOMACOMPARTMENT_OBJECT),
-				myriad_ctor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _ctor),
-				myriad_dtor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _dtor),
-				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _cudafy),
-				myriad_decudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _decudafy),
+				myriad_ctor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
+				myriad_dtor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, DTOR_FUN_NAME)),
+				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
+				myriad_decudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, DECUDAFY_FUN_NAME)),
 				simul_fxn, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _simul_fxn),
 				0
 			);
@@ -258,7 +254,7 @@ void initHHSomaCompartment(int init_cuda)
 		if (init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)HHSOMACOMPARTMENT_OBJECT, 1);
-			((struct MyriadClass*) HHSOMACOMPARTMENT_OBJECT)->device_class = (struct MyriadClass*) tmp_mech_t;
+			((struct MYRIADOBJECT_CLASS*) HHSOMACOMPARTMENT_OBJECT)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_mech_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
 					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _dev_t),

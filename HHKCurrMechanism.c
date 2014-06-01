@@ -16,10 +16,9 @@
 ///////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHKCURRMECHANISM_OBJECT, CTOR_FUN_NAME)
-//static void* HHKCurrMechanism_ctor(void* _self, va_list* app)
 {
 	struct HHKCURRMECHANISM_OBJECT* _self = 
-		(struct HHKCURRMECHANISM_OBJECT*) super_ctor(HHKCURRMECHANISM_OBJECT, self, app);
+		(struct HHKCURRMECHANISM_OBJECT*) SUPERCLASS_CTOR(HHKCURRMECHANISM_OBJECT, self, app);
     
 	_self->HHKCURRMECHANISM_CHANNEL_CONDUCTANCE = va_arg(*app, double);
 	_self->HHKCURRMECHANISM_REVERE_POTENTIAL = va_arg(*app, double);
@@ -29,15 +28,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHKCURRMECHANIS
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(HHKCURRMECHANISM_MECH_FXN_RET, HHKCURRMECHANISM_MECH_FXN_ARGS, HHKCURRMECHANISM_OBJECT, HHKCURRMECHANISM_MECH_FXN_NAME)
-/* static double HHKCurrMechanism_mech_fun(
-	void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
-*/
 {
 	struct HHKCURRMECHANISM_OBJECT* self = (struct HHKCURRMECHANISM_OBJECT*) _self;
 	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
@@ -69,7 +59,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHKCURRMECHANISM_MECH_FXN_RET, HHKCURRMECHAN
 ////////////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECHANISM_CLASS, CUDAFY_FUN_NAME)
-//static void* HHKCurrMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
@@ -78,7 +67,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECH
 
 		// Make a temporary copy-class because we need to change shit
 		struct HHKCURRMECHANISM_CLASS copy_class = *my_class;
-		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+		struct MYRIADOBJECT_CLASS* copy_class_class = (struct MYRIADOBJECT_CLASS*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 		// By default we clobber the copy_class_class' superclass with
@@ -88,11 +77,11 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECH
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			mech_fun_t my_mech_fun = NULL;
+			MECH_FXN_NAME my_mech_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _mech_fxn_t),
+					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, MYRIAD_CAT(_, MECH_FXN_NAME)),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -102,14 +91,14 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECH
 		
 			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 		
-			const struct MyriadClass* super_class = (const struct MyriadClass*) MechanismClass;
-			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
+			const struct MYRIADOBJECT_CLASS* super_class = (const struct MYRIADOBJECT_CLASS*) MECHANISM_CLASS;
+			memcpy((void**) &copy_class_class->SUPERCLASS, &super_class->ONDEVICE_CLASS, sizeof(void*));
 		}
 
 		// This works because super methods rely on the given class'
 		// semi-static superclass definition, not it's ->super attribute.
 		// Note that we don't want to clobber, so we set it to 0.
-		return super_cudafy(MechanismClass, (void*) &copy_class, 0);
+		return SUPERCLASS_CUDAFY(MECHANISM_CLASS, (void*) &copy_class, 0);
 	}
 	#else
 	{
@@ -133,10 +122,10 @@ void initHHKCurrMechanism(int init_cuda)
 	{
 		HHKCURRMECHANISM_CLASS =
 			myriad_new(
-				MechanismClass,
-				MechanismClass,
+				MECHANISM_CLASS,
+				MECHANISM_CLASS,
 				sizeof(struct HHKCURRMECHANISM_CLASS),
-				myriad_cudafy, MYRIAD_CAT(HHKCURRMECHANISM_CLASS, _cudafy),
+				myriad_cudafy, MYRIAD_CAT(HHKCURRMECHANISM_CLASS, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
 				0
 			);
 		
@@ -145,8 +134,8 @@ void initHHKCurrMechanism(int init_cuda)
 		{
 			void* tmp_mech_c_t = myriad_cudafy((void*)HHKCURRMECHANISM_CLASS, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHKCURRMECHANISM_CLASS)->device_class = 
-				(struct MyriadClass*) tmp_mech_c_t;
+			((struct MYRIADOBJECT_CLASS*) HHKCURRMECHANISM_CLASS)->ONDEVICE_CLASS = 
+				(struct MYRIADOBJECT_CLASS*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
@@ -166,9 +155,9 @@ void initHHKCurrMechanism(int init_cuda)
 		HHKCURRMECHANISM_OBJECT =
 			myriad_new(
 				HHKCURRMECHANISM_CLASS,
-				Mechanism,
+				MECHANISM_OBJECT,
 				sizeof(struct HHKCURRMECHANISM_OBJECT),
-				myriad_ctor, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _ctor),
+				myriad_ctor, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
 				mechanism_fxn, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _mech_fun),
 				0
 			);
@@ -178,8 +167,8 @@ void initHHKCurrMechanism(int init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)HHKCURRMECHANISM_OBJECT, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHKCURRMECHANISM_OBJECT)->device_class = 
-				(struct MyriadClass*) tmp_mech_t;
+			((struct MYRIADOBJECT_CLASS*) HHKCURRMECHANISM_OBJECT)->ONDEVICE_CLASS = 
+				(struct MYRIADOBJECT_CLASS*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(

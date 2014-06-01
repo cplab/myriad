@@ -16,10 +16,9 @@
 ///////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHGRADEDGABAAMECHANISM_OBJECT, CTOR_FUN_NAME)
-//static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 {
 	struct HHGRADEDGABAAMECHANISM_OBJECT* _self = 
-		(struct HHGRADEDGABAAMECHANISM_OBJECT*) super_ctor(HHGRADEDGABAAMECHANISM_OBJECT, self, app);
+		(struct HHGRADEDGABAAMECHANISM_OBJECT*) SUPERCLASS_CTOR(HHGRADEDGABAAMECHANISM_OBJECT, self, app);
 
 	const double HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_INIT = va_arg(*app, double);
 	_self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING = va_arg(*app, double*);
@@ -46,15 +45,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHGRADEDGABAAME
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(HHGRADEDGABAAMECHANISM_MECH_FXN_RET, HHGRADEDGABAAMECHANISM_MECH_FXN_ARGS, HHGRADEDGABAAMECHANISM_OBJECT, HHGRADEDGABAAMECHANISM_MECH_FXN_NAME)
-/* static double HHGradedGABAAMechanism_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
-*/
 {
 	struct HHGRADEDGABAAMECHANISM_OBJECT* self = (struct HHGRADEDGABAAMECHANISM_OBJECT*) _self;
 	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
@@ -65,15 +55,14 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(HHGRADEDGABAAMECHANISM_MECH_FXN_RET, HHGRADE
 	const double post_vm = c2->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step-1];
 	const double prev_g_s = self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING[curr_step-1];
 
-	const double fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
-	self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING[curr_step] += dt * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
+	const double fv = 1.0 / (1.0 + exp((pre_vm - self->HHGRADEDGABAAMECHANISM_HALF_ACTIVATION_POTENTIAL)/-self->HHGRADEDGABAAMECHANISM_MAXIMAL_SLOPE));
+	self->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING[curr_step] += dt * (self->HHGRADEDGABAAMECHANISM_CHANNEL_OPENING_TIME * fv * (1.0 - prev_g_s) - self->HHGRADEDGABAAMECHANISM_CHANNEL_CLOSING_TIME * prev_g_s);
 
 	const double I_GABA = -self->HHGRADEDGABAAMECHANISM_MAX_SYN_CONDUCTANCE * prev_g_s * (post_vm - self->HHGRADEDGABAAMECHANISM_REVERSAL_POTENTIAL);
 	return I_GABA;
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGABAAMECHANISM_OBJECT, CUDAFY_FUN_NAME)
-//static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
@@ -105,7 +94,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGAB
 
 		self_copy->HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING = tmp_alias;
 
-		return super_cudafy(HHSomaCompartment, self_copy, 0);
+		return SUPERCLASS_CUDAFY(HHSOMACOMPARTMENT_OBJECT, self_copy, 0);
 	}
 	#else
 	{
@@ -119,7 +108,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGAB
 /////////////////////////////////////////////////
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGABAAMECHANISM_CLASS, CUDAFY_FUN_NAME)
-//static void* HHGradedGABAAMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
@@ -128,7 +116,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGAB
 
 		// Make a temporary copy-class because we need to change shit
 		struct HHGRADEDGABAAMECHANISM_CLASS copy_class = *my_class;
-		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+		struct MYRIADOBJECT_CLASS* copy_class_class = (struct MYRIADOBJECT_CLASS*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
 		// By default we clobber the copy_class_class' superclass with
@@ -138,11 +126,11 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGAB
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			mech_fun_t my_mech_fun = NULL;
+			MECH_FXN_NAME my_mech_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, _mech_fxn_t),
+					(const void*) &MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, MYRIAD_CAT(_, MECH_FXN_NAME)),
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost
@@ -152,14 +140,14 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHGRADEDGAB
 		
 			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 		
-			const struct MyriadClass* super_class = (const struct MyriadClass*) MechanismClass;
-			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
+			const struct MYRIADOBJECT_CLASS* super_class = (const struct MYRIADOBJECT_CLASS*) MECHANISM_CLASS;
+			memcpy((void**) &copy_class_class->SUPERCLASS, &super_class->ONDEVICE_CLASS, sizeof(void*));
 		}
 
 		// This works because super methods rely on the given class'
 		// semi-static superclass definition, not it's ->super attribute.
 		// Note that we don't want to clobber, so we set it to 0.
-		return super_cudafy(MechanismClass, (void*) &copy_class, 0);
+		return SUPERCLASS_CUDAFY(MECHANISM_CLASS, (void*) &copy_class, 0);
 	}
 	#else
 	{
@@ -181,10 +169,10 @@ void initHHGradedGABAAMechanism(int init_cuda)
 	{
 		HHGRADEDGABAAMECHANISM_CLASS =
 			myriad_new(
-				MechanismClass,
-				MechanismClass,
+				MECHANISM_CLASS,
+				MECHANISM_CLASS,
 				sizeof(struct HHGRADEDGABAAMECHANISM_CLASS),
-				myriad_cudafy, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_CLASS, _cudafy),
+				myriad_cudafy, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_CLASS, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
 				0
 			);
 		
@@ -193,8 +181,8 @@ void initHHGradedGABAAMechanism(int init_cuda)
 		{
 			void* tmp_mech_c_t = myriad_cudafy((void*)HHGRADEDGABAAMECHANISM_CLASS, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHGRADEDGABAAMECHANISM_CLASS)->device_class = 
-				(struct MyriadClass*) tmp_mech_c_t;
+			((struct MYRIADOBJECT_CLASS*) HHGRADEDGABAAMECHANISM_CLASS)->ONDEVICE_CLASS = 
+				(struct MYRIADOBJECT_CLASS*) tmp_mech_c_t;
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
@@ -214,10 +202,10 @@ void initHHGradedGABAAMechanism(int init_cuda)
 		HHGRADEDGABAAMECHANISM_OBJECT =
 			myriad_new(
 				HHGRADEDGABAAMECHANISM_OBJECT,
-				Mechanism,
+				MECHANISM_CLASS,
 				sizeof(struct HHGRADEDGABAAMECHANISM_OBJECT),
-				myriad_ctor, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, _ctor),
-				myriad_cudafy, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, _cudafy),
+				myriad_ctor, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
+				myriad_cudafy, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
 				mechanism_fxn, MYRIAD_CAT(HHGRADEDGABAAMECHANISM_OBJECT, _mech_fun),
 				0
 			);
@@ -227,8 +215,8 @@ void initHHGradedGABAAMechanism(int init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)HHGRADEDGABAAMECHANISM_OBJECT, 1);
 			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHGRADEDGABAAMECHANISM_OBJECT)->device_class = 
-				(struct MyriadClass*) tmp_mech_t;
+			((struct MYRIADOBJECT_CLASS*) HHGRADEDGABAAMECHANISM_OBJECT)->ONDEVICE_CLASS = 
+				(struct MYRIADOBJECT_CLASS*) tmp_mech_t;
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(

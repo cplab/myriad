@@ -33,7 +33,7 @@ extern const void* DCCURRENTMECHANISM_CLASS;
  */
 struct DCCURRENTMECHANISM_OBJECT
 {
-	const struct Mechanism SUPERCLASS_DCCURRENTMECHANISM_OBJECT_NAME; //! DCCurrentMech : Mechanism
+	const struct MECHANISM_OBJECT SUPERCLASS_DCCURRENTMECHANISM_OBJECT_NAME; //! DCCurrentMech : Mechanism
 	unsigned int DCCURRENTMECHANISM_T_START;     //! Time step at which current starts flowing
 	unsigned int DCCURRENTMECHANISM_T_STOP;      //! Time step at which current stops flowing
 	double DCCURRENTMECHANISM_AMPLITUDE;         //! Current amplitude in nA
@@ -48,7 +48,7 @@ struct DCCURRENTMECHANISM_OBJECT
  */
 struct DCCURRENTMECHANISM_CLASS
 {
-	struct MechanismClass SUPERCLASS_DCCURRENTMECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
+	struct MECHANISM_CLASS SUPERCLASS_DCCURRENTMECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
 };
 
 // -------------------------------------

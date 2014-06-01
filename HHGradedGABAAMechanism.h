@@ -29,7 +29,7 @@ extern const void* HHGRADEDGABAAMECHANISM_CLASS;
  */
 struct HHGRADEDGABAAMECHANISM_OBJECT
 {
-	struct Mechanism SUPERCLASS_HHGRADEDGABAAMECHANISM_OBJECT_NAME;     //! HHGradedGABAAMechanism : Mechanism
+	struct MECHANISM_OBJECT SUPERCLASS_HHGRADEDGABAAMECHANISM_OBJECT_NAME;     //! HHGradedGABAAMechanism : Mechanism
 	double* HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING;			//! Synaptic gating variable (unitless, >=0, <=1)
 	unsigned int HHGRADEDGABAAMECHANISM_SYNAPTIC_GATING_LENGTH;	//! Length of the synaptic gating variable array (0 -> MAXINT)
 	double HHGRADEDGABAAMECHANISM_MAX_SYN_CONDUCTANCE;			//! Maximum synaptic conductance - nS
@@ -42,7 +42,7 @@ struct HHGRADEDGABAAMECHANISM_OBJECT
 
 struct HHGRADEDGABAAMECHANISM_CLASS
 {
-	struct MechanismClass SUPERCLASS_HHGRADEDGABAAMECHANISM_CLASS_NAME; //! HHGradedGABAAMechanismClass : MechanismClass
+	struct MECHANISM_CLASS SUPERCLASS_HHGRADEDGABAAMECHANISM_CLASS_NAME; //! HHGradedGABAAMechanismClass : MechanismClass
 };
 
 void initHHGradedGABAAMechanism(int cuda_init);

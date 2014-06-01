@@ -50,15 +50,15 @@ typedef void (* de_cudafy_t) (void* self, void* cuda_self);
 // Struct forward declarations //
 /////////////////////////////////
 
-struct MyriadObject;
-struct MyriadClass;
+struct MYRIADOBJECT_OBJECT;
+struct MYRIADOBJECT_CLASS;
 
 ////////////////////////////////////////////////
 // Dynamically-initialized reference pointers //
 ////////////////////////////////////////////////
 
-extern const void* MyriadObject;   // new(MyriadObject); 
-extern const void* MyriadClass;    // new(MyriadClass, super, ..., 0);
+extern const void* MYRIADOBJECT_OBJECT;   // new(MyriadObject); 
+extern const void* MYRIADOBJECT_CLASS;    // new(MyriadClass, super, ..., 0);
 
 /**
    Initializes on-GPU CUDA prototype objects to support Myriad OOP on the GPU.
@@ -112,7 +112,7 @@ extern size_t myriad_size_of(const void* self);
    
    @returns 1 if true, 0 if otherwise
 */
-extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
+extern int myriad_is_a(const void* _self, const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS);
 
 /**
    Tests if a given object instance inherets from a given prototype class.
@@ -123,7 +123,7 @@ extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
    @returns 1 if true, 0 if otherwise
    
  */
-extern int myriad_is_of(const void* _self, const struct MyriadClass* m_class);
+extern int myriad_is_of(const void* _self, const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS);
 
 ///////////////////////////////////////
 // Generic Object Function Delegates //
@@ -140,7 +140,8 @@ extern int myriad_is_of(const void* _self, const struct MyriadClass* m_class);
 
    @returns newly created object as a generic void pointer
  */
-extern void* myriad_ctor(void* _self, va_list* app);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, myriad, CTOR_FUN_NAME);
+
 
 /**
    Calls destructor for the given object.
@@ -152,7 +153,7 @@ extern void* myriad_ctor(void* _self, va_list* app);
    
    @returns EXIT_SUCCESS if memory was successfully freed, EXIT_FAILURE o.w.
  */
-extern int myriad_dtor(void* _self);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, myriad, DTOR_FUN_NAME);
 
 /**
    Calls CUDAfy method for the given object, with clobber flag.
@@ -162,7 +163,7 @@ extern int myriad_dtor(void* _self);
 
    @returns pointer in CUDA device memory to new object instance
  */
-extern void* myriad_cudafy(void* _self, int clobber);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, myriad, CUDAFY_FUN_NAME);
 
 /**
    Calls deCUDAfy method for the given object.
@@ -172,8 +173,7 @@ extern void* myriad_cudafy(void* _self, int clobber);
    @param[in,out]  _self      pointer to an extant object in memory
    @param[in]      cuda_self  pointer to extant object in CUDA device memory 
  */
-extern void myriad_decudafy(void* _self, void* cuda_self);
-
+extern MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, myriad, DECUDAFY_FUN_NAME);
 
 ///////////////////////////////
 // Super and related methods //
@@ -186,7 +186,7 @@ extern void myriad_decudafy(void* _self, void* cuda_self);
    
    @returns pointer to the superclass of the given object
  */
-extern const void* myriad_super(const void* _self);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPER_FUN_RET, SUPER_FUN_ARGS, myriad, SUPER_FUN_NAME);
 
 /**
    Calls the superclass' constructor for an underclass object.
@@ -199,7 +199,7 @@ extern const void* myriad_super(const void* _self);
    
    @see myriad_ctor
  */
-extern void* super_ctor(const void* _class, void* _self, va_list* app);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPERCTOR_FUN_RET, SUPERCTOR_FUN_ARGS, SUPER_FUN_NAME, SUPERCTOR_FUN_NAME);
 
 /**
    Calls the superclass' destructor for an underclass object.
@@ -211,10 +211,10 @@ extern void* super_ctor(const void* _class, void* _self, va_list* app);
 
    @see myriad_dtor
  */
-extern int super_dtor(const void* _class, void* _self);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPERDTOR_FUN_RET, SUPERDTOR_FUN_ARGS, SUPER_FUN_NAME, SUPERDTOR_FUN_NAME);
 
 /**
-   Calls the superclass' destructor for an underclass object.
+   Calls the superclass' CUDAfyer for an underclass object.
 
    @param[in]    _class   pointer to the prototype superclass
    @param[in]    _self    pointer to an extant object in memory
@@ -224,7 +224,7 @@ extern int super_dtor(const void* _class, void* _self);
 
    @see myriad_cudafy
  */
-extern void* super_cudafy(const void* _class, void* _self, int clobber);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPERCUDAFY_FUN_RET, SUPERCUDAFY_FUN_ARGS, SUPER_FUN_NAME, SUPERCUDAFY_FUN_NAME);
 
 /**
    Calls the superclass' deCUDAfyer for an underclass object.
@@ -237,7 +237,7 @@ extern void* super_cudafy(const void* _class, void* _self, int clobber);
 
    @see myriad_decudafy
  */
-extern void super_decudafy(const void* _class, void* _self, void* cuda_self);
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPERDECUDAFY_FUN_RET, SUPERDECUDAFY_FUN_ARGS, SUPER_FUN_NAME, SUPERDECUDAFY_FUN_NAME);
 
 ////////////////////////////////////////
 // Object & Class Struct declarations //
@@ -250,9 +250,9 @@ extern void super_decudafy(const void* _class, void* _self, void* cuda_self);
    Any and all functionality is in the self-describing class prototype this
    object points to.
  */
-struct MyriadObject
+struct MYRIADOBJECT_OBJECT
 {
-    const struct MyriadClass* m_class; //! Object's class/description
+    const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS; //! Object's class/description
 };
 
 /**
@@ -261,16 +261,16 @@ struct MyriadObject
    Classes are single-instance reference objects to which all object instances
    point to. They define all internally-supported functionality.
  */
-struct MyriadClass
+struct MYRIADOBJECT_CLASS
 {
-    const struct MyriadObject _;               //! Embedded object
-    const struct MyriadClass* super;           //! Super Class
-    const struct MyriadClass* device_class;    //! On-device class
-    size_t size;                               //! Object size
-    ctor_t my_ctor;                            //! Constructor
-	dtor_t my_dtor;                            //! Destructor
-	cudafy_t my_cudafy;                        //! CUDAfier
-	de_cudafy_t my_decudafy;                   //! De-CUDAficator
+    const struct MYRIADOBJECT_OBJECT EMBEDDED_OBJECT_NAME;               //! Embedded object
+    const struct MYRIADOBJECT_CLASS* SUPERCLASS;           //! Super Class
+    const struct MYRIADOBJECT_CLASS* ONDEVICE_CLASS;    //! On-device class
+    size_t OBJECTS_SIZE;                               //! Object size
+    ctor_t CONSTRUCTOR;                            //! Constructor
+    dtor_t DESTRUCTOR;                            //! Destructor
+    cudafy_t CUDAFIER;                        //! CUDAfier
+    de_cudafy_t DECUDAFIER;                   //! De-CUDAficator
 };
 
 #endif

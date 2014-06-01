@@ -29,7 +29,7 @@ extern const void* HHNACURRMECHANISM_CLASS;
  */
 struct HHNACURRMECHANISM_OBJECT
 {
-	struct Mechanism SUPERCLASS_HHNACURRMECHANISM_OBJECT_NAME; //! HHNaCurrMechanism : Mechanism
+	struct MECHANISM_OBJECT SUPERCLASS_HHNACURRMECHANISM_OBJECT_NAME; //! HHNaCurrMechanism : Mechanism
 	double HHNACURRMECHANISM_CHANNEL_CONDUCTANCE;	    //! Sodium channel conductance - nS
 	double HHNACURRMECHANISM_REVERSAL_POTENTIAL;	    //! Sodium reversal potential - mV
 	double HHNACURRMECHANISM_HH_M;	    //! @TODO Figure out what hh_m is actually called
@@ -38,7 +38,7 @@ struct HHNACURRMECHANISM_OBJECT
 
 struct HHNACURRMECHANISM_CLASS
 {
-	struct MechanismClass SUPERCLASS_HHNACURRMECHANISM_CLASS_NAME; //! HHNaCurrMechanismClass : MechanismClass
+	struct MECHANISM_CLASS SUPERCLASS_HHNACURRMECHANISM_CLASS_NAME; //! HHNaCurrMechanismClass : MechanismClass
 };
 
 void initHHNaCurrMechanism(int cuda_init);

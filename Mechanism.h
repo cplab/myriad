@@ -14,25 +14,20 @@
 
 #include "MyriadObject.h"
 
+#include "Mechanism_meta.h"
+
 //! Mechanism function typedef
-typedef double (* mech_fun_t) (
-	void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-);
+typedef MYRIAD_FXN_TYPEDEF_GEN(MECH_FXN_NAME, MECH_FXN_ARGS, MECH_FXN_RET);
 
 // Generic pointers for new/class-of purposes
 
-extern const void* Mechanism; // myriad_new(Mechanism, ...);
-extern const void* MechanismClass;
+extern const void* MECHANISM_OBJECT; // myriad_new(Mechanism, ...);
+extern const void* MECHANISM_CLASS;
 
 // -----------------------------------------
 
 /**
-   Delegator function for MechanismClass mechansim function method.
+   Delegator function for MechanismClass mechanism function method.
 
    @param[in]    _self        pointer to extant object instance
    @param[in]    pre_comp     pointer to the compartment where this mechanism is
@@ -42,14 +37,8 @@ extern const void* MechanismClass;
 
    @returns calculated output value of this mechanism for the given timestep
  */
-extern double mechanism_fxn(
-	void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-);
+
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(MECH_CLASS_FXN_RET, MECH_CLASS_FXN_ARGS, MECH_CLASS_FXN_NAME);
 
 // ----------------------------------------
 
@@ -60,10 +49,10 @@ extern double mechanism_fxn(
 
    @see MyriadObject
  */
-struct Mechanism
+struct MECHANISM_OBJECT
 {
-	const struct MyriadObject _; //! Mechanism : MyriadObject
-	unsigned int source_id;      //! Source ID of the pre-mechanism compartment
+	const struct MyriadObject SUPERCLASS_MECHANISM_OBJECT_NAME; //! Mechanism : MyriadObject
+	unsigned int COMPARTMENT_PREMECH_SOURCE_ID;      //! Source ID of the pre-mechanism compartment
 };
 
 /**
@@ -73,10 +62,10 @@ struct Mechanism
 
    @see MyriadClass
  */
-struct MechanismClass
+struct MECHANISM_CLASS
 {
-	const struct MyriadClass _; //! MechanismClass : MyriadClass
-	mech_fun_t m_mech_fxn;      //! Mechanism simulation function
+	const struct MyriadClass SUPERCLASS_MECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
+	MECH_FXN_NAME MY_MECHANISM_MECH_CLASS_FXN;      //! Mechanism simulation function
 };
 
 // -------------------------------------

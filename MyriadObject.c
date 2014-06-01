@@ -13,15 +13,15 @@
 // Forward declaration for static methods //
 ////////////////////////////////////////////
 
-static void* MyriadObject_ctor(void* _self, va_list* app);
-static int MyriadObject_dtor(void* _self);
-static void* MyriadObject_cudafy(void* self_obj, int clobber);
-static void MyriadObject_decudafy(void* _self, void* cuda_self);
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, MYRIADOBJECT_OBJECT, CTOR_FUN_NAME);
+static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, MYRIADOBJECT_OBJECT, DTOR_FUN_NAME);
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MYRIADOBJECT_OBJECT, CUDAFY_FUN_NAME);
+static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, MYRIADOBJECT_OBJECT, DECUDAFY_FUN_NAME);
 
-static void* MyriadClass_ctor(void* _self, va_list* app);
-static int MyriadClass_dtor(void* _self);
-static void* MyriadClass_cudafy(void* _self, int clobber);
-static void MyriadClass_decudafy(void* _self, void* cuda_self);
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, MYRIADOBJECT_CLASS, CTOR_FUN_NAME);
+static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, MYRIADOBJECT_CLASS, DTOR_FUN_NAME);
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MYRIADOBJECT_CLASS, CUDAFY_FUN_NAME);
+static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, MYRIADOBJECT_CLASS, DECUDAFY_FUN_NAME);
 
 ///////////////////////////////////////////////////////
 // Static initalization for new()/classof() purposes //
@@ -29,57 +29,57 @@ static void MyriadClass_decudafy(void* _self, void* cuda_self);
 
 // Static, on-stack initialization of MyriadObject and MyriadClass classes
 // Necessary because of circular dependencies (see comments below)
-static struct MyriadClass object[] =
+static struct MYRIADOBJECT_CLASS object[] =
 {
 	// MyriadObject "anonymous" class
     {
         { object + 1 },              // MyriadClass is it's class
         object,                      // Superclass is itself (MyriadObject)
         NULL,                        // No device class by default
-        sizeof(struct MyriadObject), // Size is effectively of pointer
-        MyriadObject_ctor,           // Non-class constructor
-		MyriadObject_dtor,           // Object destructor
-		MyriadObject_cudafy,         // Gets on device as an object
-		MyriadObject_decudafy,       // In-place update of CPU object using GPU object
+        sizeof(struct MYRIADOBJECT_OBJECT), // Size is effectively of pointer
+		MYRIAD_CAT(MYRIADOBJECT_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),           // Non-class constructor
+		MYRIAD_CAT(MYRIADOBJECT_OBJECT, MYRIAD_CAT(_, DTOR_FUN_NAME)),           // Object destructor
+		MYRIAD_CAT(MYRIADOBJECT_OBJECT, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),         // Gets on device as an object
+		MYRIAD_CAT(MYRIADOBJECT_OBJECT, MYRIAD_CAT(_, DECUDAFY_FUN_NAME)),       // In-place update of CPU object using GPU object
     },
 	// MyriadClass class
     {
         { object + 1 },             // MyriadClass is it's class
         object,                     // Superclass is MyriadObject (a Class is an Object)
         NULL,                       // No device class by default
-        sizeof(struct MyriadClass), // Size includes methods, embedded MyriadObject
-        MyriadClass_ctor,           // Constructor allows for prototype classes
-		MyriadClass_dtor,           // Class destructor (No-Op, undefined behavior)
-		MyriadClass_cudafy,         // Cudafication to avoid static init for extensions
-		MyriadClass_decudafy,       // No-Op; DeCUDAfying a class is undefined behavior
+        sizeof(struct MYRIADOBJECT_CLASS), // Size includes methods, embedded MyriadObject
+		MYRIAD_CAT(MYRIADOBJECT_CLASS, MYRIAD_CAT(_, CTOR_FUN_NAME)),           // Constructor allows for prototype classes
+		MYRIAD_CAT(MYRIADOBJECT_CLASS, MYRIAD_CAT(_, DTOR_FUN_NAME)),           // Class destructor (No-Op, undefined behavior)
+		MYRIAD_CAT(MYRIADOBJECT_CLASS, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),         // Cudafication to avoid static init for extensions
+		MYRIAD_CAT(MYRIADOBJECT_CLASS, MYRIAD_CAT(_, DECUDAFY_FUN_NAME)),       // No-Op; DeCUDAfying a class is undefined behavior
     }
 };
 
 // Pointers to static class definition for new()/super()/classof() purposes
-const void* MyriadObject = object;
-const void* MyriadClass = object + 1;
+const void* MYRIADOBJECT_OBJECT = object;
+const void* MYRIADOBJECT_CLASS = object + 1;
 
-static void* MyriadObject_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, MYRIADOBJECT_OBJECT, CTOR_FUN_NAME)
 {
-    return _self;
+    return self;
 }
 
-static int MyriadObject_dtor(void* _self)
+static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, MYRIADOBJECT_OBJECT, DTOR_FUN_NAME)
 {
-	free(_self);
+	free(self);
 	return EXIT_SUCCESS;
 }
 
-static void* MyriadObject_cudafy(void* self_obj, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MYRIADOBJECT_OBJECT, CUDAFY_FUN_NAME)
 {
 	#ifdef CUDA
 	{
-		struct MyriadObject* self = (struct MyriadObject*) self_obj;
+		struct MYRIADOBJECT_OBJECT* self = (struct MYRIADOBJECT_OBJECT*) self_obj;
 		void* n_dev_obj = NULL;
 		size_t my_size = myriad_size_of(self);
 
-		const struct MyriadClass* tmp = self->m_class;
-		self->m_class = self->m_class->device_class;
+		const struct MYRIADOBJECT_CLASS* tmp = self->OBJECTS_CLASS;
+		self->OBJECTS_CLASS = self->OBJECTS_CLASS->ONDEVICE_CLASS;
 
 		CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
 
@@ -92,7 +92,7 @@ static void* MyriadObject_cudafy(void* self_obj, int clobber)
 				)
 			);
 
-		self->m_class = tmp;
+		self->OBJECTS_CLASS = tmp;
 
 		return n_dev_obj;
 	}
@@ -103,7 +103,7 @@ static void* MyriadObject_cudafy(void* self_obj, int clobber)
 	#endif
 }
 
-static void MyriadObject_decudafy(void* _self, void* cuda_self)
+static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, MYRIADOBJECT_OBJECT, DECUDAFY_FUN_NAME)
 {
 	// We assume (for now) that the class hasn't changed on the GPU.
 	// This makes this effectively a no-op since nothing gets copied back
@@ -114,15 +114,15 @@ static void MyriadObject_decudafy(void* _self, void* cuda_self)
 // MyriadClass-specific static methods //
 //////////////////////////////////////////////
 
-static void* MyriadClass_ctor(void* _self, va_list* app)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, MYRIADOBJECT_CLASS, CTOR_FUN_NAME)
 {
-    struct MyriadClass* self = (struct MyriadClass*) _self;
-    const size_t offset = offsetof(struct MyriadClass, my_ctor);
+    struct MYRIADOBJECT_CLASS* _self = (struct MYRIADOBJECT_CLASS*) self;
+    const size_t offset = offsetof(struct MYRIADOBJECT_CLASS, my_ctor);
 
-    self->super = va_arg(*app, struct MyriadClass*);
-    self->size = va_arg(*app, size_t);
+    _self->SUPERCLASS = va_arg(*app, struct MYRIADOBJECT_CLASS*);
+    _self->OBJECTS_SIZE = va_arg(*app, size_t);
 
-    assert(self->super);
+    assert(_self->SUPERCLASS);
 	
 	/*
 	 * MASSIVE TODO:
@@ -134,9 +134,9 @@ static void* MyriadClass_ctor(void* _self, va_list* app)
 	 * Solution: Make it absolutely sure if we're memcpying ALL the methods.
 	 */
 	// Memcopies MyriadObject cudafy methods onto self (in case defaults aren't set)
-    memcpy((char*) self + offset,
-		   (char*) self->super + offset,
-		   myriad_size_of(self->super) - offset);
+    memcpy((char*) _self + offset,
+		   (char*) _self->SUPERCLASS + offset,
+		   myriad_size_of(_self->SUPERCLASS) - offset);
 
     va_list ap;
     va_copy(ap, *app);
@@ -149,22 +149,22 @@ static void* MyriadClass_ctor(void* _self, va_list* app)
     
         if (selector == (voidf) myriad_ctor)
         {
-            *(voidf *) &self->my_ctor = curr_method;
+            *(voidf *) &_self->CONSTRUCTOR = curr_method;
         } else if (selector == (voidf) myriad_cudafy) {
-			*(voidf *) &self->my_cudafy = curr_method;
+			*(voidf *) &_self->CUDAFIER = curr_method;
 		} else if (selector == (voidf) myriad_dtor) {
-			*(voidf *) &self->my_dtor = curr_method;
+			*(voidf *) &_self->DESTRUCTOR = curr_method;
 		} else if (selector == (voidf) myriad_decudafy) {
-			*(voidf *) &self->my_decudafy = curr_method;
+			*(voidf *) &_self->DECUDAFIER = curr_method;
 		}
 		
 		selector = va_arg(ap, voidf);
     }
 
-    return self;
+    return _self;
 }
 
-static int MyriadClass_dtor(void* self)
+static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, MYRIADOBJECT_CLASS, DTOR_FUN_NAME)
 {
 	fprintf(stderr, "Destroying a Class is undefined behavior.\n");
 	return EXIT_FAILURE;
@@ -172,7 +172,7 @@ static int MyriadClass_dtor(void* self)
 
 // IMPORTANT: This is, ironically, for external classes' use only, since our 
 // own initialization for MyriadClass is static and handled by initCUDAObjects
-static void* MyriadClass_cudafy(void* _self, int clobber)
+static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MYRIADOBJECT_CLASS, CUDAFY_FUN_NAME)
 {
 	/*
 	 * Invariants/Expectations: 
@@ -202,9 +202,9 @@ static void* MyriadClass_cudafy(void* _self, int clobber)
 	 */
 	#ifdef CUDA
 	{
-		struct MyriadClass* self = (struct MyriadClass*) _self;
+		struct MYRIADOBJECT_CLASS* self = (struct MYRIADOBJECT_CLASS*) _self;
 
-		const struct MyriadClass* dev_class = NULL;
+		const struct MYRIADOBJECT_CLASS* dev_class = NULL;
 
 		const size_t class_size = myriad_size_of(self); // DO NOT USE sizeof(struct MyriadClass)!
 
@@ -212,11 +212,11 @@ static void* MyriadClass_cudafy(void* _self, int clobber)
 		CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
 	
 		// Memcpy the entirety of the old class onto a new CPU heap pointer
-		const struct MyriadClass* class_cpy = (const struct MyriadClass*) calloc(1, class_size);
+		const struct MYRIADOBJECT_CLASS* class_cpy = (const struct MYRIADOBJECT_CLASS*) calloc(1, class_size);
 		memcpy((void*)class_cpy, _self, class_size);
 
 		// Embedded object's class set to our GPU class; this is unaffected by $clobber
-		memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*)); 
+		memcpy((void*)&class_cpy->_.OBJECTS_CLASS, &dev_class, sizeof(void*)); 
 
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(
@@ -238,7 +238,7 @@ static void* MyriadClass_cudafy(void* _self, int clobber)
 	#endif
 }
 
-static void MyriadClass_decudafy(void* _self, void* cuda_self)
+static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, MYRIADOBJECT_CLASS, DECUDAFY_FUN_NAME)
 {
 	fprintf(stderr, "De-CUDAfying a class is undefined behavior. Aborted.\n");
 	return;
@@ -252,21 +252,23 @@ static void MyriadClass_decudafy(void* _self, void* cuda_self)
 //            New
 //----------------------------
 
+// Much of the following functions have been assumed to not need full
+// genericisation as they shouldn't be touched by anyone.
 void* myriad_new(const void* _class, ...)
 {
-    const struct MyriadClass* prototype_class = (const struct MyriadClass*) _class;
-    struct MyriadObject* curr_obj;
+    const struct MYRIADOBJECT_CLASS* prototype_class = (const struct MYRIADOBJECT_CLASS*) _class;
+    struct MYRIADOBJECT_OBJECT* curr_obj;
     va_list ap;
 
-    assert(prototype_class && prototype_class->size);
+    assert(prototype_class && prototype_class->OBJECTS_SIZE);
     
-    curr_obj = (struct MyriadObject*) calloc(1, prototype_class->size);
+    curr_obj = (struct MYRIADOBJECT_OBJECT*) calloc(1, prototype_class->OBJECTS_SIZE);
     assert(curr_obj);
 
-    curr_obj->m_class = prototype_class;
+    curr_obj->OBJECTS_CLASS = prototype_class;
 
     va_start(ap, _class);
-    curr_obj = (struct MyriadObject*) myriad_ctor(curr_obj, &ap);
+    curr_obj = (struct MYRIADOBJECT_OBJECT*) myriad_ctor(curr_obj, &ap);
     va_end(ap);
 	
     return curr_obj;
@@ -278,8 +280,8 @@ void* myriad_new(const void* _class, ...)
 
 const void* myriad_class_of(const void* _self)
 {
-    const struct MyriadObject* self = (const struct MyriadObject*) _self;
-    return self->m_class;
+    const struct MYRIADOBJECT_OBJECT* self = (const struct MYRIADOBJECT_OBJECT*) _self;
+    return self->OBJECTS_CLASS;
 }
 
 //----------------------------
@@ -288,37 +290,37 @@ const void* myriad_class_of(const void* _self)
 
 size_t myriad_size_of(const void* _self)
 {
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
+    const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS = (const struct MYRIADOBJECT_CLASS*) myriad_class_of(_self);
 
-    return m_class->size;
+    return OBJECTS_CLASS->OBJECTS_SIZE;
 }
 
 //----------------------------
 //         Is A
 //----------------------------
 
-int myriad_is_a(const void* _self, const struct MyriadClass* m_class)
+int myriad_is_a(const void* _self, const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS)
 {
-    return _self && myriad_class_of(_self) == m_class;
+    return _self && myriad_class_of(_self) == OBJECTS_CLASS;
 }
 
 //----------------------------
 //          Is Of
 //----------------------------
 
-int myriad_is_of(const void* _self, const struct MyriadClass* m_class)
+int myriad_is_of(const void* _self, const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS)
 {
     if (_self)
     {   
-        const struct MyriadClass * myClass = (const struct MyriadClass*) myriad_class_of(_self);
+        const struct MYRIADOBJECT_CLASS * myClass = (const struct MYRIADOBJECT_CLASS*) myriad_class_of(_self);
 
-        if (m_class != MyriadObject)
+        if (OBJECTS_CLASS != MYRIADOBJECT_OBJECT)
         {
-            while (myClass != m_class)
+            while (myClass != OBJECTS_CLASS)
             {
-                if (myClass != MyriadObject)
+                if (myClass != MYRIADOBJECT_OBJECT)
                 {
-                    myClass = (const struct MyriadClass*) myriad_super(myClass);
+                    myClass = (const struct MYRIADOBJECT_CLASS*) myriad_super(myClass);
                 } else {
                     return 0;
                 }
@@ -335,36 +337,36 @@ int myriad_is_of(const void* _self, const struct MyriadClass* m_class)
 //   Object Built-in Generics
 //------------------------------
 
-void* myriad_ctor(void* _self, va_list* app)
+MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, myriad, CTOR_FUN_NAME)
 {
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
+    const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS = (const struct MYRIADOBJECT_CLASS*) myriad_class_of(self);
 
-    assert(m_class->my_ctor);
-    return m_class->my_ctor(_self, app);
+    assert(OBJECTS_CLASS->CONSTRUCTOR);
+    return OBJECTS_CLASS->CONSTRUCTOR(self, app);
 }
 
-int myriad_dtor(void* _self)
+MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, myriad, DTOR_FUN_NAME)
 {
-	const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
+    const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS = (const struct MYRIADOBJECT_CLASS*) myriad_class_of(self);
+
+    assert(OBJECTS_CLASS->DESTRUCTOR);
+    return OBJECTS_CLASS->DESTRUCTOR(self);
+}
+
+MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, myriad, CUDAFY_FUN_NAME)
+{
+    const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS = (const struct MYRIADOBJECT_CLASS*) myriad_class_of(_self);
+
+	assert(OBJECTS_CLASS->CUDAFIER);
+	return OBJECTS_CLASS->CUDAFIER(_self, clobber);
+}
+
+MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, myriad, DECUDAFY_FUN_NAME)
+{
+	const struct MYRIADOBJECT_CLASS* OBJECTS_CLASS = (const struct MYRIADOBJECT_CLASS*) myriad_class_of(_self);
 	
-	assert(m_class->my_dtor);
-	return m_class->my_dtor(_self);
-}
-
-void* myriad_cudafy(void* _self, int clobber)
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-
-	assert(m_class->my_cudafy);
-	return m_class->my_cudafy(_self, clobber);
-}
-
-void myriad_decudafy(void* _self, void* cuda_self)
-{
-	const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-	
-	assert(m_class->my_decudafy);
-	m_class->my_decudafy(_self, cuda_self);
+	assert(OBJECTS_CLASS->DECUDAFIER);
+	OBJECTS_CLASS->DECUDAFIER(_self, cuda_self);
 	return;
 }
 
@@ -372,42 +374,42 @@ void myriad_decudafy(void* _self, void* cuda_self)
 // Super and related methods //
 ///////////////////////////////
 
-const void* myriad_super(const void* _self)
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPER_FUN_RET, SUPER_FUN_ARGS, myriad, SUPER_FUN_NAME)
 {
-    const struct MyriadClass* self = (const struct MyriadClass*) _self;
+    const struct MYRIADOBJECT_CLASS* self = (const struct MYRIADOBJECT_CLASS*) _self;
 
-    assert(self && self->super);
-    return self->super;
+    assert(self && self->SUPERCLASS);
+    return self->SUPERCLASS;
 }
 
-void* super_ctor(const void* _class, void* _self, va_list* app)
+extern MYRIAD_FXN_METHOD_HEADER_GEN(SUPERCTOR_FUN_RET, SUPERCTOR_FUN_ARGS, SUPER_FUN_NAME, SUPERCTOR_FUN_NAME)
 {
-    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
+    const struct MYRIADOBJECT_CLASS* superclass = (const struct MYRIADOBJECT_CLASS*) myriad_super(_class);
 
-    assert(_self && superclass->my_ctor);
-    return superclass->my_ctor(_self, app);
+    assert(_self && superclass->CONSTRUCTOR);
+    return superclass->CONSTRUCTOR(_self, app);
 }
 
-int super_dtor(const void* _class, void* _self)
+MYRIAD_FXN_METHOD_HEADER_GEN(SUPERDTOR_FUN_RET, SUPERDTOR_FUN_ARGS, SUPER_FUN_NAME, SUPERDTOR_FUN_NAME)
 {
-	const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
+	const struct MYRIADOBJECT_CLASS* superclass = (const struct MYRIADOBJECT_CLASS*) myriad_super(_class);
 
-	assert(_self && superclass->my_dtor);
-	return superclass->my_dtor(_self);
+	assert(_self && superclass->DESTRUCTOR);
+	return superclass->DESTRUCTOR(_self);
 }
 
-void* super_cudafy(const void* _class, void* _self, int clobber)
+MYRIAD_FXN_METHOD_HEADER_GEN(SUPERCUDAFY_FUN_RET, SUPERCUDAFY_FUN_ARGS, SUPER_FUN_NAME, SUPERCUDAFY_FUN_NAME)
 {
-	const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
-	assert(_self && superclass->my_cudafy);
-	return superclass->my_cudafy(_self, clobber);
+	const struct MYRIADOBJECT_CLASS* superclass = (const struct MYRIADOBJECT_CLASS*) myriad_super(_class);
+	assert(_self && superclass->CUDAFIER);
+	return superclass->CUDAFIER(_self, clobber);
 }
 
-void super_decudafy(const void* _class, void* _self, void* cuda_self)
+MYRIAD_FXN_METHOD_HEADER_GEN(SUPERDECUDAFY_FUN_RET, SUPERDECUDAFY_FUN_ARGS, SUPER_FUN_NAME, SUPERDECUDAFY_FUN_NAME)
 {
-	const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
-	assert(_self && superclass->my_decudafy);
-	superclass->my_decudafy(_self, cuda_self);
+	const struct MYRIADOBJECT_CLASS* superclass = (const struct MYRIADOBJECT_CLASS*) myriad_super(_class);
+	assert(_self && superclass->DECUDAFIER);
+	superclass->DECUDAFIER(_self, cuda_self);
 	return;
 }
 
@@ -424,11 +426,11 @@ int initCUDAObjects()
 		// Pre-allocate GPU classes for self-reference /
 		////////////////////////////////////////////////
 
-		const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
+		const struct MYRIADOBJECT_CLASS *obj_addr = NULL, *class_addr = NULL;
 	
 		//TODO: Not sure if we need these; surely we can just use object[x].size instead?
-		const size_t obj_size = sizeof(struct MyriadObject);
-		const size_t class_size = sizeof(struct MyriadClass);
+		const size_t obj_size = sizeof(struct MYRIADOBJECT_OBJECT);
+		const size_t class_size = sizeof(struct MYRIADOBJECT_CLASS);
 
 		// Allocate class and object structs on the GPU.
 		CUDA_CHECK_RETURN(cudaMalloc((void**)&obj_addr, class_size)); 
@@ -438,7 +440,7 @@ int initCUDAObjects()
 		// Static initialization using "Anonymous"  Class /
 		///////////////////////////////////////////////////
 
-		const struct MyriadClass anon_class_class = {
+		const struct MYRIADOBJECT_CLASS anon_class_class = {
 			{class_addr}, // MyriadClass' class is itself
 			obj_addr,     // Superclass is MyriadObject (a Class is an Object)
 			class_addr,   // Device class is itself (since we're on the GPU)
@@ -453,19 +455,19 @@ int initCUDAObjects()
 			cudaMemcpy(
 				(void**) class_addr,
 				&anon_class_class,
-				sizeof(struct MyriadClass),
+				sizeof(struct MYRIADOBJECT_CLASS),
 				cudaMemcpyHostToDevice
 				)
 			);	
 
 		// Remember to update static CPU class object
-		object[1].device_class = class_addr; //TODO: Replace with memcpy?
+		object[1].ONDEVICE_CLASS = class_addr; //TODO: Replace with memcpy?
 
 		/////////////////////////////////////////////////////////
 		// Static initialization using "Anonymous" Object Class /
 		/////////////////////////////////////////////////////////
 	
-		const struct MyriadClass anon_obj_class = {
+		const struct MYRIADOBJECT_CLASS anon_obj_class = {
 			{class_addr}, // It's class is MyriadClass (on GPU, of course)
 			obj_addr,     // Superclass is itself
 			class_addr,   // Device class is it's class (since we're on the GPU)
@@ -480,13 +482,13 @@ int initCUDAObjects()
 			cudaMemcpy(
 				(void**) obj_addr,
 				&anon_obj_class,
-				sizeof(struct MyriadClass),
+				sizeof(struct MYRIADOBJECT_CLASS),
 				cudaMemcpyHostToDevice
 				)
 			);
 	
 		// Remember to update static CPU object
-		object[0].device_class = (const struct MyriadClass*) obj_addr; //TODO: Replace with memcpy?
+		object[0].ONDEVICE_CLASS = (const struct MYRIADOBJECT_CLASS*) obj_addr; //TODO: Replace with memcpy?
 
 		/////////////////////////////////////////////////
 		// Memcpy GPU class pointers to *_dev_t symbols /
@@ -494,7 +496,7 @@ int initCUDAObjects()
 
 		CUDA_CHECK_RETURN(
 			cudaMemcpyToSymbol(
-				(const void*) &MyriadClass_dev_t,
+				(const void*) &MYRIAD_CAT(MYRIADOBJECT_CLASS, _dev_t), 
 				&class_addr,
 				sizeof(void*),
 				0,
@@ -504,7 +506,7 @@ int initCUDAObjects()
 
 		CUDA_CHECK_RETURN(
 			cudaMemcpyToSymbol(
-				(const void*) &MyriadObject_dev_t,
+				(const void*) &MYRIAD_CAT(MYRIADOBJECT_OBJECT, _dev_t),
 				&obj_addr,
 				sizeof(void*),
 				0,

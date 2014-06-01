@@ -9,8 +9,8 @@
     ret (* name)(args)
 
 #define MYRIAD_FXN_METHOD_HEADER_GEN(ret, args, objname, suffix) \
-    ret MYRIAD_CAT(objname, MYRIAD_CAT(_,suffix)) (args)
+    ret MYRIAD_CAT(objname, MYRIAD_CAT(_,suffix))(args)
 
 #define MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(ret, args, funname) \
-    ret funname (args)
+    ret funname(args)
 

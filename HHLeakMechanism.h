@@ -29,14 +29,14 @@ extern const void* HHLEAKMECHANISM_CLASS;
  */
 struct HHLEAKMECHANISM_OBJECT
 {
-	struct Mechanism HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanism : Mechanism
+	struct MECHANISM_OBJECT HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanism : Mechanism
 	double HHLEAKMECHANISM_G_LEAK;      //! Leak Conductance - nS
 	double HHLEAKMECHANISM_E_REV;       //! Leak Reversal Potential - mV
 };
 
 struct HHLEAKMECHANISM_CLASS
 {
-	struct MechanismClass SUPERCLASS_HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanismClass : MechanismClass
+	struct MECHANISM_CLASS SUPERCLASS_HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanismClass : MechanismClass
 };
 
 void initHHLeakMechanism(int cuda_init);
