@@ -19,8 +19,8 @@
 #define MY_MECHANISM_MECH_CLASS_FXN m_mech_fxn
 
 // Mechanism function
-#define MECH_FXN_TYPE mech_fun_t
-#define MECH_FXN_NAME mechanism_fxn
+#define MECH_FXN_NAME mech_fun_t
+#define MECH_FXN_NAME_C mechanism_fxn
 
 #define MECH_FXN_ARGS void* _self, \
 	void* pre_comp, \
@@ -39,6 +39,9 @@
 	const double global_time, \
 	const unsigned int curr_step
 #define MECH_CLASS_FXN_RET double
+
+
+
 
 
 #endif
