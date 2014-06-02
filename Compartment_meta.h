@@ -21,7 +21,8 @@
 #define MY_MECHS my_mechs
 
 // Simulation function
-#define SIMUL_FXN_NAME compartment_simul_fxn_t
+#define SIMUL_FXN_NAME compartment_simul_fxn
+#define SIMUL_FXN_TYPEDEF_NAME compartment_simul_fxn_t //_MYRIAD_CAT(SIMUL_FXN_NAME,_t)
 #define SIMUL_FXN_ARGS \
     void* self, \
     void** network, \
@@ -32,7 +33,8 @@
 #define MY_COMPARTMENT_SIMUL_FXN m_comp_fxn
 
 // Compartment add mech
-#define ADD_MECH_FXN_NAME compartment_add_mech_t
+#define ADD_MECH_FXN_NAME compartment_add_mech
+#define ADD_MECH_FXN_TYPEDEF_NAME compartment_add_mech_t //_MYRIAD_CAT(ADD_MECH_FXN_NAME,_t)
 #define ADD_MECH_FXN_ARGS \
     void* self, \
     void* mechanism 

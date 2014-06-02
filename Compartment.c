@@ -60,7 +60,6 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, COMPARTMENT
 		}
 		// @TODO: Should we really be passing a pointer to something on our stack?
 		return SUPERCLASS_CUDAFY(MYRIADOBJECT_OBJECT, copy_comp, clobber);
-		
 	}
 	#else
 	{
@@ -189,58 +188,58 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, COMPARTMENT_CLA
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, COMPARTMENT_CLASS, CUDAFY_FUN_NAME)
 {
-	#ifdef CUDA
-	// We know what class we are
-	struct COMPARTMENT_CLASS* my_class = (struct COMPARTMENT_CLASS*) _self;
+    #ifdef CUDA
+    {
+        // We know what class we are
+        struct COMPARTMENT_CLASS* my_class = (struct COMPARTMENT_CLASS*) _self;
 
-	// Make a temporary copy-class because we need to change shit
-	struct COMPARTMENT_CLASS copy_class = *my_class;
-	struct MYRIADOBJECT_CLASS* copy_class_class = (struct MYRIADOBJECT_CLASS*) &copy_class;
+        // Make a temporary copy-class because we need to change shit
+        struct COMPARTMENT_CLASS copy_class = *my_class;
+        struct MYRIADOBJECT_CLASS* copy_class_class = (struct MYRIADOBJECT_CLASS*) &copy_class;
 
-	
-	// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
-	// By default we clobber the copy_class_class' superclass with
-	// the superclass' device_class' on-GPU address value. 
-	// To avoid cloberring this value (e.g. if an underclass has already
-	// clobbered it), the clobber flag should be 0.
-	if (clobber)
-	{
-		// TODO: Find a better way to get function pointers for on-card functions
-		SIMUL_FXN_NAME my_comp_fun = NULL;
-		CUDA_CHECK_RETURN(
-			cudaMemcpyFromSymbol(
-				(void**) &my_comp_fun,
-				(const void*) &MYRIAD_CAT(COMPARTMENT_OBJECT, _cuda_compartment_fxn_t),
-				sizeof(void*),
-				0,
-				cudaMemcpyDeviceToHost
-				)
-			);
-		copy_class.MY_COMPARTMENT_SIMUL_FXN = my_comp_fun;
+        // !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
+        // By default we clobber the copy_class_class' superclass with
+        // the superclass' device_class' on-GPU address value. 
+        // To avoid cloberring this value (e.g. if an underclass has already
+        // clobbered it), the clobber flag should be 0.
+        if (clobber)
+        {
+            // TODO: Find a better way to get function pointers for on-card functions
+            SIMUL_FXN_TYPEDEF_NAME my_comp_fun = NULL;
+            CUDA_CHECK_RETURN(
+                cudaMemcpyFromSymbol(
+                    (void**) &my_comp_fun,
+                    //TOOD: Generecise this out
+                    (const void*) &Compartment_cuda_compartment_fxn_t,
+                    sizeof(void*),
+                    0,
+                    cudaMemcpyDeviceToHost
+                    )
+                );
+            copy_class.MY_COMPARTMENT_SIMUL_FXN = my_comp_fun;
 		
-		DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
+            DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 		
-		const struct MYRIADOBJECT_CLASS* super_class = (const struct MYRIADOBJECT_CLASS*) MYRIADOBJECT_CLASS;
-		memcpy((void**) &copy_class_class->SUPERCLASS, &super_class->ONDEVICE_CLASS, sizeof(void*));
+            const struct MYRIADOBJECT_CLASS* super_class = (const struct MYRIADOBJECT_CLASS*) MYRIADOBJECT_CLASS;
+            memcpy((void**) &copy_class_class->SUPERCLASS, &super_class->ONDEVICE_CLASS, sizeof(void*));
+        }
+
+        // This works because super methods rely on the given class'
+        // semi-static superclass definition, not it's ->super attribute.
+        return SUPERCLASS_CUDAFY(COMPARTMENT_CLASS, (void*) &copy_class, 0);
     }
-
-	// This works because super methods rely on the given class'
-	// semi-static superclass definition, not it's ->super attribute.
-	return SUPERCLASS_CUDAFY(COMPARTMENT_CLASS, (void*) &copy_class, 0);
-
-	#else
-
-    return NULL;
-
-	#endif
-
+    #else
+    {
+        return NULL;
+    }
+    #endif
 }
 
 ///////////////////////////
 // Object Initialization //
 ///////////////////////////
 
-const void *COMPARTMENT_CLASS, *COMPARTMENT_OBJECT;
+const void * COMPARTMENT_CLASS, * COMPARTMENT_OBJECT;
 
 void initCompartment(const int init_cuda)
 {
@@ -262,7 +261,7 @@ void initCompartment(const int init_cuda)
 		if (init_cuda)
 		{
 			void* tmp_comp_c_t = myriad_cudafy((void*)COMPARTMENT_CLASS, 1);
-			((struct MYRIADOBJECT_CLASS*) COMPARTMENT_CLASS)->ONDEVICE_CLASS = (struct COMPARTMENT_CLASS*) tmp_comp_c_t;
+			((struct MYRIADOBJECT_CLASS*) COMPARTMENT_CLASS)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_comp_c_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
 					(const void*) &MYRIAD_CAT(COMPARTMENT_CLASS, _dev_t),

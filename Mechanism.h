@@ -17,7 +17,7 @@
 #include "Mechanism_meta.h"
 
 //! Mechanism function typedef
-typedef MYRIAD_FXN_TYPEDEF_GEN(MECH_FXN_NAME, MECH_FXN_ARGS, MECH_FXN_RET);
+typedef MYRIAD_FXN_TYPEDEF_GEN(MECH_FXN_TYPE, MECH_FXN_ARGS, MECH_FXN_RET);
 
 // Generic pointers for new/class-of purposes
 
@@ -65,7 +65,7 @@ struct MECHANISM_OBJECT
 struct MECHANISM_CLASS
 {
 	const struct MyriadClass SUPERCLASS_MECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
-	MECH_FXN_NAME MY_MECHANISM_MECH_CLASS_FXN;      //! Mechanism simulation function
+	MECH_FXN_TYPE MY_MECHANISM_MECH_CLASS_FXN;      //! Mechanism simulation function
 };
 
 // -------------------------------------

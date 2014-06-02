@@ -74,7 +74,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MYRIADOBJEC
 {
 	#ifdef CUDA
 	{
-		struct MYRIADOBJECT_OBJECT* self = (struct MYRIADOBJECT_OBJECT*) self_obj;
+		struct MYRIADOBJECT_OBJECT* self = (struct MYRIADOBJECT_OBJECT*) _self;
 		void* n_dev_obj = NULL;
 		size_t my_size = myriad_size_of(self);
 

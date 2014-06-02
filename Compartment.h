@@ -18,10 +18,10 @@
 #include "Compartment_meta.h"
 
 //! Compartment simulate function pointer
-typedef MYRIAD_FXN_TYPEDEF_GEN(SIMUL_FXN_NAME, SIMUL_FXN_ARGS, SIMUL_FXN_RET);
+typedef MYRIAD_FXN_TYPEDEF_GEN(SIMUL_FXN_TYPEDEF_NAME, SIMUL_FXN_ARGS, SIMUL_FXN_RET);
 
 //! Method for adding mechanisms to a compartment
-typedef MYRIAD_FXN_TYPEDEF_GEN(ADD_MECH_FXN_NAME, ADD_MECH_FXN_ARGS, ADD_MECH_FXN_RET);
+typedef MYRIAD_FXN_TYPEDEF_GEN(ADD_MECH_FXN_TYPEDEF_NAME, ADD_MECH_FXN_ARGS, ADD_MECH_FXN_RET);
 
 // Generic pointers for new/class-of purposes
 
@@ -56,15 +56,15 @@ struct COMPARTMENT_OBJECT
 	const struct COMPARTMENT_OBJECT_SUPERCLASS COMPARTMENT_OBJECT_SUPERCLASS_NAME; //! Compartment : MyriadObject
 	unsigned int ID;             //! This compartment's unique ID number
 	unsigned int NUM_MECHS;      //! Number of mechanisms in this compartment
-	struct Mechanism** MY_MECHS; //! List of mechanisms in this compartment
+	struct MECHANISM_OBJECT** MY_MECHS; //! List of mechanisms in this compartment
 };
 
 //! Generic CompartmentClass structure definition
 struct COMPARTMENT_CLASS
 {
-	const struct COMPARTMENT_CLASS_SUPERCLASS COMPARTMENT_CLASS_SUPERCLASS_NAME;            //! CompartmentClass : MyriadClass
-	SIMUL_FXN_NAME MY_COMPARTMENT_SIMUL_FXN;    //! Defines compartment simulation
-	ADD_MECH_FXN_NAME MY_COMPARTMENT_ADD_MECH_FXN; //! Allows for adding mechanisms to compartment
+	const struct COMPARTMENT_CLASS_SUPERCLASS COMPARTMENT_CLASS_SUPERCLASS_NAME; //! CompartmentClass : MyriadClass
+	SIMUL_FXN_TYPEDEF_NAME MY_COMPARTMENT_SIMUL_FXN;    //! Defines compartment simulation
+	ADD_MECH_FXN_TYPEDEF_NAME MY_COMPARTMENT_ADD_MECH_FXN; //! Allows for adding mechanisms to compartment
 };
 
 /**

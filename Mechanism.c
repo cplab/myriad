@@ -99,7 +99,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MECHANISM_C
 		CUDA_CHECK_RETURN(
 			cudaMemcpyFromSymbol(
 				(void**) &my_mech_fun,
-				(const void*) &MYRIAD_CAT(MECHANISM_OBJECT, _cuda_mechanism_fxn_t),
+                //TODO: Genericise this out
+				(const void*) Mechanism_cuda_mechanism_fxn_t),
 				sizeof(void*),
 				0,
 				cudaMemcpyDeviceToHost
@@ -115,7 +116,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MECHANISM_C
 		// clobbered it), the clobber flag should be 0.
 		if (clobber)
 		{
-			const struct MECHANISM_CLASS* super_class = (const struct MECHANISM_CLASS*) MECHANISM_CLASS;
+			const struct MYRIADOBJECT_CLASS* super_class = (const struct MYRIADOBJECT_CLASS*) MYRIADOBJECT_CLASS;
 			memcpy((void**) &copy_class_class->SUPERCLASS, &super_class->ONDEVICE_CLASS, sizeof(void*));
 		}
 

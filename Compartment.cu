@@ -15,6 +15,9 @@ extern "C"
 #include "MyriadObject.cuh"
 #include "Compartment.cuh"
 
+__device__ __constant__ struct Compartment* Compartment_dev_t;
+__device__ __constant__ struct CompartmentClass* CompartmentClass_dev_t;
+
 __device__ void Compartment_cuda_simul_fxn(
 	void* _self,
 	void** network,
@@ -28,8 +31,6 @@ __device__ void Compartment_cuda_simul_fxn(
 	printf("My num_mechs is %u\n", self->NUM_MECHS);
 	return;
 }
-
-__device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartment_cuda_simul_fxn;
 
 __device__ void cuda_simul_fxn(
 	void* _self,
@@ -45,5 +46,4 @@ __device__ void cuda_simul_fxn(
 	return m_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
 }
 
-__device__ __constant__ struct Compartment* Compartment_dev_t;
-__device__ __constant__ struct CompartmentClass* CompartmentClass_dev_t;
+__device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartment_cuda_simul_fxn;

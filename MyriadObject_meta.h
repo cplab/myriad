@@ -48,30 +48,30 @@
 #define SUPER_FUN_RET const void*
 #define SUPER_FUN_ARGS const void* _self
 
-    // SuperCtor fun properties
-    #define SUPERCTOR_FUN_NAME ctor
-    #define SUPERCTOR_FUN_RET void*
-    #define SUPERCTOR_FUN_ARGS const void* _class, void* _self, va_list* app
+// SuperCtor fun properties
+#define SUPERCTOR_FUN_NAME ctor
+#define SUPERCTOR_FUN_RET void*
+#define SUPERCTOR_FUN_ARGS const void* _class, void* _self, va_list* app
     
-    // SuperDtor fun properties
-    #define SUPERDTOR_FUN_NAME dtor
-    #define SUPERDTOR_FUN_RET int
-    #define SUPERDTOR_FUN_ARGS const void* _class, void* _self
+// SuperDtor fun properties
+#define SUPERDTOR_FUN_NAME dtor
+#define SUPERDTOR_FUN_RET int
+#define SUPERDTOR_FUN_ARGS const void* _class, void* _self
     
-    // SuperCudafy fun properties
-    #define SUPERCUDAFY_FUN_NAME cudafy
-    #define SUPERCUDAFY_FUN_RET void*
-    #define SUPERCUDAFY_FUN_ARGS const void* _class, void* _self, int clobber
+// SuperCudafy fun properties
+#define SUPERCUDAFY_FUN_NAME cudafy
+#define SUPERCUDAFY_FUN_RET void*
+#define SUPERCUDAFY_FUN_ARGS const void* _class, void* _self, int clobber
     
-    // SuperDecudafy fun properties
-    #define SUPERDECUDAFY_FUN_NAME decudafy
-    #define SUPERDECUDAFY_FUN_RET void
-    #define SUPERDECUDAFY_FUN_ARGS const void* _class, void* _self, void* cuda_self
+// SuperDecudafy fun properties
+#define SUPERDECUDAFY_FUN_NAME decudafy
+#define SUPERDECUDAFY_FUN_RET void
+#define SUPERDECUDAFY_FUN_ARGS const void* _class, void* _self, void* cuda_self
     
-    #define SUPERCLASS_CTOR MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERCTOR_FUN_NAME))
-    #define SUPERCLASS_DTOR MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERDTOR_FUN_NAME))
-    #define SUPERCLASS_CUDAFY MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERCUDAFY_FUN_NAME))
-    #define SUPERCLASS_DECUDAFY MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERDECUDAFY_FUN_NAME))
+#define SUPERCLASS_CTOR MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERCTOR_FUN_NAME))
+#define SUPERCLASS_DTOR MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERDTOR_FUN_NAME))
+#define SUPERCLASS_CUDAFY MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERCUDAFY_FUN_NAME))
+#define SUPERCLASS_DECUDAFY MYRIAD_CAT(SUPERCLASS, MYRIAD_CAT(_, SUPERDECUDAFY_FUN_NAME))
 
 // Dynamic initialisation properties
 #define DYNAMIC_INIT_FXN_RET void

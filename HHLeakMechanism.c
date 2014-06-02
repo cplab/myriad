@@ -70,7 +70,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, MYRIAD_CAT(_, MECH_FXN_NAME)),
+                    //TOOD: Generecise this out
+                    (const void*) &HHLeakMechanism_mech_fxn_t,
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost

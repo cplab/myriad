@@ -9,7 +9,7 @@
 #include "Mechanism.h"
 #include "HHSomaCompartment.h"
 #include "HHSpikeGABAAMechanism.h"
-//#include "HHSpikeGABAAMechanism.cuh"
+#include "HHSpikeGABAAMechanism.cuh"
 
 ///////////////////////////////////////
 // HHSpikeGABAAMechanism Super Overrides //
@@ -101,6 +101,7 @@ static void* HHSpikeGABAAMechanismClass_cudafy(void* _self, int clobber)
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
+                    //TODO: Genericise this out
 					(const void*) &HHSpikeGABAAMechanism_mech_fxn_t,
 					sizeof(void*),
 					0,

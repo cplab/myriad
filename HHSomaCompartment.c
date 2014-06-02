@@ -101,7 +101,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, HHSOMAC
 				)
 			);
 
-		SUPERCLASS_CUDAFY(COMPARTMENT_OBJECT, self, cuda_self);
+		SUPERCLASS_DECUDAFY(COMPARTMENT_OBJECT, self, cuda_self);
 	}
 	#endif
 
@@ -164,11 +164,12 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			SIMUL_FXN_NAME my_comp_fun = NULL;
+			SIMUL_FXN_TYPEDEF_NAME my_comp_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_comp_fun,
-					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, SIMUL_FXN_NAME)),
+                    //TODO: Genericise this out
+					(const void*) &HHSomaCompartment_simul_fxn_t,
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost

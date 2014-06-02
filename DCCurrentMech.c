@@ -59,7 +59,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTME
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
-					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, MYRIAD_CAT(_, MECH_FXN_NAME))
+                    //TODO: Genericise this out
+					(const void*) &DCCurrentMech_mech_fxn_t,
 					sizeof(void*),
 					0,
 					cudaMemcpyDeviceToHost

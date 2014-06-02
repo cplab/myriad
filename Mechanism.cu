@@ -15,6 +15,8 @@ extern "C"
 #include "MyriadObject.cuh"
 #include "Mechanism.cuh"
 
+__device__ __constant__ struct Mechanism* Mechanism_dev_t = NULL;
+__device__ __constant__ struct MechanismClass* MechanismClass_dev_t = NULL;
 
 __device__ double Mechanism_cuda_mechanism_fxn(
 	void* _self,
@@ -30,8 +32,6 @@ __device__ double Mechanism_cuda_mechanism_fxn(
 	return 0.0;
 }
 
-__device__ mech_fun_t Mechanism_cuda_mechanism_fxn_t = Mechanism_cuda_mechanism_fxn;
-
 __device__ double cuda_mechanism_fxn(
 	void* _self,
     void* pre_comp,
@@ -46,5 +46,4 @@ __device__ double cuda_mechanism_fxn(
 	return m_class->m_mech_fxn(_self, pre_comp, post_comp, dt, global_time, curr_step);
 }
 
-__device__ __constant__ struct Mechanism* Mechanism_dev_t = NULL;
-__device__ __constant__ struct MechanismClass* MechanismClass_dev_t = NULL;
+__device__ mech_fun_t Mechanism_cuda_mechanism_fxn_t = Mechanism_cuda_mechanism_fxn;
