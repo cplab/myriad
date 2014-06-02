@@ -55,6 +55,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 				)
 			);
 
+        CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+
 		// Copy contents over to GPU
 		CUDA_CHECK_RETURN(
 			cudaMemcpy(

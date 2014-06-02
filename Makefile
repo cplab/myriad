@@ -26,14 +26,14 @@ OS_SIZE = 64
 OS_ARCH = x86_64
 
 # CC & related flags
-CCOMMON_FLAGS	:= -g3 -O0 -Wall
+CCOMMON_FLAGS	:= -g3 -O0 -Wall -pg
 CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99 -Wpedantic
 CXXFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
 CUFLAGS		:= $(CCOMMON_FLAGS)
 
 # NVCC & related flags
 NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
-NVCCFLAGS := -m$(OS_SIZE) -g -G -pg
+NVCCFLAGS := -m$(OS_SIZE) -g -G
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 

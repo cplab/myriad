@@ -100,7 +100,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MECHANISM_C
 			cudaMemcpyFromSymbol(
 				(void**) &my_mech_fun,
                 //TODO: Genericise this out
-				(const void*) Mechanism_cuda_mechanism_fxn_t,
+				(const void*) &Mechanism_cuda_mechanism_fxn_t,
 				sizeof(void*),
 				0,
 				cudaMemcpyDeviceToHost
