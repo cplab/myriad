@@ -20,15 +20,10 @@
 #define HHGRADEDGABAAMECHANISM_CHANNEL_CLOSING_TIME tau_beta
 #define HHGRADEDGABAAMECHANISM_REVERSAL_POTENTIAL gaba_rev
 
-// Mechanism function
-#define HHGRADEDGABAAMECHANISM_MECH_FXN_RET double
-#define HHGRADEDGABAAMECHANISM_MECH_FXN_ARGS void* _self, \
-	void* pre_comp, \
-	void* post_comp, \
-	const double dt, \
-	const double global_time, \
-	const unsigned int curr_step
-#define HHGRADEDGABAAMECHANISM_MECH_FXN_NAME mech_fun
+
+
+// Dynamic initialisation properties
+#define HHGRADEDGABAAMECHANISM_INIT_FXN_NAME initHHGradedGABAAMechanism
 
 
 

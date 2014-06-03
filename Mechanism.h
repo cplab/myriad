@@ -17,7 +17,7 @@
 #include "Mechanism_meta.h"
 
 //! Mechanism function typedef
-typedef MYRIAD_FXN_TYPEDEF_GEN(MECH_FXN_NAME, MECH_FXN_ARGS, MECH_FXN_RET);
+typedef MYRIAD_FXN_TYPEDEF_GEN(MECH_FXN_NAME_T, MECH_FXN_ARGS, MECH_FXN_RET);
 
 // Generic pointers for new/class-of purposes
 
@@ -38,7 +38,7 @@ extern const void* MECHANISM_CLASS;
    @returns calculated output value of this mechanism for the given timestep
  */
 
-extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(MECH_CLASS_FXN_RET, MECH_CLASS_FXN_ARGS, MECH_CLASS_FXN_NAME);
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(MECH_FXN_RET, MECH_FXN_ARGS, MECH_FXN_NAME_D);
 
 // ----------------------------------------
 
@@ -51,7 +51,7 @@ extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(MECH_CLASS_FXN_RET, MECH_CLASS_FXN
  */
 struct MECHANISM_OBJECT
 {
-	const struct MyriadObject SUPERCLASS_MECHANISM_OBJECT_NAME; //! Mechanism : MyriadObject
+	const struct MYRIADOBJECT_OBJECT SUPERCLASS_MECHANISM_OBJECT_NAME; //! Mechanism : MyriadObject
 	unsigned int COMPARTMENT_PREMECH_SOURCE_ID;      //! Source ID of the pre-mechanism compartment
 };
 
@@ -64,8 +64,8 @@ struct MECHANISM_OBJECT
  */
 struct MECHANISM_CLASS
 {
-	const struct MyriadClass SUPERCLASS_MECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
-	MECH_FXN_NAME MY_MECHANISM_MECH_CLASS_FXN;      //! Mechanism simulation function
+	const struct MYRIADOBJECT_CLASS SUPERCLASS_MECHANISM_CLASS_NAME; //! MechanismClass : MyriadClass
+	MECH_FXN_NAME_T MY_MECHANISM_MECH_CLASS_FXN;      //! Mechanism simulation function
 };
 
 // -------------------------------------
@@ -75,6 +75,6 @@ struct MECHANISM_CLASS
 
    @param[in]    init_cuda    flag for directing CUDA protoype initialization
  */
-void initMechanism(const int init_cuda);
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, MECHANISM_INIT_FXN_NAME);
 
 #endif

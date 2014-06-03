@@ -109,34 +109,33 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(DECUDAFY_FUN_RET, DECUDAFY_FUN_ARGS, HHSOMAC
 }
 
 static MYRIAD_FXN_METHOD_HEADER_GEN(DTOR_FUN_RET, DTOR_FUN_ARGS, HHSOMACOMPARTMENT_OBJECT, DTOR_FUN_NAME)
-//static int HHSomaCompartment_dtor(void* _self)
 {
 	struct HHSOMACOMPARTMENT_OBJECT* _self = (struct HHSOMACOMPARTMENT_OBJECT*) self;
 
 	free(_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE);
 
-	return SUPERCLASS_DTOR(Compartment, self);
+	return SUPERCLASS_DTOR(COMPARTMENT_OBJECT, self);
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(HHSOMACOMPARTMENT_SIMUL_FXN_RET, HHSOMACOMPARTMENT_SIMUL_FXN_ARGS, HHSOMACOMPARTMENT_OBJECT, HHSOMACOMPARTMENT_SIMUL_FXN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(SIMUL_FXN_RET, SIMUL_FXN_ARGS, HHSOMACOMPARTMENT_OBJECT, SIMUL_FXN_NAME_D)
 {
-	struct HHSOMACOMPARTMENT_OBJECT* self = (struct HHSOMACOMPARTMENT_OBJECT*) _self;
+	struct HHSOMACOMPARTMENT_OBJECT* _self = (struct HHSOMACOMPARTMENT_OBJECT*) self;
 
 	double I_sum = 0.0;
 
 	//	Calculate mechanism contribution to current term
-	for (unsigned int i = 0; i < self->_.NUM_MECHS; i++)
+	for (unsigned int i = 0; i < _self->_.NUM_MECHS; i++)
 	{
-		struct MECHANISM_OBJECT* curr_mech = self->_.MY_MECHS[i]; // TODO: GENERICiSE DIS
+		struct MECHANISM_OBJECT* curr_mech = _self->_.MY_MECHS[i];
 		struct COMPARTMENT_OBJECT* pre_comp = network[curr_mech->COMPARTMENT_PREMECH_SOURCE_ID];
 
 		//TODO: Make this conditional on specific Mechanism types
 		//if (curr_mech->fx_type == CURRENT_FXN)
-		I_sum += mechanism_fxn(curr_mech, pre_comp, self, dt, global_time, curr_step);
+		I_sum += MECH_FXN_NAME_D(curr_mech, pre_comp, self, dt, global_time, curr_step);
 	}
 
 	//	Calculate new membrane voltage: (dVm) + prev_vm
-	self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step] = (dt * (I_sum) / (self->HHSOMACOMPARTMENT_CAPACITANCE)) + self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step - 1];
+	_self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step] = (dt * (I_sum) / (_self->HHSOMACOMPARTMENT_CAPACITANCE)) + _self->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE[curr_step - 1];
 
 	return;
 }
@@ -175,7 +174,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 					cudaMemcpyDeviceToHost
 					)
 				);
-			copy_class._.m_comp_fxn = my_comp_fun;
+			copy_class._.MY_COMPARTMENT_SIMUL_CLASS_FXN = my_comp_fun;
 		
 			DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 		
@@ -203,7 +202,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 const void* HHSOMACOMPARTMENT_OBJECT;
 const void* HHSOMACOMPARTMENT_CLASS;
 
-void initHHSomaCompartment(int init_cuda)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, HHSOMACOMPARTMENT_INIT_FXN_NAME)
+//void initHHSomaCompartment(int init_cuda)
 {
 	// initCompartment(init_cuda);
 
@@ -225,7 +225,7 @@ void initHHSomaCompartment(int init_cuda)
 			((struct MYRIADOBJECT_CLASS*) HHSOMACOMPARTMENT_CLASS)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_comp_c_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, _dev_t),
+					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_CLASS, MYRIAD_CAT(_, DEV_T)),
 					&tmp_comp_c_t,
 					sizeof(struct HHSOMACOMPARTMENT_CLASS*),
 					0,
@@ -247,7 +247,7 @@ void initHHSomaCompartment(int init_cuda)
 				myriad_dtor, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, DTOR_FUN_NAME)),
 				myriad_cudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
 				myriad_decudafy, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, DECUDAFY_FUN_NAME)),
-				simul_fxn, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _simul_fxn),
+				SIMUL_FXN_NAME_D, MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, SIMUL_FXN_NAME_D)),
 				0
 			);
 
@@ -258,7 +258,7 @@ void initHHSomaCompartment(int init_cuda)
 			((struct MYRIADOBJECT_CLASS*) HHSOMACOMPARTMENT_OBJECT)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_mech_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, _dev_t),
+					(const void*) &MYRIAD_CAT(HHSOMACOMPARTMENT_OBJECT, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_t,
 					sizeof(struct HHSOMACOMPARTMENT_OBJECT*),
 					0,

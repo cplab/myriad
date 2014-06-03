@@ -28,34 +28,25 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, MECHANISM_OBJEC
 // Native Mechanism Fxn //
 //////////////////////////
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(MECH_FXN_RET, MECH_FXN_ARGS, MECHANISM_OBJECT, MECH_FXN_NAME_C)
+static MYRIAD_FXN_METHOD_HEADER_GEN(MECH_FXN_RET, MECH_FXN_ARGS, MECHANISM_OBJECT, MECH_FXN_NAME_D)
 {
 	const struct MECHANISM_OBJECT* self = (const struct MECHANISM_OBJECT*) _self;
 	printf("My source id is %u\n", self->COMPARTMENT_PREMECH_SOURCE_ID);
 	return 0.0;
 }
 
-MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(MECH_FXN_RET, MECH_FXN_ARGS, MECH_FXN_NAME_C)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(MECH_FXN_RET, MECH_FXN_ARGS, MECH_FXN_NAME_D)
 {
 	const struct MECHANISM_CLASS* OBJECTS_CLASS = (const struct MECHANISM_CLASS*) myriad_class_of(_self);
 	assert(OBJECTS_CLASS->MY_MECHANISM_MECH_CLASS_FXN);
 	return OBJECTS_CLASS->MY_MECHANISM_MECH_CLASS_FXN(_self, pre_comp, post_comp, dt, global_time, curr_step);
 }
 
-//TODO: GENERICISE THIS!
-double super_mechanism_fxn(
-	void* _class,
-	void* _self,
-    void* pre_comp,
-    void* post_comp,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+MYRIAD_FXN_METHOD_HEADER_GEN(MECH_FXN_RET, SUPER_MECH_FXN_ARGS, SUPERCLASS, MECH_FXN_NAME_D)
 {
-	const struct MechanismClass* s_class=(const struct MechanismClass*) myriad_super(_class);
-	assert(_self && s_class->m_mech_fxn);
-	return s_class->m_mech_fxn(_self, pre_comp, post_comp, dt, global_time, curr_step);
+	const struct MECHANISM_CLASS* s_class=(const struct MECHANISM_CLASS*) myriad_super(_class);
+	assert(_self && s_class->MY_MECHANISM_MECH_CLASS_FXN);
+	return s_class->MY_MECHANISM_MECH_CLASS_FXN(_self, pre_comp, post_comp, dt, global_time, curr_step);
 }
 
 ////////////////////////////////////
@@ -72,7 +63,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, MECHANISM_CLASS
 	{
 		const voidf method = va_arg(*app, voidf);
 		
-		if (selector == (voidf) MECH_FXN_NAME_C)
+		if (selector == (voidf) MECH_FXN_NAME_D)
 		{
 			*(voidf *) &_self->MY_MECHANISM_MECH_CLASS_FXN = method;
 		}
@@ -95,7 +86,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MECHANISM_C
 		struct MYRIADOBJECT_CLASS* copy_class_class = (struct MYRIADOBJECT_CLASS*) &copy_class;
 
 		// TODO: Find a better way to get function pointers for on-card functions
-		MECH_FXN_NAME my_mech_fun = NULL;
+		MECH_FXN_NAME_T my_mech_fun = NULL;
 		CUDA_CHECK_RETURN(
 			cudaMemcpyFromSymbol(
 				(void**) &my_mech_fun,
@@ -122,7 +113,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MECHANISM_C
 
 		// This works because super methods rely on the given class'
 		// semi-static superclass definition, not it's ->super attribute.
-		return super_cudafy(MECHANISM_CLASS, (void*) &copy_class, 0);
+		return SUPERCLASS_CUDAFY(MECHANISM_CLASS, (void*) &copy_class, 0);
 	}
 	#else
 	{
@@ -137,7 +128,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, MECHANISM_C
 
 const void *MECHANISM_CLASS, *MECHANISM_OBJECT;
 
-void initMechanism(int init_cuda)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, MECHANISM_INIT_FXN_NAME)
 {
 	if (!MECHANISM_CLASS)
 	{
@@ -160,7 +151,7 @@ void initMechanism(int init_cuda)
 			((struct MYRIADOBJECT_CLASS*) MECHANISM_CLASS)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_mech_c_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(MECHANISM_CLASS, _dev_t),
+					(const void*) &MYRIAD_CAT(MECHANISM_CLASS, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_c_t,
 					sizeof(struct MECHANISM_CLASS*),
 					0,
@@ -179,7 +170,7 @@ void initMechanism(int init_cuda)
 				   MYRIADOBJECT_OBJECT,
 				   sizeof(struct MECHANISM_OBJECT),
 				   myriad_ctor, MYRIAD_CAT(MECHANISM_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
-				   mechanism_fxn, MYRIAD_CAT(MECHANISM_OBJECT, _mechanism_fxn),
+				   MECH_FXN_NAME_D, MYRIAD_CAT(MECHANISM_OBJECT, MYRIAD_CAT(_, MECH_FXN_NAME_D)),
 				   0
 			);
 
@@ -190,7 +181,7 @@ void initMechanism(int init_cuda)
 			((struct MYRIADOBJECT_CLASS*) MECHANISM_OBJECT)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_mech_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(MECHANISM_OBJECT, _dev_t),
+					(const void*) &MYRIAD_CAT(MECHANISM_OBJECT, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_t,
 					sizeof(struct MECHANISM_OBJECT*),
 					0,

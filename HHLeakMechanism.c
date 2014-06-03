@@ -27,7 +27,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHLEAKMECHANISM
 	return self;
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(HHLEAKMECHANISM_MECH_FXN_RET, HHLEAKMECHANISM_MECH_FXN_ARGS, HHLEAKMECHANISM_OBJECT, HHLEAKMECHANISM_MECH_FXN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(MECH_FXN_RET, MECH_FXN_ARGS, HHLEAKMECHANISM_OBJECT, INDIVIDUAL_MECH_FXN_NAME)
 {
 	const struct HHLEAKMECHANISM_OBJECT* self = (const struct HHLEAKMECHANISM_OBJECT*) _self;
 	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
@@ -77,7 +77,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 					cudaMemcpyDeviceToHost
 					)
 				);
-			copy_class._.m_mech_fxn = my_mech_fun;
+			copy_class._.MY_MECHANISM_MECH_CLASS_FXN = my_mech_fun;
 		
 			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 		
@@ -104,7 +104,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 const void* HHLEAKMECHANISM_OBJECT;
 const void* HHLEAKMECHANISM_CLASS;
 
-void initHHLeakMechanism(int init_cuda)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, HHLEAKMECHANISM_INIT_FXN_NAME)
+//void initHHLeakMechanism(int init_cuda)
 {
 	// initCompartment(init_cuda);
 	
@@ -129,7 +130,7 @@ void initHHLeakMechanism(int init_cuda)
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_CLASS, _dev_t),
+					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_CLASS, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_c_t,
 					sizeof(struct HHLEAKMECHANISM_CLASS*),
 					0,
@@ -148,7 +149,7 @@ void initHHLeakMechanism(int init_cuda)
 				MECHANISM_OBJECT,
 				sizeof(struct HHLEAKMECHANISM_OBJECT),
 				myriad_ctor, MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
-				mechanism_fxn, MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, _mech_fun),
+				MECH_FXN_NAME_D, MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, MYRIAD_CAT(_, INDIVIDUAL_MECH_FXN_NAME)),
 				0
 			);
 		
@@ -162,7 +163,7 @@ void initHHLeakMechanism(int init_cuda)
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, _dev_t),
+					(const void*) &MYRIAD_CAT(HHLEAKMECHANISM_OBJECT, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_t,
 					sizeof(struct HHLEAKMECHANISM_OBJECT*),
 					0,

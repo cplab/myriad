@@ -16,13 +16,20 @@
 #define SUPERCLASS_MECHANISM_OBJECT_NAME _
 #define SUPERCLASS_MECHANISM_CLASS_NAME _
 #define COMPARTMENT_PREMECH_SOURCE_ID source_id
-#define MY_MECHANISM_MECH_CLASS_FXN m_mech_fxn
 
 // Mechanism function
-#define MECH_FXN_NAME mech_fun_t
-#define MECH_FXN_NAME_C mechanism_fxn
-
+#define MECH_FXN_NAME_T mech_fun_t
+#define MECH_FXN_NAME_D mechanism_fxn
+#define MY_MECHANISM_MECH_CLASS_FXN m_mech_fxn
+#define INDIVIDUAL_MECH_FXN_NAME mech_fun
 #define MECH_FXN_ARGS void* _self, \
+	void* pre_comp, \
+	void* post_comp, \
+	const double dt, \
+	const double global_time, \
+	const unsigned int curr_step
+#define SUPER_MECH_FXN_ARGS void* _class, \
+	void* _self, \
 	void* pre_comp, \
 	void* post_comp, \
 	const double dt, \
@@ -30,15 +37,8 @@
 	const unsigned int curr_step
 #define MECH_FXN_RET double
 
-// Mechanism class function
-#define MECH_CLASS_FXN_NAME mechanism_fxn
-#define MECH_CLASS_FXN_ARGS void* _self, \
-	void* pre_comp, \
-	void* post_comp, \
-	const double dt, \
-	const double global_time, \
-	const unsigned int curr_step
-#define MECH_CLASS_FXN_RET double
+// Dynamic initialisation properties
+#define MECHANISM_INIT_FXN_NAME initMechanism
 
 
 

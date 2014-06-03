@@ -18,6 +18,8 @@
 #define CUDAFIER my_cudafy
 #define DECUDAFIER my_decudafy
 
+#define DEV_T dev_t
+
 // Ctor fun properties
 #define CTOR_FUN_NAME ctor
 #define CTOR_FUN_TYPEDEF_NAME _MYRIAD_CAT(CTOR_FUN_NAME,_t)
@@ -75,6 +77,6 @@
 
 // Dynamic initialisation properties
 #define DYNAMIC_INIT_FXN_RET void
-#define DYNAMIC_INIT_FXN_ARGS const int init_cuda
+#define DYNAMIC_INIT_FXN_ARGS int init_cuda
 
 #endif

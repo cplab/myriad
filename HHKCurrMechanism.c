@@ -27,7 +27,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHKCURRMECHANIS
 	return self;
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(HHKCURRMECHANISM_MECH_FXN_RET, HHKCURRMECHANISM_MECH_FXN_ARGS, HHKCURRMECHANISM_OBJECT, HHKCURRMECHANISM_MECH_FXN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(MECH_FXN_RET, MECH_FXN_ARGS, HHKCURRMECHANISM_OBJECT, INDIVIDUAL_MECH_FXN_NAME)
 {
 	struct HHKCURRMECHANISM_OBJECT* self = (struct HHKCURRMECHANISM_OBJECT*) _self;
 	const struct HHSOMACOMPARTMENT_OBJECT* c1 = (const struct HHSOMACOMPARTMENT_OBJECT*) pre_comp;
@@ -88,7 +88,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECH
 					cudaMemcpyDeviceToHost
 					)
 				);
-			copy_class._.m_mech_fxn = my_mech_fun;
+			copy_class._.MY_MECHANISM_MECH_CLASS_FXN = my_mech_fun;
 		
 			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 		
@@ -115,7 +115,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHKCURRMECH
 const void* HHKCURRMECHANISM_OBJECT;
 const void* HHKCURRMECHANISM_CLASS;
 
-void initHHKCurrMechanism(int init_cuda)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, HHKCURRMECHANISM_INIT_FXN_NAME)
+//void initHHKCurrMechanism(int init_cuda)
 {
 	// initCompartment(init_cuda);
 	
@@ -140,7 +141,7 @@ void initHHKCurrMechanism(int init_cuda)
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_CLASS, _dev_t),
+					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_CLASS, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_c_t,
 					sizeof(struct HHKCURRMECHANISM_CLASS*),
 					0,
@@ -159,7 +160,7 @@ void initHHKCurrMechanism(int init_cuda)
 				MECHANISM_OBJECT,
 				sizeof(struct HHKCURRMECHANISM_OBJECT),
 				myriad_ctor, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
-				mechanism_fxn, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _mech_fun),
+				MECH_FXN_NAME_D, MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, MYRIAD_CAT(_, INDIVIDUAL_MECH_FXN_NAME)),
 				0
 			);
 		
@@ -173,7 +174,7 @@ void initHHKCurrMechanism(int init_cuda)
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, _dev_t),
+					(const void*) &MYRIAD_CAT(HHKCURRMECHANISM_OBJECT, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_t,
 					sizeof(struct HHKCURRMECHANISM_OBJECT*),
 					0,

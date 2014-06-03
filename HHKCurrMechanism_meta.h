@@ -14,15 +14,8 @@
 #define HHKCURRMECHANISM_REVERE_POTENTIAL e_k
 #define HHKCURRMECHANISM_HH_N hh_n
 
-// Mechanism function
-#define HHKCURRMECHANISM_MECH_FXN_RET double
-#define HHKCURRMECHANISM_MECH_FXN_ARGS void* _self, \
-	void* pre_comp, \
-	void* post_comp, \
-	const double dt, \
-	const double global_time, \
-	const unsigned int curr_step
-#define HHKCURRMECHANISM_MECH_FXN_NAME mech_fun
 
+// Dynamic initialisation properties
+#define HHKCURRMECHANISM_INIT_FXN_NAME initHHKCurrMechanism
 
 #endif

@@ -27,4 +27,7 @@
 	const unsigned int curr_step
 #define HHSOMACOMPARTMENT_SIMUL_FXN_NAME simul_fxn
 
+// Dynamic initialisation properties
+#define HHSOMACOMPARTMENT_INIT_FXN_NAME initHHSomaCompartment
+
 #endif

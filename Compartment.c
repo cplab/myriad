@@ -73,90 +73,91 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, COMPARTMENT
 //////////////////////////////////////
 
 // Simulate function
-// Simul_fxn and add_mech have not been genericised due to questions about
-// their naming. Once naming is resolved, genericisation shall proceed!!
-static void Compartment_simul_fxn(
+static MYRIAD_FXN_METHOD_HEADER_GEN(SIMUL_FXN_RET, SIMUL_FXN_ARGS, COMPARTMENT_OBJECT, INDIVIDUAL_SIMUL_FXN_NAME)
+/*static void Compartment_simul_fxn(
 	void* _self,
 	void** network,
 	const double dt,
 	const double global_time,
 	const unsigned int curr_step
-	)
+	)*/
 {
-	const struct Compartment* self = (const struct Compartment*) _self;
-	printf("My id is %u\n", self->ID);
-	printf("My num_mechs is %u\n", self->NUM_MECHS);
+	const struct COMPARTMENT_OBJECT* _self = (const struct COMPARTMENT_OBJECT*) self;
+	printf("My id is %u\n", _self->ID);
+	printf("My num_mechs is %u\n", _self->NUM_MECHS);
 	return;
 }
 
-void simul_fxn(
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(SIMUL_FXN_RET, SIMUL_FXN_ARGS, INDIVIDUAL_SIMUL_FXN_NAME)
+/*void simul_fxn(
 	void* _self,
 	void** network,
 	const double dt,
 	const double global_time,
 	const unsigned int curr_step
-	)
+	)*/
 {
-	const struct CompartmentClass* m_class = 
-		(const struct CompartmentClass*) myriad_class_of((void*) _self);
-	assert(m_class->m_comp_fxn);
-	m_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+	const struct COMPARTMENT_CLASS* OBJECTS_CLASS = 
+		(const struct COMPARTMENT_CLASS*) myriad_class_of((void*) self);
+	assert(OBJECTS_CLASS->MY_COMPARTMENT_SIMUL_CLASS_FXN);
+	OBJECTS_CLASS->MY_COMPARTMENT_SIMUL_CLASS_FXN(self, network, dt, global_time, curr_step);
 }
 
-void super_simul_fxn(
+MYRIAD_FXN_METHOD_HEADER_GEN(SIMUL_FXN_RET, SUPER_SIMUL_FXN_ARGS, SUPERCLASS, SIMUL_FXN_NAME_D)
+/*void super_simul_fxn(
 	void* _class,
 	void* _self,
 	void** network,
     const double dt,
     const double global_time,
 	const unsigned int curr_step
-	)
+	)*/
 {
-	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
-	assert(_self && s_class->m_comp_fxn);
-	s_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+	const struct COMPARTMENT_CLASS* s_class=(const struct COMPARTMENT_CLASS*) myriad_super(_class);
+	assert(_self && s_class->MY_COMPARTMENT_SIMUL_CLASS_FXN);
+	s_class->MY_COMPARTMENT_SIMUL_CLASS_FXN(_self, network, dt, global_time, curr_step);
 }
 
 // Add mechanism function
 
-static int Compartment_add_mech(void* _self, void* mechanism)
+static MYRIAD_FXN_METHOD_HEADER_GEN(ADDMECH_FXN_RET, ADDMECH_FXN_ARGS, COMPARTMENT_OBJECT, INDIVIDUAL_ADDMECH_FXN_NAME)
 {
-	if (_self == NULL || mechanism == NULL)
+	if (self == NULL || mechanism == NULL)
 	{
 		DEBUG_PRINTF("Cannot add NULL mechanism/add to NULL compartment.\n");
 		return EXIT_FAILURE;
 	}
 
-	struct Compartment* self = (struct Compartment*) _self;
-	struct Mechanism* mech = (struct Mechanism*) mechanism;
+	struct COMPARTMENT_OBJECT* _self = (struct COMPARTMENT_OBJECT*) self;
+	struct MECHANISM_OBJECT* mech = (struct MECHANISM_OBJECT*) mechanism;
 	
-	self->NUM_MECHS++;
-	self->MY_MECHS = (struct Mechanism**) realloc(self->MY_MECHS, sizeof(struct Mechanism*) * self->NUM_MECHS);
+	_self->NUM_MECHS++;
+	_self->MY_MECHS = (struct MECHANISM_OBJECT**) realloc(_self->MY_MECHS, sizeof(struct MECHANISM_OBJECT*) * _self->NUM_MECHS);
 
-	if (self->my_mechs == NULL)
+	if (_self->MY_MECHS == NULL)
 	{
 		DEBUG_PRINTF("Could not reallocate mechanisms array.\n");
 		return EXIT_FAILURE;
 	}
 
-	self->MY_MECHS[self->NUM_MECHS-1] = mech;
+	_self->MY_MECHS[_self->NUM_MECHS-1] = mech;
 
 	return EXIT_SUCCESS;
 }
 
-int add_mechanism(void* _self, void* mechanism)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(ADDMECH_FXN_RET, ADDMECH_FXN_ARGS, ADDMECH_FXN_NAME_D)
 {
-	const struct CompartmentClass* m_class = 
-		(const struct CompartmentClass*) myriad_class_of((void*) _self);
-	assert(m_class->m_add_mech_fun);
-	return m_class->m_add_mech_fun(_self, mechanism);
+	const struct COMPARTMENT_CLASS* OBJECTS_CLASS = 
+		(const struct COMPARTMENT_CLASS*) myriad_class_of((void*) self);
+	assert(OBJECTS_CLASS->MY_COMPARTMENT_ADDMECH_CLASS_FXN);
+	return OBJECTS_CLASS->MY_COMPARTMENT_ADDMECH_CLASS_FXN(self, mechanism);
 }
 
-int super_add_mechanism(const void* _class, void* _self, void* mechanism)
+MYRIAD_FXN_METHOD_HEADER_GEN(ADDMECH_FXN_RET, SUPER_ADDMECH_FXN_ARGS, SUPERCLASS, ADDMECH_FXN_NAME_D)
 {
-	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
-	assert(_self && s_class->m_add_mech_fun);
-	return s_class->m_add_mech_fun(_self, mechanism);
+	const struct COMPARTMENT_CLASS* s_class=(const struct COMPARTMENT_CLASS*) myriad_super(_class);
+	assert(self && s_class->MY_COMPARTMENT_ADDMECH_CLASS_FXN);
+	return s_class->MY_COMPARTMENT_ADDMECH_CLASS_FXN(self, mechanism);
 }
 
 //////////////////////////////////////
@@ -173,11 +174,11 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, COMPARTMENT_CLA
 	{
 		const voidf method = va_arg(*app, voidf);
 		
-		if (selector == (voidf) simul_fxn)
+		if (selector == (voidf) SIMUL_FXN_NAME_D)
 		{
-			*(voidf *) &_self->MY_COMPARTMENT_SIMUL_FXN = method;
+			*(voidf *) &_self->MY_COMPARTMENT_SIMUL_CLASS_FXN = method;
 		} else if (selector == (voidf) add_mechanism) {
-			*(voidf *) &_self->MY_COMPARTMENT_ADD_MECH_FXN = method;
+			*(voidf *) &_self->MY_COMPARTMENT_ADDMECH_CLASS_FXN = method;
 		}
 
 		selector = va_arg(*app, voidf);
@@ -241,7 +242,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, COMPARTMENT
 
 const void * COMPARTMENT_CLASS, * COMPARTMENT_OBJECT;
 
-void initCompartment(const int init_cuda)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, COMPARTMENT_INIT_FXN_NAME)
 {
 	if (!COMPARTMENT_CLASS)
 	{
@@ -264,7 +265,7 @@ void initCompartment(const int init_cuda)
 			((struct MYRIADOBJECT_CLASS*) COMPARTMENT_CLASS)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_comp_c_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(COMPARTMENT_CLASS, _dev_t),
+					(const void*) &MYRIAD_CAT(COMPARTMENT_CLASS, MYRIAD_CAT(_, DEV_T)),
 					&tmp_comp_c_t,
 					sizeof(struct COMPARTMENT_CLASS*),
 					0,
@@ -284,8 +285,8 @@ void initCompartment(const int init_cuda)
 				   sizeof(struct COMPARTMENT_OBJECT),
 				   myriad_ctor, MYRIAD_CAT(COMPARTMENT_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
 				   myriad_cudafy, MYRIAD_CAT(COMPARTMENT_OBJECT, MYRIAD_CAT(_, CUDAFY_FUN_NAME)),
-				   simul_fxn, MYRIAD_CAT(COMPARTMENT_OBJECT, _simul_fxn), 
-				   add_mechanism, MYRIAD_CAT(COMPARTMENT_OBJECT, _add_mech),
+				   SIMUL_FXN_NAME_D, MYRIAD_CAT(COMPARTMENT_OBJECT, MYRIAD_CAT(_, INDIVIDUAL_SIMUL_FXN_NAME)), 
+				   ADDMECH_FXN_NAME_D, MYRIAD_CAT(COMPARTMENT_OBJECT, MYRIAD_CAT(_, INDIVIDUAL_ADDMECH_FXN_NAME)),
 				   0
 			);
 
@@ -296,7 +297,7 @@ void initCompartment(const int init_cuda)
 			((struct MYRIADOBJECT_CLASS*) COMPARTMENT_OBJECT)->ONDEVICE_CLASS = (struct MYRIADOBJECT_CLASS*) tmp_mech_t;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(COMPARTMENT_OBJECT, _dev_t),
+					(const void*) &MYRIAD_CAT(COMPARTMENT_OBJECT, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_t,
 					sizeof(struct COMPARTMENT_OBJECT*),
 					0,

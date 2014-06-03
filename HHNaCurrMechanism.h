@@ -41,6 +41,7 @@ struct HHNACURRMECHANISM_CLASS
 	struct MECHANISM_CLASS SUPERCLASS_HHNACURRMECHANISM_CLASS_NAME; //! HHNaCurrMechanismClass : MechanismClass
 };
 
-void initHHNaCurrMechanism(int cuda_init);
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, HHNACURRMECHANISM_INIT_FXN_NAME);
+//void initHHNaCurrMechanism(int cuda_init);
 
 #endif

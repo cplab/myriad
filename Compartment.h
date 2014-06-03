@@ -18,10 +18,11 @@
 #include "Compartment_meta.h"
 
 //! Compartment simulate function pointer
-typedef MYRIAD_FXN_TYPEDEF_GEN(SIMUL_FXN_TYPEDEF_NAME, SIMUL_FXN_ARGS, SIMUL_FXN_RET);
+
+typedef MYRIAD_FXN_TYPEDEF_GEN(SIMUL_FXN_NAME_T, SIMUL_FXN_ARGS, SIMUL_FXN_RET);
 
 //! Method for adding mechanisms to a compartment
-typedef MYRIAD_FXN_TYPEDEF_GEN(ADD_MECH_FXN_TYPEDEF_NAME, ADD_MECH_FXN_ARGS, ADD_MECH_FXN_RET);
+typedef MYRIAD_FXN_TYPEDEF_GEN(ADDMECH_FXN_NAME_T, ADDMECH_FXN_ARGS, ADDMECH_FXN_RET);
 
 // Generic pointers for new/class-of purposes
 
@@ -37,7 +38,7 @@ extern const void* COMPARTMENT_CLASS;
    @param[in]    global_time  current global time of the simulation
    @param[in]    curr_step    current global time step of the simulation
  */
-extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(SIMUL_FXN_RET, SIMUL_FXN_ARGS, simul_fxn);
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(SIMUL_FXN_RET, SIMUL_FXN_ARGS, SIMUL_FXN_NAME_D);
 
 /**
    Generic mechanism adder delegator.
@@ -47,7 +48,7 @@ extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(SIMUL_FXN_RET, SIMUL_FXN_ARGS, sim
    
    @returns EXIT_SUCCESS if addition completed, EXIT_FAILURE otherwise.
 */
-extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(ADD_MECH_FXN_RET, ADD_MECH_FXN_ARGS, add_mechanism);
+extern MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(ADDMECH_FXN_RET, ADDMECH_FXN_ARGS, ADDMECH_FXN_NAME_D);
 
 //TOOD: Array of pointers for mechanisms vs Array of structs; better for performance?
 //! Generic Compartment structure definition
@@ -63,8 +64,8 @@ struct COMPARTMENT_OBJECT
 struct COMPARTMENT_CLASS
 {
 	const struct COMPARTMENT_CLASS_SUPERCLASS COMPARTMENT_CLASS_SUPERCLASS_NAME; //! CompartmentClass : MyriadClass
-	SIMUL_FXN_TYPEDEF_NAME MY_COMPARTMENT_SIMUL_FXN;    //! Defines compartment simulation
-	ADD_MECH_FXN_TYPEDEF_NAME MY_COMPARTMENT_ADD_MECH_FXN; //! Allows for adding mechanisms to compartment
+	SIMUL_FXN_NAME_T MY_COMPARTMENT_SIMUL_CLASS_FXN;    //! Defines compartment simulation
+	ADDMECH_FXN_NAME_T MY_COMPARTMENT_ADDMECH_CLASS_FXN; //! Allows for adding mechanisms to compartment
 };
 
 /**
@@ -72,6 +73,6 @@ struct COMPARTMENT_CLASS
 
    @param[in]    init_cuda    flag for directing CUDA protoype initialization
  */
-void initCompartment(const int init_cuda);
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, COMPARTMENT_INIT_FXN_NAME);
 
 #endif

@@ -25,7 +25,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, DCCURRENTMECHAN
 	return self;
 }
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(DCCURRENTMECHANISM_MECH_FXN_RET, DCCURRENTMECHANISM_MECH_FXN_ARGS, DCCURRENTMECHANISM_OBJECT, DCCURRENTMECHANISM_MECH_FXN_NAME)
+static MYRIAD_FXN_METHOD_HEADER_GEN(MECH_FXN_RET, MECH_FXN_ARGS, DCCURRENTMECHANISM_OBJECT, INDIVIDUAL_MECH_FXN_NAME)
 {
 	const struct DCCURRENTMECHANISM_OBJECT* self = (const struct DCCURRENTMECHANISM_OBJECT*) _self;
 
@@ -66,7 +66,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTME
 					cudaMemcpyDeviceToHost
 					)
 				);
-			copy_class._.m_mech_fxn = my_mech_fun;
+			copy_class._.MY_MECHANISM_MECH_CLASS_FXN = my_mech_fun;
 		
 			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
 		
@@ -93,7 +93,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTME
 const void* DCCURRENTMECHANISM_OBJECT;
 const void* DCCURRENTMECHANISM_CLASS;
 
-void initDCCurrMech(const int init_cuda)
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, DCCURRENTMECHANISM_INIT_FXN_NAME)
 {
 	// initCompartment(init_cuda);
 	
@@ -118,7 +118,7 @@ void initDCCurrMech(const int init_cuda)
 			
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_CLASS, _dev_t),
+					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_CLASS, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_c_t,
 					sizeof(struct DCCURRENTMECHANISM_CLASS*),
 					0,
@@ -137,7 +137,7 @@ void initDCCurrMech(const int init_cuda)
 				MECHANISM_OBJECT,
 				sizeof(struct DCCURRENTMECHANISM_OBJECT),
 				myriad_ctor, MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, MYRIAD_CAT(_, CTOR_FUN_NAME)),
-				mechanism_fxn, MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, _mech_fun),
+				MECH_FXN_NAME_D, MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, MYRIAD_CAT(_, INDIVIDUAL_MECH_FXN_NAME)),
 				0
 			);
 		
@@ -151,7 +151,7 @@ void initDCCurrMech(const int init_cuda)
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, _dev_t),
+					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, MYRIAD_CAT(_, DEV_T),
 					&tmp_mech_t,
 					sizeof(struct DCCURRENTMECHANISM_OBJECT*),
 					0,

@@ -21,25 +21,38 @@
 #define MY_MECHS my_mechs
 
 // Simulation function
-#define SIMUL_FXN_NAME compartment_simul_fxn
-#define SIMUL_FXN_TYPEDEF_NAME compartment_simul_fxn_t //_MYRIAD_CAT(SIMUL_FXN_NAME,_t)
-#define SIMUL_FXN_ARGS \
-    void* self, \
-    void** network, \
-    const double dt, \
-    const double global_time, \
-    const unsigned int curr_step
+#define SIMUL_FXN_NAME_T simul_fxn_t
+#define SIMUL_FXN_NAME_D simul_fxn
+#define MY_COMPARTMENT_SIMUL_CLASS_FXN m_comp_fxn
+#define INDIVIDUAL_SIMUL_FXN_NAME simul_fxn
+#define SIMUL_FXN_ARGS void* self, \
+        void** network, \
+        const double dt, \
+        const double global_time, \
+        const unsigned int curr_step
+#define SUPER_SIMUL_FXN_ARGS void* _class, \
+	void* _self, \
+	void** network, \
+	const double dt, \
+	const double global_time, \
+	const unsigned int curr_step
 #define SIMUL_FXN_RET void
-#define MY_COMPARTMENT_SIMUL_FXN m_comp_fxn
 
-// Compartment add mech
-#define ADD_MECH_FXN_NAME compartment_add_mech
-#define ADD_MECH_FXN_TYPEDEF_NAME compartment_add_mech_t //_MYRIAD_CAT(ADD_MECH_FXN_NAME,_t)
-#define ADD_MECH_FXN_ARGS \
-    void* self, \
-    void* mechanism 
-#define ADD_MECH_FXN_RET int
-#define MY_COMPARTMENT_ADD_MECH_FXN m_add_mech_fun
+
+// Add mech function
+#define ADDMECH_FXN_NAME_T add_mech_t
+#define ADDMECH_FXN_NAME_D add_mechanism
+#define MY_COMPARTMENT_ADDMECH_CLASS_FXN m_add_mech_fun
+#define INDIVIDUAL_ADDMECH_FXN_NAME add_mech
+#define ADDMECH_FXN_ARGS void* self, \
+        void* mechanism
+#define SUPER_ADDMECH_FXN_ARGS const void* _class, \
+        void* self, \
+        void* mechanism
+#define ADDMECH_FXN_RET int
+
+// Dynamic initialisation properties
+#define COMPARTMENT_INIT_FXN_NAME initCompartment
 
 
 #endif

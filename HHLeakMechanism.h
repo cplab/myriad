@@ -39,6 +39,7 @@ struct HHLEAKMECHANISM_CLASS
 	struct MECHANISM_CLASS SUPERCLASS_HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanismClass : MechanismClass
 };
 
-void initHHLeakMechanism(int cuda_init);
+MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_ARGS, HHLEAKMECHANISM_INIT_FXN_NAME);
+//void initHHLeakMechanism(int cuda_init);
 
 #endif
