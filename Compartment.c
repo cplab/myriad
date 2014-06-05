@@ -206,7 +206,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, COMPARTMENT
         if (clobber)
         {
             // TODO: Find a better way to get function pointers for on-card functions
-            SIMUL_FXN_TYPEDEF_NAME my_comp_fun = NULL;
+            SIMUL_FXN_NAME_T my_comp_fun = NULL;
             CUDA_CHECK_RETURN(
                 cudaMemcpyFromSymbol(
                     (void**) &my_comp_fun,
@@ -217,7 +217,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, COMPARTMENT
                     cudaMemcpyDeviceToHost
                     )
                 );
-            copy_class.MY_COMPARTMENT_SIMUL_FXN = my_comp_fun;
+            copy_class.MY_COMPARTMENT_SIMUL_CLASS_FXN = my_comp_fun;
 		
             DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 		

@@ -64,18 +64,18 @@ extern "C"
 #define GABA_REV -75.0
 
 #ifdef CUDA
-__global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
+
+__global__ void cuda_hh_compartment_test(void** network)
 {
-	void* dev_arr[1];
-	dev_arr[0] = network;
-
-	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
-
-	double curr_time = DT;
+	__shared__ double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
 	{
 		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
-		curr_time += DT;
+        if (threadIdx.x == 1)
+        {
+            curr_time += DT;            
+        }
+        __syncthreads();
 	}
 }
 #endif
@@ -95,10 +95,17 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 0.0);
 	}
 
+    #ifdef CUDA
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(hh_leak_mech, 0)));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(hh_na_curr_mech, 0)));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(hh_k_curr_mech, 0)));
+	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(dc_curr_mech, 0)));
+    #else
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_leak_mech));
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_na_curr_mech));
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_k_curr_mech));
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, dc_curr_mech));
+    #endif
 
 	if (num_connxs > 0)
 	{
@@ -116,17 +123,31 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
                     GABA_TAU_BETA,
                     GABA_REV
 				);
+
+            #ifdef CUDA
+			assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(hh_GABA_a_curr_mech, 0)));
+            #else
 			assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
+            #endif
+
 			printf("Made GABA synapse starting at cell %i ending at cell %i\n", connect_to[i], id);
 		}
 	}
 
-	return hh_comp_obj;
+    #ifdef CUDA
+	return myriad_cudafy(hh_comp_obj, 0);
+    #else
+    return hh_comp_obj;
+    #endif
 }
 
 static int dsac()
 {
+    #ifdef CUDA
+	const int cuda_init = 1;
+    #else
 	const int cuda_init = 0;
+    #endif
 
 	initMechanism(cuda_init);
 	initDCCurrMech(cuda_init);
@@ -137,7 +158,13 @@ static int dsac()
 	initCompartment(cuda_init);
 	initHHSomaCompartment(cuda_init);
 
-	void** network = (void**) calloc(NUM_CELLS, sizeof(void*));
+	void** network = NULL;
+
+    #ifdef CUDA
+    CUDA_CHECK_RETURN(cudaMallocHost(&network, NUM_CELLS * sizeof(void*)));
+    #else
+    network = (void**) calloc(NUM_CELLS, sizeof(void*));
+    #endif
 
 	for (int i = 0; i < NUM_CELLS; i++)
 	{
@@ -154,7 +181,25 @@ static int dsac()
 		}
 
 	    network[i] = new_dsac_soma(i, to_connect, 1);
-	}	
+        free(to_connect);
+	}
+
+    #ifdef CUDA
+
+    void** c_network = NULL;
+    CUDA_CHECK_RETURN(cudaMalloc(&c_network, sizeof(void*) * NUM_CELLS));
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            c_network,
+            network,
+            sizeof(void*) * NUM_CELLS,
+            cudaMemcpyHostToDevice
+            )
+        );
+
+    //TODO: Invoke kernel
+
+    #else
 
 	double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
@@ -169,12 +214,20 @@ static int dsac()
 	for (int i = 0; i < NUM_CELLS; i++)
 	{
 		struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) network[i];
-		char* fname = (char*) malloc(sizeof("cell0.dat"));
-		sprintf(fname, "cell%i.dat", i);
+		char* fname = (char*) calloc(1, sizeof("cell000.dat"));
+		sprintf(fname, "cell%03i.dat", i);
 		FILE* p_file = fopen(fname,"wb");
 		fwrite(curr_comp->soma_vm, sizeof(double), curr_comp->soma_vm_len, p_file);
 		fclose(p_file);
+        free(fname);
 	}
+    #endif
+
+    #ifdef CUDA
+    CUDA_CHECK_RETURN(cudaFreeHost(network));
+    #else
+    free(network);
+    #endif
 
     return EXIT_SUCCESS;
 }

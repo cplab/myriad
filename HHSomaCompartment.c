@@ -43,7 +43,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 		struct HHSOMACOMPARTMENT_OBJECT* self = (struct HHSOMACOMPARTMENT_OBJECT*) _self;
 		struct HHSOMACOMPARTMENT_OBJECT* self_copy = (struct HHSOMACOMPARTMENT_OBJECT*) calloc(1, my_size);
 		
-		memcpy(self_copy, HHSOMACOMPARTMENT_OBJECT, my_size);
+		memcpy(self_copy, self, my_size);
 
 		double* tmp_alias = NULL;
 		
@@ -67,6 +67,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 
 		self_copy->HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE = tmp_alias;
 
+        //TODO: Should probably free the copy after cudafication
 		return SUPERCLASS_CUDAFY(HHSOMACOMPARTMENT_OBJECT, self_copy, 0);
 	}
 	#else
@@ -163,7 +164,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHSOMACOMPA
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			SIMUL_FXN_TYPEDEF_NAME my_comp_fun = NULL;
+			SIMUL_FXN_NAME_T my_comp_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_comp_fun,

@@ -55,7 +55,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, DCCURRENTME
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			MECH_FXN_NAME my_mech_fun = NULL;
+			MECH_FXN_NAME_T my_mech_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,
@@ -151,7 +151,7 @@ MYRIAD_FXN_METHOD_HEADER_GEN_NO_SUFFIX(DYNAMIC_INIT_FXN_RET, DYNAMIC_INIT_FXN_AR
 
 			CUDA_CHECK_RETURN(
 				cudaMemcpyToSymbol(
-					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, MYRIAD_CAT(_, DEV_T),
+					(const void*) &MYRIAD_CAT(DCCURRENTMECHANISM_OBJECT, MYRIAD_CAT(_, DEV_T)),
 					&tmp_mech_t,
 					sizeof(struct DCCURRENTMECHANISM_OBJECT*),
 					0,

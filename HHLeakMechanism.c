@@ -66,7 +66,7 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 		if (clobber)
 		{
 			// TODO: Find a better way to get function pointers for on-card functions
-			MECH_FXN_NAME my_mech_fun = NULL;
+			MECH_FXN_NAME_T my_mech_fun = NULL;
 			CUDA_CHECK_RETURN(
 				cudaMemcpyFromSymbol(
 					(void**) &my_mech_fun,

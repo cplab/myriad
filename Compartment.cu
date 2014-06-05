@@ -46,4 +46,4 @@ __device__ void cuda_simul_fxn(
 	return m_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
 }
 
-__device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartment_cuda_simul_fxn;
+__device__ simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartment_cuda_simul_fxn;

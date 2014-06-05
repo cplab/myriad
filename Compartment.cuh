@@ -31,7 +31,7 @@ extern __device__ __constant__ struct CompartmentClass* CompartmentClass_dev_t;
 // ----------------------------------------
 
 //! On-GPU reference pointer to Compartment function implementation
-extern __device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t;
+extern __device__ simul_fxn_t Compartment_cuda_compartment_fxn_t;
 
 /**
    On-GPU Delegator function for CompartmentClass mechansim function method.
