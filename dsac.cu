@@ -65,15 +65,25 @@ extern "C"
 
 #ifdef CUDA
 
-__global__ void cuda_hh_compartment_test(void** network)
+__global__ void myriad_simul(void** network)
 {
-	__shared__ double curr_time = DT;
-	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
+	__shared__ double curr_time;
+    __shared__ unsigned int curr_step;
+
+    if (threadIdx.x == 1)
+    {
+        curr_time = DT;
+        curr_step = 1;
+    }
+    __syncthreads();
+
+	while (curr_step < SIMUL_LEN)
 	{
-		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
+		cuda_simul_fxn(network[threadIdx.x], network, DT, curr_time, curr_step);
         if (threadIdx.x == 1)
         {
-            curr_time += DT;            
+            curr_time += DT;
+            curr_step++;
         }
         __syncthreads();
 	}
@@ -197,7 +207,14 @@ static int dsac()
             )
         );
 
-    //TODO: Invoke kernel
+    const int nThreads = 2; // NUM_CUDA_THREADS;
+    const int nBlocks = 1;
+
+    dim3 dimGrid(nBlocks);
+    dim3 dimBlock(nThreads);
+
+    myriad_simul<<<dimGrid, dimBlock>>>(c_network);
+    CUDA_CHECK_RETURN(cudaDeviceSynchronize());
 
     #else
 
