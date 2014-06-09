@@ -40,7 +40,7 @@ extern "C"
 // Simulation parameters
 #define SIMUL_LEN 1000000 
 #define DT 0.001
-#define NUM_CELLS 2
+#define NUM_CELLS 5
 // Leak params
 #define G_LEAK 1.0
 #define E_REV -65.0
@@ -64,7 +64,6 @@ extern "C"
 #define GABA_REV -75.0
 
 #ifdef CUDA
-
 __global__ void myriad_simul(void** network)
 {
 	__shared__ double curr_time;
@@ -90,20 +89,16 @@ __global__ void myriad_simul(void** network)
 }
 #endif
 
-static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsigned int num_connxs)
+static void* new_dsac_soma(unsigned int id, int* connect_to, const unsigned int num_connxs)
 {
 	void* hh_comp_obj = myriad_new(HHSomaCompartment, id, 0, NULL, SIMUL_LEN, NULL, INIT_VM, CM);
 	void* hh_leak_mech = myriad_new(HHLeakMechanism, id, G_LEAK, E_REV);
 	void* hh_na_curr_mech = myriad_new(HHNaCurrMechanism, id, G_NA, E_NA, HH_M, HH_H);
 	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, id, G_K, E_K, HH_N);
 
+    //TODO: Add variable currents
 	void* dc_curr_mech = NULL;
-	if (id == 0)
-	{
-		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 9.0);
-	} else {
-		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 0.0);
-	}
+    dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 9.0);
 
     #ifdef CUDA
 	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(hh_leak_mech, 0)));
@@ -121,26 +116,33 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 	{
 		for (unsigned int i = 0; i < num_connxs; i++)
 		{
-			void* hh_GABA_a_curr_mech = 
-				myriad_new
-				(
-					HHSpikeGABAAMechanism,
-					connect_to[i],
-                    GABA_VM_THRESH,
-                    -INFINITY,
-                    GABA_G_MAX,
-                    GABA_TAU_ALPHA,
-                    GABA_TAU_BETA,
-                    GABA_REV
-				);
+            if (connect_to[i] != -1)
+            {
+                void* hh_GABA_a_curr_mech = 
+                    myriad_new
+                    (
+                        HHSpikeGABAAMechanism,
+                        connect_to[i],
+                        GABA_VM_THRESH,
+                        -INFINITY,
+                        GABA_G_MAX,
+                        GABA_TAU_ALPHA,
+                        GABA_TAU_BETA,
+                        GABA_REV
+                    );
 
-            #ifdef CUDA
-			assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, myriad_cudafy(hh_GABA_a_curr_mech, 0)));
-            #else
-			assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
-            #endif
+                #ifdef CUDA
+                assert(EXIT_SUCCESS == 
+                    add_mechanism(hh_comp_obj, myriad_cudafy(hh_GABA_a_curr_mech, 0))
+                    );
+                #else
+                assert(EXIT_SUCCESS == 
+                       add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech)
+                    );
+                #endif
 
-			printf("Made GABA synapse starting at cell %i ending at cell %i\n", connect_to[i], id);
+                printf("Made GABA synapse starting at cell %i ending at cell %i\n", connect_to[i], id);
+            }
 		}
 	}
 
@@ -149,6 +151,23 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
     #else
     return hh_comp_obj;
     #endif
+}
+
+static inline void all_to_all(unsigned int curr_cell, const unsigned int num_connxs, int* to_connect)
+{
+    unsigned int curr_indx = 0;
+    int count = 0;
+    while (curr_indx < num_connxs)
+    {
+        if (curr_indx == curr_cell)
+        {
+            to_connect[curr_indx] = -1;
+        } else {
+            to_connect[curr_indx] = count;
+        }
+        count++;
+        curr_indx++;
+    }
 }
 
 static int dsac()
@@ -176,21 +195,16 @@ static int dsac()
     network = (void**) calloc(NUM_CELLS, sizeof(void*));
     #endif
 
-	for (int i = 0; i < NUM_CELLS; i++)
+	for (unsigned int i = 0; i < NUM_CELLS; i++)
 	{
 		//TODO: Guarantee % connectivity b/w cells in network
-		const unsigned int num_connxs = 1;
-		unsigned int* to_connect = (unsigned int*) calloc(num_connxs, sizeof(unsigned int));
+		const unsigned int num_connxs = NUM_CELLS;
+		int* to_connect = (int*) calloc(num_connxs, sizeof(unsigned int));
 		
-		//TODO: Get rid of this hack
-		if (i == 0)
-		{
-			to_connect[0] = 1;
-		} else if (i == 1) {
-			to_connect[0] = 0;
-		}
+        //TODO: Implement non all-to-all connection types
+        all_to_all(i, num_connxs, to_connect);
 
-	    network[i] = new_dsac_soma(i, to_connect, 1);
+	    network[i] = new_dsac_soma(i, to_connect, num_connxs);
         free(to_connect);
 	}
 
