@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.6])
 AC_INIT([myriad], [1.0], [pedro.rittner@outlook.com])
 AC_CONFIG_SRCDIR([src/points.c])
 AC_CONFIG_HEADERS([config.h])
