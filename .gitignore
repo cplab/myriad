@@ -20,3 +20,6 @@ doc/
 *.dat
 /*~
 
+/.cproject
+/.project
+/.settings/
