@@ -27,7 +27,7 @@ OS_ARCH = x86_64
 
 # CC & related flags
 CCOMMON_FLAGS	:= -g3 -O0 -Wall
-CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99 -Wpedantic
+CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99 -Wpedantic 
 CXXFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
 CUFLAGS		:= $(CCOMMON_FLAGS)
 

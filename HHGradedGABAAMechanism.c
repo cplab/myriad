@@ -58,8 +58,8 @@ static double HHGradedGABAAMechanism_mech_fun(
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1];
-	const double post_vm = c2->soma_vm[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
+	const double post_vm = c2->vm[curr_step-1];
 	const double prev_g_s = self->g_s[curr_step-1];
 
 	const double fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));

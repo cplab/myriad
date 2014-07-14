@@ -10,20 +10,17 @@
 #include "HHLeakMechanism.h"
 #include "HHLeakMechanism.cuh"
 
-#include "HHLeakMechanism_meta.h"
-
 /////////////////////////////////////
 // HHLeakMechanism Super Overrides //
 /////////////////////////////////////
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(CTOR_FUN_RET, CTOR_FUN_ARGS, HHLEAKMECHANISM_OBJECT, CTOR_FUN_NAME)
-//static void* HHLeakMechanism_ctor(void* _self, va_list* app)
+static void* HHLeakMechanism_ctor(void* _self, va_list* app)
 {
-	struct HHLEAKMECHANISM_OBJECT* _self = 
-		(struct HHLEAKMECHANISM_OBJECT*) super_ctor(HHLEAKMECHANISM_OBJECT, self, app);
+	struct HHLeakMechanism* self = 
+		(struct HHLeakMechanism*) super_ctor(HHLeakMechanism, _self, app);
     
-	_self->HHLEAKMECHANISM_G_LEAK = va_arg(*app, double);
-	_self->HHLEAKMECHANISM_E_REV = va_arg(*app, double);
+	self->g_leak = va_arg(*app, double);
+	self->e_rev = va_arg(*app, double);
 	
 	return self;
 }
@@ -44,7 +41,7 @@ static double HHLeakMechanism_mech_fun(
 	//	No extracellular compartment. Current simply "disappears".
 	if (c1 == NULL || c1 == c2)
 	{
-		return -self->g_leak * (c1->soma_vm[curr_step-1] - self->e_rev);
+		return -self->g_leak * (c1->vm[curr_step-1] - self->e_rev);
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
 		return 0.0;
@@ -55,16 +52,15 @@ static double HHLeakMechanism_mech_fun(
 // HHLeakMechanismClass Super Overrides //
 //////////////////////////////////////////
 
-static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHANISM_CLASS, CUDAFY_FUN_NAME)
-//static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
+static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
 		// We know what class we are
-		struct HHLEAKMECHANISM_CLASS* my_class = (struct HHLEAKMECHANISM_CLASS*) _self;
+		struct HHLeakMechanismClass* my_class = (struct HHLeakMechanismClass*) _self;
 
 		// Make a temporary copy-class because we need to change shit
-		struct HHLEAKMECHANISM_CLASS copy_class = *my_class;
+		struct HHLeakMechanismClass copy_class = *my_class;
 		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
 		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
@@ -109,8 +105,8 @@ static MYRIAD_FXN_METHOD_HEADER_GEN(CUDAFY_FUN_RET, CUDAFY_FUN_ARGS, HHLEAKMECHA
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHLEAKMECHANISM_OBJECT;
-const void* HHLEAKMECHANISM_CLASS;
+const void* HHLeakMechanism;
+const void* HHLeakMechanismClass;
 
 void initHHLeakMechanism(int init_cuda)
 {

@@ -37,7 +37,7 @@ __device__ void HHSomaCompartment_cuda_simul_fxn(
 	}
 
 	//	Calculate new membrane voltage: (dVm) + prev_vm
-	self->soma_vm[curr_step] = (dt * (I_sum) / (self->cm)) + self->soma_vm[curr_step - 1];
+	self->vm[curr_step] = (dt * (I_sum) / (self->cm)) + self->vm[curr_step - 1];
 
 	return;
 }

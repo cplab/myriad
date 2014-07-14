@@ -43,7 +43,7 @@ __device__ double HHKCurrMechanism_cuda_mech_fun(
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
     const double alpha_n = (-0.01 * (pre_vm + 10.0)) / (exp((pre_vm+10.0)/-10.0) - 1.0);
     const double beta_n  = 0.125 * exp(pre_vm/-80.);
 

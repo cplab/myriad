@@ -3,22 +3,20 @@
 
 #include "Compartment.h"
 
-#include "HHSomaCompartment_meta.h"
+extern const void* HHSomaCompartment;
+extern const void* HHSomaCompartmentClass;
 
-extern const void* HHSOMACOMPARTMENT_OBJECT;
-extern const void* HHSOMACOMPARTMENT_CLASS;
-
-struct HHSOMACOMPARTMENT_OBJECT
+struct HHSomaCompartment
 {
-	struct Compartment HHSOMACOMPARTMENT_NAME;                // HHSomaCompartment : Compartment
-	double* HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE;               // Membrane voltage - mV
-	unsigned int HHSOMACOMPARTMENT_MEMBRANE_VOLTAGE_LENGTH;   // Length of soma_vm array
-	double HHSOMACOMPARTMENT_CAPACITANCE;                     // Capacitance - nF
+    struct Compartment _; //! HHSomaCompartment : Compartment
+    double* vm;           //! Membrane voltage - mV
+    unsigned int vm_len;  //! Length of soma_vm array
+    double cm;            //! Capacitance - nF
 };
 
-struct HHSOMACOMPARTMENT_CLASS
+struct HHSomaCompartmentClass
 {
-	struct CompartmentClass HHSOMACOMPARTMENT_CLASS_NAME; // HHSomaCompartmentClass : CompartmentClass
+    struct CompartmentClass _; //! HHSomaCompartmentClass : CompartmentClass
 };
 
 extern void initHHSomaCompartment(int init_cuda);

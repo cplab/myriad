@@ -15,30 +15,28 @@
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
-#include "HHLeakMechanism_meta.h"
-
 // Generic pointers for new/class-of purposes
 
-extern const void* HHLEAKMECHANISM_OBJECT;
-extern const void* HHLEAKMECHANISM_CLASS;
+extern const void* HHLeakMechanism;
+extern const void* HHLeakMechanismClass;
 
 /**
    HHLeakMechanism mechanism for Hodgkin-Huxley leak channel.
 
    @see Mechanism
  */
-struct HHLEAKMECHANISM_OBJECT
+struct HHLeakMechanism
 {
-	struct Mechanism HHLEAKMECHANISM_OBJECT_NAME; //! HHLeakMechanism : Mechanism
-	double HHLEAKMECHANISM_G_LEAK;      //! Leak Conductance - nS
-	double HHLEAKMECHANISM_E_REV;       //! Leak Reversal Potential - mV
+	struct Mechanism _; //! HHLeakMechanism : Mechanism
+	double g_leak;      //! Leak Conductance - nS
+	double e_rev;       //! Leak Reversal Potential - mV
 };
 
-struct HHLEAKMECHANISM_CLASS
+struct HHLeakMechanismClass
 {
-	struct MechanismClass HHLEAKMECHANISM_CLASS_NAME; //! HHLeakMechanismClass : MechanismClass
+	struct MechanismClass _; //! HHLeakMechanismClass : MechanismClass
 };
 
-void initHHLeakMechanism(int cuda_init);
+extern void initHHLeakMechanism(int cuda_init);
 
 #endif

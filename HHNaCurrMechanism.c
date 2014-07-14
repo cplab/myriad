@@ -42,7 +42,7 @@ static double HHNaCurrMechanism_mech_fun(
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
 
 	const double alpha_m = (-0.1*(pre_vm + 35.)) / (exp(-0.1*(pre_vm+35.)) - 1.) ;
 	const double beta_m =  4. * exp((pre_vm + 60.) / -18.);

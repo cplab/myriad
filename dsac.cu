@@ -172,7 +172,7 @@ static int dsac()
 		char* fname = (char*) malloc(sizeof("cell0.dat"));
 		sprintf(fname, "cell%i.dat", i);
 		FILE* p_file = fopen(fname,"wb");
-		fwrite(curr_comp->soma_vm, sizeof(double), curr_comp->soma_vm_len, p_file);
+		fwrite(curr_comp->vm, sizeof(double), curr_comp->vm_len, p_file);
 		fclose(p_file);
 	}
 

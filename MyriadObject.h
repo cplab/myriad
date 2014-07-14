@@ -15,8 +15,6 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-#include "MyriadObject_meta.h"
-
 // TODO: Move to some utility library
 #ifndef INDIRECT_SET
 #define INDIRECT_SET(struct_ptr, struct_name, member_name, var, type)          \

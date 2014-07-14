@@ -43,7 +43,7 @@ __device__ double HHNaCurrMechanism_cuda_mech_fun(
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	// Channel dynamics calculation
-	const double pre_vm = c1->soma_vm[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
 
 	// @TODO: Magic numbers should be extracted out as defines
 	const double alpha_m = (0.32*(pre_vm+45.0)) / (1 - exp(-(pre_vm+45.0)/4.0));

@@ -45,7 +45,7 @@ __device__ double HHLeakMechanism_cuda_mech_fun(
 	//	No extracellular compartment. Current simply "disappears".
 	if (c1 == NULL || c1 == c2)
 	{
-		return -self->g_leak * (c1->soma_vm[curr_step-1] - self->e_rev);
+		return -self->g_leak * (c1->vm[curr_step-1] - self->e_rev);
 	}else{
 		// @TODO Figure out how to do extracellular compartment calc.
 		return 0.0;

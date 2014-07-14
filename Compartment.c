@@ -16,10 +16,10 @@
 static void* Compartment_ctor(void* _self, va_list* app)
 {
 	struct Compartment* self = (struct Compartment*) super_ctor(Compartment, _self, app);
-	
-	self->ID = va_arg(*app, unsigned int);
-	self->NUM_MECHS = va_arg(*app, unsigned int);
-	self->MY_MECHS = va_arg(*app, struct Mechanism**);
+
+	self->id = va_arg(*app, unsigned int);
+	self->num_mechs = va_arg(*app, unsigned int);
+	self->my_mechs = va_arg(*app, struct Mechanism**);
 
 	return self;
 }
@@ -81,8 +81,8 @@ static void Compartment_simul_fxn(
 	)
 {
 	const struct Compartment* self = (const struct Compartment*) _self;
-	printf("My id is %u\n", self->ID);
-	printf("My num_mechs is %u\n", self->NUM_MECHS);
+	printf("My id is %u\n", self->id);
+	printf("My num_mechs is %u\n", self->num_mechs);
 	return;
 }
 
@@ -96,8 +96,8 @@ void simul_fxn(
 {
 	const struct CompartmentClass* m_class = 
 		(const struct CompartmentClass*) myriad_class_of((void*) _self);
-	assert(m_class->m_comp_fxn);
-	m_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+	assert(m_class->m_compartment_simul_fxn);
+	m_class-> m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
 }
 
 void super_simul_fxn(
@@ -110,8 +110,8 @@ void super_simul_fxn(
 	)
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
-	assert(_self && s_class->m_comp_fxn);
-	s_class->m_comp_fxn(_self, network, dt, global_time, curr_step);
+	assert(_self && s_class->m_compartment_simul_fxn);
+	s_class->m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
 }
 
 // Add mechanism function
@@ -127,8 +127,8 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 	struct Compartment* self = (struct Compartment*) _self;
 	struct Mechanism* mech = (struct Mechanism*) mechanism;
 	
-	self->NUM_MECHS++;
-	self->MY_MECHS = (struct Mechanism**) realloc(self->MY_MECHS, sizeof(struct Mechanism*) * self->NUM_MECHS);
+	self->num_mechs++;
+	self->my_mechs = (struct Mechanism**) realloc(self->my_mechs, sizeof(struct Mechanism*) * self->num_mechs);
 
 	if (self->my_mechs == NULL)
 	{
@@ -136,7 +136,7 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 		return EXIT_FAILURE;
 	}
 
-	self->MY_MECHS[self->NUM_MECHS-1] = mech;
+	self->my_mechs[self->num_mechs-1] = mech;
 
 	return EXIT_SUCCESS;
 }
@@ -145,15 +145,15 @@ int add_mechanism(void* _self, void* mechanism)
 {
 	const struct CompartmentClass* m_class = 
 		(const struct CompartmentClass*) myriad_class_of((void*) _self);
-	assert(m_class->m_add_mech_fun);
-	return m_class->m_add_mech_fun(_self, mechanism);
+	assert(m_class->m_compartment_add_mech_fxn);
+	return m_class->m_compartment_add_mech_fxn(_self, mechanism);
 }
 
 int super_add_mechanism(const void* _class, void* _self, void* mechanism)
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
-	assert(_self && s_class->m_add_mech_fun);
-	return s_class->m_add_mech_fun(_self, mechanism);
+	assert(_self && s_class->m_compartment_add_mech_fxn);
+	return s_class->m_compartment_add_mech_fxn(_self, mechanism);
 }
 
 //////////////////////////////////////
@@ -172,9 +172,9 @@ static void* CompartmentClass_ctor(void* _self, va_list* app)
 		
 		if (selector == (voidf) simul_fxn)
 		{
-			*(voidf *) &self->m_comp_fxn = method;
+			*(voidf *) &self->m_compartment_simul_fxn = method;
 		} else if (selector == (voidf) add_mechanism) {
-			*(voidf *) &self->m_add_mech_fun = method;
+			*(voidf *) &self->m_compartment_add_mech_fxn = method;
 		}
 
 		selector = va_arg(*app, voidf);
@@ -212,7 +212,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 				cudaMemcpyDeviceToHost
 				)
 			);
-		copy_class.m_comp_fxn = my_comp_fun;
+		copy_class.m_compartment_simul_fxn = my_comp_fun;
 		
 		DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 		
