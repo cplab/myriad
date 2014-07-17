@@ -12,11 +12,37 @@ typedef void (* de_cudafy_t) (void* self, void* cuda_self);
 """
 from mako.runtime import Context
 from mako.template import Template
-from StringIO import StringIO
+from io import StringIO
+from functools import wraps
+from inspect import getcallargs
+
+
+def enforce_annotations(f):
+    """
+    Function annotation to enforce argument and return types.
+    """
+    @wraps(f)
+    def _wrapper(*args, **kwargs):
+        for arg, val in getcallargs(f, *args, **kwargs).items():
+            if arg in f.__annotations__:
+                templ = f.__annotations__[arg]
+                msg = "Argument \'{arg}\' of type {t1} to {f} doesn't match annotation type {t2}"
+                if (val is not None and not issubclass(val.__class__, templ)):
+                    raise ValueError(msg.format(arg=arg, f=f, t1=type(val), t2=templ))
+        return_val = f(*args, **kwargs)
+        if 'return' in f.__annotations__:
+            templ = f.__annotations__['return']
+            msg = "Return value of {f} does not match annotation type {t}"
+            if (val is not None
+                    and not issubclass(val.__class__, templ.__class__)):
+                raise ValueError(msg.format(arg=arg, f=f, t=templ))
+        return return_val
+    return _wrapper
 
 
 class _MakoTemplate(object):
 
+    @enforce_annotations
     def __init__(self,
                  template: str="",
                  buf: StringIO=None,
