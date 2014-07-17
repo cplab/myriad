@@ -19,23 +19,29 @@ from inspect import getcallargs
 
 def enforce_annotations(f):
     """
-    Function annotation to enforce argument and return types.
+    Function annotation to enforce function argument and return types.
     """
     @wraps(f)
     def _wrapper(*args, **kwargs):
+        # Check each annotated argument type for type correctness
         for arg, val in getcallargs(f, *args, **kwargs).items():
             if arg in f.__annotations__:
                 templ = f.__annotations__[arg]
-                msg = "Argument \'{arg}\' of type {t1} to {f} doesn't match annotation type {t2}"
-                if (val is not None and not issubclass(val.__class__, templ)):
-                    raise ValueError(msg.format(arg=arg, f=f, t1=type(val), t2=templ))
+                msg_args = {'arg': arg, 'f': f, 't1': type(val), 't2': templ}
+                msg = """Argument mismatch in call to {f}:
+                \'{arg}\' is of type {t1}, expected type {t2}"""
+                if val is not None and not issubclass(val.__class__, templ):
+                    raise TypeError(msg.format(**msg_args))
+        # Call wrapped function and get return value
         return_val = f(*args, **kwargs)
         if 'return' in f.__annotations__:
             templ = f.__annotations__['return']
-            msg = "Return value of {f} does not match annotation type {t}"
-            if (val is not None
-                    and not issubclass(val.__class__, templ.__class__)):
-                raise ValueError(msg.format(arg=arg, f=f, t=templ))
+            msg_args = {'f': f, 't1': type(return_val), 't2': templ}
+            msg = """Return type mismatch in call to {f}:
+            Call return type {t1} does not match expected type {t2}"""
+            if (return_val is not None
+                    and not issubclass(return_val.__class__, templ)):
+                raise TypeError(msg.format(**msg_args))
         return return_val
     return _wrapper
 
@@ -47,22 +53,52 @@ class _MakoTemplate(object):
                  template: str="",
                  buf: StringIO=None,
                  ctx: Context=None):
+        """
+        Initializes a (by default, empty) mako template, context, and buffer.
+
+        Keyword arguments:
+        template -- actual mako template string (default empty string)
+        buf -- StringIO buffer for rendering (default empty buffer)
+        ctx -- mako runtime context for rendering (default empty context)
+        """
         self.template = template if template is not None else Template()
         self.str_buffer = buf if buf is not None else StringIO()
         self.ctx = ctx if ctx is not None else Context(self.str_buffer, **{})
 
     def render(self, filename=None):
         # TODO: Make this file/filename agnostic
-        if (self.str_buffer is not ""):
+        if (self.str_buffer is not "" and self.str_buffer is not None):
             self.str_buffer = StringIO()  # Refresh the buffer
         self.template.render_context(self.mako_context)
 
+    def __str__(self):
+        self.render()
+        return self.str_buffer
+
+
+class MyriadBasicType(object):
+
+    def __init__(self):
+        pass
+
+
+class MyriadMethod(object):
+
+    @enforce_annotations
+    def __init__(self,
+                 c_name: str=None,
+                 c_ret_type: str="void",
+                 c_args: dict={}):
+        self.c_name = c_name if c_name is not None else str(self.__class__)
+        self.c_ret_type = c_ret_type
+        self.c_args = c_args  # TODO: Use regimented paramater type list
+
+    @classmethod
+    def from_method(cls, method):
+        raise NotImplementedError()
+
 
 class MyriadModule(object):
-
-    @staticmethod
-    def gen_typedef_decl(my_fun):
-        pass
 
     def __init__(self):
         self.lib_includes = ["stdio.h", "stdlib.h", "stddef.h"]
