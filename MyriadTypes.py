@@ -1,20 +1,14 @@
+#!/usr/bin/python3
 """
-struct MyriadObject
-{
-    const struct MyriadClass* m_class; //! Object's class/description
-};
+typedef void (* voidf) ();
 
-struct MyriadClass
-{
-    const struct MyriadObject _;               //! Embedded object
-    const struct MyriadClass* super;           //! Super Class
-    const struct MyriadClass* device_class;    //! On-device class
-    size_t size;                               //! Object size
-    ctor_t my_ctor;                            //! Constructor
-    dtor_t my_dtor;                            //! Destructor
-    cudafy_t my_cudafy;                        //! CUDAfier
-    de_cudafy_t my_decudafy;                   //! De-CUDAficator
-};
+typedef void* (* ctor_t) (void* self, va_list* app);
+
+typedef int (* dtor_t) (void* self);
+
+typedef void* (* cudafy_t) (void* self, int clobber);
+
+typedef void (* de_cudafy_t) (void* self, void* cuda_self);
 """
 from mako.runtime import Context
 from mako.template import Template
@@ -23,7 +17,10 @@ from StringIO import StringIO
 
 class _MakoTemplate(object):
 
-    def __init__(self, template: '', buf=None, ctx=None):
+    def __init__(self,
+                 template: str="",
+                 buf: StringIO=None,
+                 ctx: Context=None):
         self.template = template if template is not None else Template()
         self.str_buffer = buf if buf is not None else StringIO()
         self.ctx = ctx if ctx is not None else Context(self.str_buffer, **{})
@@ -33,6 +30,18 @@ class _MakoTemplate(object):
         if (self.str_buffer is not ""):
             self.str_buffer = StringIO()  # Refresh the buffer
         self.template.render_context(self.mako_context)
+
+
+class MyriadModule(object):
+
+    @staticmethod
+    def gen_typedef_decl(my_fun):
+        pass
+
+    def __init__(self):
+        self.lib_includes = ["stdio.h", "stdlib.h", "stddef.h"]
+        self.local_includes = ["assert.h"]
+        self.method_types = []
 
 
 class MyriadObject(object):
