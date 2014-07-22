@@ -32,19 +32,23 @@ class _MakoTemplate(object):
         buf -- StringIO buffer for rendering (default empty buffer)
         ctx -- mako runtime context for rendering (default empty context)
         """
-        self.template = Template() if template is None else Template(template)
+        self.template = Template(template)
         self.str_buffer = StringIO() if buf is None else buf
         self.ctx = Context(self.str_buffer, **{}) if ctx is None else ctx
 
-    def render(self, filename=None):
-        # TODO: Make this file/filename agnostic
-        if (self.str_buffer is not "" and self.str_buffer is not None):
+    @enforce_annotations
+    def set_context(self, m_dict: dict={}):
+        self.str_buffer = StringIO()
+        self.ctx = Context(self.str_buffer, **m_dict)
+
+    def render(self):
+        if (self.str_buffer.getvalue() is not "" or self.str_buffer is None):
             self.str_buffer = StringIO()  # Refresh the buffer
         self.template.render_context(self.ctx)
 
     def __str__(self):
         self.render()
-        return self.str_buffer
+        return self.str_buffer.getvalue()
 
 
 class MyriadCType(Enum):
@@ -53,6 +57,7 @@ class MyriadCType(Enum):
     m_int = "int"
     m_uint = "unsigned int"
     m_void = "void"
+    m_struct = "struct"
 
 
 class MyriadVariable(object):
@@ -61,7 +66,8 @@ class MyriadVariable(object):
     def __init__(self,
                  ident: str,
                  c_type: MyriadCType,
-                 ptr: int=0):
+                 ptr: int=0,
+                 decl_template: str=None):
         """
         Initializes a MyriadVariable with an indentifier and a native c type.
 
@@ -72,44 +78,103 @@ class MyriadVariable(object):
         c_type -- Underlying C type
         ptr -- Optional level of pointer indirection (default: 0)
         """
+        if c_type is MyriadCType.m_void and ptr == 0:
+            raise TypeError("Can't create a void variable")
+
         self.ident = ident
         self.c_type = c_type
+        self.c_type_repr = c_type.value
         self.ptr = ptr
-        self._ptr_repr = "".join("*" for i in range(self.ptr))
+        self.ptr_repr = "".join("*" for i in range(self.ptr))
 
         # Initialize internal templates
-        self._decl_template = _MakoTemplate(template="""
-        ${c_type} ${_ptr_repr} ${ident};
-        """)
+
+        # Stand-alone declaration
+        if decl_template is None:
+            self.decl_template = _MakoTemplate(template="""
+            ${c_type_repr} ${ptr_repr} ${ident}""")
+        else:
+            self.decl_template = _MakoTemplate(template=decl_template)
+
+    def declaration(self):
+        self.decl_template.set_context(vars(self))
+        return str(self.decl_template)
 
 
-class MyriadArray(MyriadVariable):
+class MyriadVector(MyriadVariable):
 
     @enforce_annotations
     def __init__(self,
                  ident: str,
                  base_type: MyriadCType,
-                 dim_len: list,
+                 m_len: int,
                  dynamic: bool=True):
         """
-        Initializes a Myriad Array variable.
+        Initializes a Myriad vector variable.
 
         Keyword Arguments
         ident -- identifier for the array variable
         base_type -- underlying c type
-        dim_len -- list of lengths of each dimension (0 if dynamic)
+        m_len -- length of the vector
         dynamic -- boolean flag for dynamic vs static initialization
         """
-        assert(dim_len is not None and len(dim_len) != 0)
-        assert(type(i) is int and i >= 0 for i in dim_len)
-        super().__init__(ident=ident, c_type=base_type, ptr=len(dim_len))
-        self.dim_len = dim_len
+        assert(m_len > 0)
+
+        # Only use */**/etc. if dynamically initialized
+        super().__init__(ident=ident,
+                         c_type=base_type,
+                         ptr=1 if dynamic else 0)
+
+        self.m_len = m_len
         self.dynamic = dynamic
 
+        # Interal templates
+        self.init_template = _MakoTemplate("""
+        % if not dynamic:
+        ${c_type_repr} ${ptr_repr} ${ident} [${m_len}]
+        % else:
+        ${c_type_repr} ${ptr_repr} ${ident} =
+        (${c_type_repr} ${ptr_repr}) calloc(${m_len}, sizeof(${c_type_repr}))
+        % endif
+        """)
+        self.init_template.set_context(vars(self))
+
+
+class MyriadFunction(object):
+
+    @enforce_annotations
+    def __init__(self,
+                 ident: str,
+                 args_list: list,
+                 ret_var: MyriadVariable=None):
+        self.ident = ident
+        self.args_list = args_list
+        self.ret_var = ret_var
+
+        if self.ret_var is None:
+            self.ret_type = MyriadCType.m_void
+        else:
+            self.ret_type = self.ret_var.c_type
+
+        # Internal templates
+        self._decl_template = _MakoTemplate(template="""
+        ${ret_type} ${ident}
+        (
+        % for m_arg in m_args_list:
+        ${m_arg},
+        % endfor
+        )
+        """)
+        self.fxn_body_template = _MakoTemplate(template="")
 
 
 def main():
-    pass
+    a = MyriadVariable("a", MyriadCType.m_int)
+    print(a.declaration())
+    v = MyriadVector("v", MyriadCType.m_double, 5)
+    print(v.declaration())
+    v.init_template.set_context(vars(v))
+    print(v.init_template)
 
 if __name__ == "__main__":
     main()
