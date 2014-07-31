@@ -88,6 +88,7 @@ class MyriadFunction(_MyriadBase):
                  ident: str,
                  args_list: list=[],
                  ret_var: MyriadScalar=None,
+                 typedef_name: str=None,
                  gen_typedef: bool=False):
         # Make sure we got the right parameter types
         if not all(type(elem) is MyriadScalar for elem in args_list):
@@ -126,25 +127,32 @@ class MyriadFunction(_MyriadBase):
                          init=None,
                          bitsize=None)
 
+        # ------------------------------------
         # Create internal typedef, if specfied
+        # ------------------------------------
         self.fun_typedef = None
 
         if gen_typedef:
-            _typedef_name = self.ident + "_t"
-            _tmp = IdentifierType(names=self.func_decl.type.type.names)
-            tmp = PtrDecl([], TypeDecl(_typedef_name, [], _tmp))
-            _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
-
-            self.fun_typedef = Typedef(name=_typedef_name,
-                                       quals=[],
-                                       storage=['typedef'],
-                                       type=_tmp_fdecl,
-                                       coord=None)
+            if typedef_name is None:
+                typedef_name = self.ident + "_t"
+            self.gen_typedef(typedef_name)
 
         # -----------------------------------------------
         # TODO: Create internal c_ast function definition
         # -----------------------------------------------
         self.func_def = None
+
+    @enforce_annotations
+    def gen_typedef(self, typedef_name: str):
+        _tmp = IdentifierType(names=self.func_decl.type.type.names)
+        tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
+        _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
+
+        self.fun_typedef = Typedef(name=typedef_name,
+                                   quals=[],
+                                   storage=['typedef'],
+                                   type=_tmp_fdecl,
+                                   coord=None)
 
     @enforce_annotations
     def stringify_typedef(self) -> str:
