@@ -639,6 +639,7 @@ FileAST:
         PtrDecl: []
           TypeDecl: m_class, ['const']
             Struct: MyriadClass
+
   Decl: None, [], [], []
     Struct: MyriadClass
       Decl: _, ['const'], [], []
@@ -667,6 +668,7 @@ FileAST:
       Decl: my_decudafy, [], [], []
         TypeDecl: my_decudafy, []
           IdentifierType: ['de_cudafy_t']
+
   Decl: MyriadObject_ctor, [], ['static'], []
     FuncDecl: 
       ParamList: 

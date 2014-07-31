@@ -26,6 +26,21 @@ from m_annotations import enforce_annotations
 """
 
 
+class _MyriadBase(object):
+    """
+    Common core class for Myriad types
+    """
+    _cgen = c_generator.CGenerator()
+
+    def __init__(self, ident):
+        # TODO: Namespace collision detection?
+        self.ident = ident
+
+    @enforce_annotations
+    def stringify_decl(self) -> str:
+        return self._cgen.visit(self.decl)
+
+
 class MyriadCType(PyEnum):
     m_float = IdentifierType(names=["float"])
     m_double = IdentifierType(names=["double"])
@@ -36,15 +51,15 @@ class MyriadCType(PyEnum):
 #    m_struct = IdentifierType(names=["struct"])
 
 
-class MyriadScalar(object):
+class MyriadScalar(_MyriadBase):
     """
     Object for representing any individual C scalar variable.
     """
-    _cgen = c_generator.CGenerator()
 
     @enforce_annotations
     def __init__(self, ident: str, base_type: MyriadCType, ptr: bool=False):
-        self.ident = ident
+        super().__init__(ident)
+
         self.base_type = base_type
         self.ptr = ptr
 
@@ -65,31 +80,20 @@ class MyriadScalar(object):
                          init=None,
                          bitsize=None)
 
-    @enforce_annotations
-    def stringify_decl(self) -> str:
-        return self._cgen.visit(self.decl)
 
-    @enforce_annotations
-    def stringify_type_decl(self) -> str:
-        if self.ptr:
-            return self._cgen_visit(self.ptr_decl)
-        else:
-            return self._cgen_visit(self.type_decl)
-
-
-class MyriadFunction(object):
-
-    _cgen = c_generator.CGenerator()
+class MyriadFunction(_MyriadBase):
 
     @enforce_annotations
     def __init__(self,
                  ident: str,
                  args_list: list=[],
-                 ret_var: MyriadScalar=None):
+                 ret_var: MyriadScalar=None,
+                 gen_typedef: bool=False):
         # Make sure we got the right parameter types
-        assert(all(type(elem) is MyriadScalar for elem in args_list))
+        if not all(type(elem) is MyriadScalar for elem in args_list):
+            raise TypeError("Invalid function argument types")
 
-        self.ident = ident
+        super().__init__(ident)
 
         # If no return value is given, assume void
         self.ret_var = ret_var
@@ -113,6 +117,7 @@ class MyriadFunction(object):
             _tmp_decl.declname = self.ident
 
         self.func_decl = FuncDecl(self.param_list, _tmp_decl)
+
         self.decl = Decl(name=self.ident,
                          quals=[],
                          storage=[],
@@ -121,14 +126,29 @@ class MyriadFunction(object):
                          init=None,
                          bitsize=None)
 
-        # -----------------------------------------
+        # Create internal typedef, if specfied
+        self.fun_typedef = None
+
+        if gen_typedef:
+            _typedef_name = self.ident + "_t"
+            _tmp = IdentifierType(names=self.func_decl.type.type.names)
+            tmp = PtrDecl([], TypeDecl(_typedef_name, [], _tmp))
+            _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
+
+            self.fun_typedef = Typedef(name=_typedef_name,
+                                       quals=[],
+                                       storage=['typedef'],
+                                       type=_tmp_fdecl,
+                                       coord=None)
+
+        # -----------------------------------------------
         # TODO: Create internal c_ast function definition
-        # -----------------------------------------
+        # -----------------------------------------------
         self.func_def = None
 
     @enforce_annotations
-    def stringify_decl(self) -> str:
-        return self._cgen.visit(self.decl)
+    def stringify_typedef(self) -> str:
+        return self._cgen.visit(self.fun_typedef)
 
 
 def test_ast():
@@ -158,9 +178,10 @@ def main():
     # Test Scalar
     m = MyriadScalar("self", MyriadCType.m_void, True)
     print(m.stringify_decl())
-
-    f = MyriadFunction("myriad_dtor", [m])
+    # Test Function
+    f = MyriadFunction("myriad_dtor", [m], gen_typedef=True)
     print(f.stringify_decl())
+    print(f.stringify_typedef())
 
 
 if __name__ == "__main__":
