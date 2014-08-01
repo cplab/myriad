@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+lol
+"""
 from enum import Enum as PyEnum
 import copy
 
@@ -7,57 +10,39 @@ from pycparser.c_ast import *
 
 from m_annotations import enforce_annotations
 
-"""
-  Typedef: ctor_t, [], ['typedef']
-    PtrDecl: []
-      FuncDecl:
-        ParamList:
-          Decl: self, [], [], []
-            PtrDecl: []
-              TypeDecl: self, []
-                IdentifierType: ['void']
-          Decl: app, [], [], []
-            PtrDecl: []
-              TypeDecl: app, []
-                IdentifierType: ['va_list']
-        PtrDecl: []
-          TypeDecl: ctor_t, []
-            IdentifierType: ['void']
-"""
-
 
 class _MyriadBase(object):
-    """
-    Common core class for Myriad types
-    """
+    """Common core class for Myriad types"""
     _cgen = c_generator.CGenerator()
 
-    def __init__(self, ident):
+    def __init__(self, ident, decl=None):
         # TODO: Namespace collision detection?
         self.ident = ident
+        self.decl = decl
 
     @enforce_annotations
     def stringify_decl(self) -> str:
+        """Renders the internal C declaration"""
         return self._cgen.visit(self.decl)
 
 
 class MyriadCType(PyEnum):
+    """Base C types available for scalars."""
     m_float = IdentifierType(names=["float"])
     m_double = IdentifierType(names=["double"])
     m_int = IdentifierType(names=["int"])
     m_uint = IdentifierType(names=["unsigned int"])
     m_void = IdentifierType(names=["void"])
     m_va_list = IdentifierType(names=["va_list"])
-#    m_struct = IdentifierType(names=["struct"])
+    m_struct = IdentifierType(names=["struct"])
 
 
 class MyriadScalar(_MyriadBase):
-    """
-    Object for representing any individual C scalar variable.
-    """
+    """Object for representing any individual C scalar variable."""
 
     @enforce_annotations
     def __init__(self, ident: str, base_type: MyriadCType, ptr: bool=False):
+        # Always call super first
         super().__init__(ident)
 
         self.base_type = base_type
@@ -82,6 +67,7 @@ class MyriadScalar(_MyriadBase):
 
 
 class MyriadFunction(_MyriadBase):
+    """Function container for Myriad functions"""
 
     @enforce_annotations
     def __init__(self,
@@ -90,11 +76,12 @@ class MyriadFunction(_MyriadBase):
                  ret_var: MyriadScalar=None,
                  typedef_name: str=None,
                  gen_typedef: bool=False):
-        # Make sure we got the right parameter types
-        if not all(type(elem) is MyriadScalar for elem in args_list):
-            raise TypeError("Invalid function argument types")
-
+        # Always call super first
         super().__init__(ident)
+
+        # Make sure we got the right parameter types
+        if not all(issubclass(e.__class__, MyriadScalar) for e in args_list):
+            raise TypeError("Invalid arguments: expected MyriadScalar(s)")
 
         # If no return value is given, assume void
         self.ret_var = ret_var
@@ -144,6 +131,9 @@ class MyriadFunction(_MyriadBase):
 
     @enforce_annotations
     def gen_typedef(self, typedef_name: str):
+        """
+        Generates a typedef definition with the given name.
+        """
         _tmp = IdentifierType(names=self.func_decl.type.type.names)
         tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
@@ -184,12 +174,13 @@ def test_ast():
 
 def main():
     # Test Scalar
-    m = MyriadScalar("self", MyriadCType.m_void, True)
-    print(m.stringify_decl())
+    void_ptr = MyriadScalar("self", MyriadCType.m_void, True)
+    void_ptr.decl.show()
+    print(void_ptr.stringify_decl())
     # Test Function
-    f = MyriadFunction("myriad_dtor", [m], gen_typedef=True)
-    print(f.stringify_decl())
-    print(f.stringify_typedef())
+    myriad_dtor = MyriadFunction("myriad_dtor", [void_ptr], gen_typedef=True)
+    print(myriad_dtor.stringify_decl())
+    print(myriad_dtor.stringify_typedef())
 
 
 if __name__ == "__main__":
