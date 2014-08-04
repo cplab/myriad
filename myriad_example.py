@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-lol
+TODO: Docstring
 """
 from enum import Enum as PyEnum
 import copy
@@ -66,6 +66,34 @@ class MyriadScalar(_MyriadBase):
                          bitsize=None)
 
 
+class MyriadStruct(_MyriadBase):
+
+    @enforce_annotations
+    def __init__(self, ident: str, struct_name: str, members: list=[]):
+
+        # Make sure we got the right parameter types
+        if not all(issubclass(m.__class__, _MyriadBase) for m in members):
+            raise TypeError("Invalid struct member(s) type(s).")
+
+        self.ident = ident
+        self.struct_name = struct_name
+        self.base_type = MyriadCType.m_struct
+
+        # Set struct members
+        self.members = [v.decl for v in members]
+
+        _tmp_decl = Decl(name=self.ident,
+                         quals=[],
+                         storage=[],
+                         funcspec=[],
+                         type=Struct(self.struct_name, self.members),
+                         init=None,
+                         bitsize=None)
+
+        # Need to call super last in this instance
+        super().__init__(ident, _tmp_decl)
+
+
 class MyriadFunction(_MyriadBase):
     """Function container for Myriad functions"""
 
@@ -79,17 +107,23 @@ class MyriadFunction(_MyriadBase):
         # Always call super first
         super().__init__(ident)
 
-        # Make sure we got the right parameter types
-        if not all(issubclass(e.__class__, MyriadScalar) for e in args_list):
-            raise TypeError("Invalid arguments: expected MyriadScalar(s)")
-
-        # If no return value is given, assume void
+        # --------------------------------------------
+        # Set return value; none is given, assume void
+        # --------------------------------------------
         self.ret_var = ret_var
         if self.ret_var is None:
             self.ret_var = MyriadScalar(self.ident, MyriadCType.m_void)
 
-        # Args list stores the MyriadScalars
-        self.args_list = args_list
+        # --------------------------------------------
+        #  Create internal representation of args list
+        # --------------------------------------------
+
+        # Make sure we got the right parameter types
+        if not all(issubclass(e.__class__, _MyriadBase) for e in args_list):
+            raise TypeError("Invalid function argument(s) type(s).")
+
+        self.args_list = args_list # Args list stores the MyriadScalars
+
         # Param list stores the scalar's declarations
         self.param_list = ParamList([v.decl for v in self.args_list])
 
@@ -131,9 +165,8 @@ class MyriadFunction(_MyriadBase):
 
     @enforce_annotations
     def gen_typedef(self, typedef_name: str):
-        """
-        Generates a typedef definition with the given name.
-        """
+        """Generates a typedef definition with the given name."""
+
         _tmp = IdentifierType(names=self.func_decl.type.type.names)
         tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
@@ -175,12 +208,14 @@ def test_ast():
 def main():
     # Test Scalar
     void_ptr = MyriadScalar("self", MyriadCType.m_void, True)
-    void_ptr.decl.show()
     print(void_ptr.stringify_decl())
     # Test Function
     myriad_dtor = MyriadFunction("myriad_dtor", [void_ptr], gen_typedef=True)
     print(myriad_dtor.stringify_decl())
     print(myriad_dtor.stringify_typedef())
+    # Test struct
+    myriad_class = MyriadStruct(None, "MyriadClass", [void_ptr])
+    print(myriad_class.stringify_decl())
 
 
 if __name__ == "__main__":
