@@ -362,7 +362,7 @@ static int HHCompartmentTest()
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
 	FILE* p_file = fopen("output.dat","wb");
-	fwrite(curr_comp->soma_vm, sizeof(double), curr_comp->soma_vm_len, p_file);
+	fwrite(curr_comp->vm, sizeof(double), curr_comp->vm_len, p_file);
 	fclose(p_file);
 
 	// Free

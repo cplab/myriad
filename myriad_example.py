@@ -2,12 +2,18 @@
 """
 TODO: Docstring
 """
+# Python standard library imports
 from enum import Enum as PyEnum
 import copy
 
+# pycparser imports
 from pycparser import parse_file, c_generator
-from pycparser.c_ast import *
+from pycparser.c_ast import IdentifierType, Typedef
+from pycparser.c_ast import Decl, PtrDecl, TypeDecl
+from pycparser.c_ast import Struct, FuncDecl
+from pycparser.c_ast import ParamList
 
+# utility imports
 from m_annotations import enforce_annotations
 
 
@@ -66,7 +72,8 @@ class MyriadScalar(_MyriadBase):
                          bitsize=None)
 
 
-class MyriadStruct(_MyriadBase):
+class MyriadStructType(_MyriadBase):
+    """Struct construct"""
 
     @enforce_annotations
     def __init__(self, ident: str, struct_name: str, members: list=[]):
@@ -179,10 +186,12 @@ class MyriadFunction(_MyriadBase):
 
     @enforce_annotations
     def stringify_typedef(self) -> str:
+        """Returns string representation of this function's typedef"""
         return self._cgen.visit(self.fun_typedef)
 
 
 def test_ast():
+    """Inspect C soure code using AST and re-render"""
     filename = 'test.c'
     ast = parse_file(filename,
                      use_cpp=True,
@@ -193,9 +202,9 @@ def test_ast():
 
     cgen = c_generator.CGenerator()
 
-    with open("test.c", 'w', encoding="utf-8") as f:
+    with open("test.c", 'w', encoding="utf-8") as test_file:
         for node in ast.ext:
-            f.write(cgen.visit(node) + ";\n")
+            test_file.write(cgen.visit(node) + ";\n")
 
     void_id = IdentifierType(names=["void"])
     self_arg = Decl("self", [], [], [],
@@ -206,6 +215,7 @@ def test_ast():
 
 
 def main():
+    """Test basic functionality"""
     # Test Scalar
     void_ptr = MyriadScalar("self", MyriadCType.m_void, True)
     print(void_ptr.stringify_decl())
@@ -214,7 +224,7 @@ def main():
     print(myriad_dtor.stringify_decl())
     print(myriad_dtor.stringify_typedef())
     # Test struct
-    myriad_class = MyriadStruct(None, "MyriadClass", [void_ptr])
+    myriad_class = MyriadStructType(None, "MyriadClass", [void_ptr])
     print(myriad_class.stringify_decl())
 
 
