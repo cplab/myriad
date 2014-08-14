@@ -4,6 +4,7 @@ TODO: Docstring
 """
 # Python standard library imports
 from enum import Enum as PyEnum
+from enum import unique
 import copy
 
 # pycparser imports
@@ -16,6 +17,7 @@ from pycparser.c_ast import ParamList
 # utility imports
 from m_annotations import enforce_annotations
 
+# TODO: add support for modifiers (e.g. "const")
 
 class _MyriadBase(object):
     """Common core class for Myriad types"""
@@ -101,6 +103,15 @@ class MyriadStructType(_MyriadBase):
         super().__init__(ident, _tmp_decl)
 
 
+@unique
+class MyriadFunType(PyEnum):
+    """ Enumerator for different function types """
+    m_delegator = 1
+    m_module = 2
+    m_method = 3
+
+
+# pylint: disable=too-many-instance-attributes
 class MyriadFunction(_MyriadBase):
     """Function container for Myriad functions"""
 
@@ -109,8 +120,7 @@ class MyriadFunction(_MyriadBase):
                  ident: str,
                  args_list: list=[],
                  ret_var: MyriadScalar=None,
-                 typedef_name: str=None,
-                 gen_typedef: bool=False):
+                 fun_type: MyriadFunType=MyriadFunType.m_module):
         # Always call super first
         super().__init__(ident)
 
@@ -120,6 +130,11 @@ class MyriadFunction(_MyriadBase):
         self.ret_var = ret_var
         if self.ret_var is None:
             self.ret_var = MyriadScalar(self.ident, MyriadCType.m_void)
+
+        # -----------------------------------------------------
+        # Set function type/scope: module, method, or delegator
+        # -----------------------------------------------------
+        self.fun_type = fun_type
 
         # --------------------------------------------
         #  Create internal representation of args list
@@ -155,15 +170,12 @@ class MyriadFunction(_MyriadBase):
                          init=None,
                          bitsize=None)
 
-        # ------------------------------------
-        # Create internal typedef, if specfied
-        # ------------------------------------
+        # -------------------------------------------
+        # Generate typedef depending on function type
+        # -------------------------------------------
         self.fun_typedef = None
-
-        if gen_typedef:
-            if typedef_name is None:
-                typedef_name = self.ident + "_t"
-            self.gen_typedef(typedef_name)
+        if self.fun_type is MyriadFunType.m_method:
+            self.gen_typedef()
 
         # -----------------------------------------------
         # TODO: Create internal c_ast function definition
@@ -171,8 +183,11 @@ class MyriadFunction(_MyriadBase):
         self.func_def = None
 
     @enforce_annotations
-    def gen_typedef(self, typedef_name: str):
-        """Generates a typedef definition with the given name."""
+    def gen_typedef(self, typedef_name: str=None):
+        """Generates a typedef definition for this function."""
+
+        if typedef_name is None:
+            typedef_name = self.ident + "_t"
 
         _tmp = IdentifierType(names=self.func_decl.type.type.names)
         tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
@@ -220,7 +235,8 @@ def main():
     void_ptr = MyriadScalar("self", MyriadCType.m_void, True)
     print(void_ptr.stringify_decl())
     # Test Function
-    myriad_dtor = MyriadFunction("myriad_dtor", [void_ptr], gen_typedef=True)
+    myriad_dtor = MyriadFunction("myriad_dtor", [void_ptr])
+    myriad_dtor.gen_typedef()
     print(myriad_dtor.stringify_decl())
     print(myriad_dtor.stringify_typedef())
     # Test struct
