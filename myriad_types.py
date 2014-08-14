@@ -23,10 +23,16 @@ class _MyriadBase(object):
     """Common core class for Myriad types"""
     _cgen = c_generator.CGenerator()
 
-    def __init__(self, ident, decl=None):
-        # TODO: Namespace collision detection?
+    def __init__(self,
+                 ident,
+                 decl=None,
+                 quals: list=None,
+                 storage: list=None):
         self.ident = ident
         self.decl = decl
+        # TODO: check valid quals, storage types
+        self.quals = [] if quals is None else quals
+        self.storage = [] if storage is None else storage
 
     @enforce_annotations
     def stringify_decl(self) -> str:
@@ -49,16 +55,21 @@ class MyriadScalar(_MyriadBase):
     """Object for representing any individual C scalar variable."""
 
     @enforce_annotations
-    def __init__(self, ident: str, base_type: MyriadCType, ptr: bool=False):
+    def __init__(self,
+                 ident: str,
+                 base_type: MyriadCType,
+                 ptr: bool=False,
+                 quals: list=None,
+                 storage: list=None):
         # Always call super first
-        super().__init__(ident)
+        super().__init__(ident, quals=quals, storage=storage)
 
         self.base_type = base_type
         self.ptr = ptr
 
         # Initialize internal C type declaration
         self.type_decl = TypeDecl(declname=self.ident,
-                                  quals=[],
+                                  quals=self.quals,
                                   type=self.base_type.value)
 
         # Initialize internal C ptr declaration (might not be used)
@@ -66,8 +77,8 @@ class MyriadScalar(_MyriadBase):
 
         # Initialize internal top-level declaration
         self.decl = Decl(name=self.ident,
-                         quals=[],
-                         storage=[],
+                         quals=self.quals,
+                         storage=self.storage,
                          funcspec=[],
                          type=self.ptr_decl if ptr else self.type_decl,
                          init=None,
@@ -78,7 +89,11 @@ class MyriadStructType(_MyriadBase):
     """Struct construct"""
 
     @enforce_annotations
-    def __init__(self, ident: str, struct_name: str, members: list=[]):
+    def __init__(self,
+                 ident: str,
+                 struct_name: str,
+                 members: list=[],
+                 storage: list=None):
 
         # Make sure we got the right parameter types
         if not all(issubclass(m.__class__, _MyriadBase) for m in members):
@@ -100,7 +115,7 @@ class MyriadStructType(_MyriadBase):
                          bitsize=None)
 
         # Need to call super last in this instance
-        super().__init__(ident, _tmp_decl)
+        super().__init__(ident, _tmp_decl, storage=storage)
 
 
 @unique
@@ -118,7 +133,7 @@ class MyriadFunction(_MyriadBase):
     @enforce_annotations
     def __init__(self,
                  ident: str,
-                 args_list: list=[],
+                 args_list: list=None,
                  ret_var: MyriadScalar=None,
                  fun_type: MyriadFunType=MyriadFunType.m_module):
         # Always call super first
@@ -144,7 +159,8 @@ class MyriadFunction(_MyriadBase):
         if not all(issubclass(e.__class__, _MyriadBase) for e in args_list):
             raise TypeError("Invalid function argument(s) type(s).")
 
-        self.args_list = args_list # Args list stores the MyriadScalars
+        # Args list stores the MyriadScalars
+        self.args_list = [] if args_list is None else args_list
 
         # Param list stores the scalar's declarations
         self.param_list = ParamList([v.decl for v in self.args_list])
@@ -152,8 +168,8 @@ class MyriadFunction(_MyriadBase):
         # ------------------------------------------
         # Create internal c_ast function declaration
         # ------------------------------------------
-
         _tmp_decl = copy.deepcopy(self.ret_var.decl.type)
+
         # Make sure we override the identifier in our copy
         if type(_tmp_decl) is PtrDecl:
             _tmp_decl.type.declname = self.ident
@@ -232,7 +248,7 @@ def test_ast():
 def main():
     """Test basic functionality"""
     # Test Scalar
-    void_ptr = MyriadScalar("self", MyriadCType.m_void, True)
+    void_ptr = MyriadScalar("self", MyriadCType.m_void, True, quals=["const"])
     print(void_ptr.stringify_decl())
     # Test Function
     myriad_dtor = MyriadFunction("myriad_dtor", [void_ptr])

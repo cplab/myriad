@@ -41,8 +41,11 @@ for fun in functions:
 struct ${class_name};
 struct ${object_name};
 
-extern const void* MyriadObject;
-extern const void* MyriadClass;
+## Module variables
+<%
+for m_var in module_vars:
+    context.write("extern "+m_var.stringify_decl()+";")
+%>
 
 ## Print methods forward declarations
 <%
@@ -132,11 +135,24 @@ class MyriadModule(object):
 
         # Initialize module global variables
         self.module_vars = []
+        v_obj = myriad_types.MyriadScalar(self.object_name,
+                                          myriad_types.MyriadCType.m_void,
+                                          True,
+                                          quals=["const"])
+        self.module_vars.append(v_obj)
+        v_cls = myriad_types.MyriadScalar(self.class_name,
+                                          myriad_types.MyriadCType.m_void,
+                                          True,
+                                          quals=["const"])
+        self.module_vars.append(v_cls)
 
         # Initialize standard library imports, by default with fail-safes
         self.lib_includes = lib_includes
         if self.lib_includes is None:
             self.lib_includes = MyriadModule.FAILSAFE_INCLUDES
+
+        #TODO: Initialize local header imports
+        self.local_includes = []
 
         # Initialize C header template
         self.header_template = None
@@ -172,9 +188,10 @@ class MyriadModule(object):
     def register_global_variable(self, var: myriad_types.MyriadScalar):
         pass
 
+
 def main():
     """ Creates a template and renders it using a Mako context """
-    m_object = MyriadModule("MyriadObject")
+    m_object = MyriadModule("MyriadObject", "MyriadClass")
     m_object.render_header_template(printout=True)
 
 if __name__ == "__main__":
