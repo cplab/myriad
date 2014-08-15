@@ -8,6 +8,7 @@ from mako.runtime import Context
 from io import StringIO
 
 from m_annotations import enforce_annotations
+from myriad_mako_wrapper import MakoTemplate
 
 import myriad_types
 
@@ -21,12 +22,12 @@ HEADER_FILE_TEMPLATE = """
 
 ## Add library includes
 % for lib in lib_includes:
-#include <${lib}.h>
+#include <${lib}>
 % endfor
 
 ## Add local includes
 % for lib in local_includes:
-#include "${lib}.h"
+#include "${lib}"
 % endfor
 
 ## Declare typedefs
@@ -113,8 +114,8 @@ class MyriadModule(object):
     Represents an independent Myriad module (e.g. MyriadObject)
     """
 
-    FAILSAFE_INCLUDES = ["stdlib", "stdio", "assert",
-                         "stddef", "stdarg", "stdint"]
+    FAILSAFE_INCLUDES = ["stdlib.h", "stdio.h", "assert.h",
+                         "stddef.h", "stdarg.h", "stdint.h"]
 
     @enforce_annotations
     def __init__(self,
@@ -151,40 +152,37 @@ class MyriadModule(object):
         if self.lib_includes is None:
             self.lib_includes = MyriadModule.FAILSAFE_INCLUDES
 
-        #TODO: Initialize local header imports
+        # TODO: Initialize local header imports
         self.local_includes = []
 
         # Initialize C header template
         self.header_template = None
-        self.header_buffer = None
-        self.header_ctx = None
         self.initialize_header_template()
 
     @enforce_annotations
     def initialize_header_template(self, context_dict: dict=None):
         """ Initializes internal Mako template for C header file """
-        self.header_template = Template(HEADER_FILE_TEMPLATE)
-        self.header_buffer = StringIO()
-
         if context_dict is None:
-            self.header_ctx = Context(self.header_buffer, **vars(self))
-        else:
-            self.header_ctx = Context(self.header_buffer, **context_dict)
+            context_dict = vars(self)
+        self.header_template = MakoTemplate(HEADER_FILE_TEMPLATE, context_dict)
 
     @enforce_annotations
     def render_header_template(self, buf: StringIO=None, printout: bool=False):
         """ Renders the header file template """
-        if buf is not None:
-            self.header_buffer = buf
 
-        self.header_template.render_context(self.header_ctx)
+        # Reset buffer if necessary
+        if self.header_template.buffer is not '':
+            self.header_template.reset_buffer()
+
+        self.header_template.render()
 
         if printout:
-            print(self.header_buffer.getvalue())
+            print(self.header_template.buffer)
         else:
-            # TODO: What to do when not printing to stdout?
+            # TODO: Write to a file (see bit.ly/1t1ak9N)
             pass
 
+    # TODO: Implement register_global_variable
     def register_global_variable(self, var: myriad_types.MyriadScalar):
         pass
 
