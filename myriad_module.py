@@ -3,12 +3,8 @@
 TODO: Docstring
 """
 
-from mako.template import Template
-from mako.runtime import Context
-from io import StringIO
-
-from m_annotations import enforce_annotations
-from myriad_mako_wrapper import MakoTemplate
+from myriad_utils import enforce_annotations
+from myriad_mako_wrapper import MakoFileTemplate
 
 import myriad_types
 
@@ -36,7 +32,6 @@ for fun in functions:
     if fun.gen_typedef is not None:
         context.write(f.stringify_typedef())
 %>
-
 
 ## Struct forward declarations
 struct ${class_name};
@@ -164,10 +159,12 @@ class MyriadModule(object):
         """ Initializes internal Mako template for C header file """
         if context_dict is None:
             context_dict = vars(self)
-        self.header_template = MakoTemplate(HEADER_FILE_TEMPLATE, context_dict)
+        self.header_template = MakoFileTemplate(self.object_name+".h",
+                                                HEADER_FILE_TEMPLATE,
+                                                context_dict)
 
     @enforce_annotations
-    def render_header_template(self, buf: StringIO=None, printout: bool=False):
+    def render_header_template(self, printout: bool=False):
         """ Renders the header file template """
 
         # Reset buffer if necessary
@@ -179,8 +176,7 @@ class MyriadModule(object):
         if printout:
             print(self.header_template.buffer)
         else:
-            # TODO: Write to a file (see bit.ly/1t1ak9N)
-            pass
+            self.header_template.render_to_file()
 
     # TODO: Implement register_global_variable
     def register_global_variable(self, var: myriad_types.MyriadScalar):

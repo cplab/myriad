@@ -3,21 +3,24 @@
 Common wrapper for Mako templates
 """
 
-from m_annotations import enforce_annotations
+from myriad_utils import TypeEnforcer
 from mako.template import Template
 from mako.runtime import Context
 from io import StringIO
 
 
-class MakoTemplate(object):
+class MakoFileTemplate(object, metaclass=TypeEnforcer):
     """ Wraps a mako template, context, and I/O buffer """
 
-    @enforce_annotations
     def __init__(self,
+                 filename: str,
                  template,
                  context: dict=None,
                  buf: StringIO=None):
-        """ Initializes a template with a template, buffer, and context """
+        """ Initializes a template relevant data """
+
+        # Sets filename
+        self.filename = filename
 
         # Sets template
         self._template = None
@@ -53,22 +56,31 @@ class MakoTemplate(object):
         return self._context.kwargs
 
     @context.setter
-    @enforce_annotations
     def context(self, new_context: dict):
         """ Replaces current context with new context & refreshes buffer."""
         self._buffer = StringIO()
         self._context = Context(self._buffer, **new_context)
 
     def render(self):
-        """ Renders the template """
+        """ Renders the template to the internal buffer."""
         self._template.render_context(self._context)
+
+    def render_to_file(self, filename: str=None):
+        """
+        Renders the template to a file with the given filename
+        """
+        if filename is None:
+            filename = self.filename
+        self.render()
+        with open(filename, 'wb') as filep:
+            filep.write(bytes(self._buffer.getvalue(), "UTF-8"))
 
 
 def main():
     """ Renders a simple MakoTemplate """
-    tmp = MakoTemplate("hello ${data}!")
+    tmp = MakoFileTemplate(None, "hello ${data}!")
     tmp.context = {"data": "World"}
-    tmp.render()
+    tmp.render_to_file("hello.txt")
     print(tmp.buffer)
 
 if __name__ == "__main__":

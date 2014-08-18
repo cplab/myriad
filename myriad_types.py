@@ -15,7 +15,7 @@ from pycparser.c_ast import Struct, FuncDecl
 from pycparser.c_ast import ParamList
 
 # utility imports
-from m_annotations import enforce_annotations
+from myriad_utils import enforce_annotations
 
 # TODO: add support for modifiers (e.g. "const")
 
