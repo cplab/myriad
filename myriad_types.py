@@ -9,7 +9,7 @@ import copy
 
 from pycparser import parse_file, c_generator
 from pycparser.c_ast import IdentifierType, Typedef
-from pycparser.c_ast import Decl, PtrDecl, TypeDecl
+from pycparser.c_ast import Decl, PtrDecl, TypeDecl, ID
 from pycparser.c_ast import Struct, FuncDecl
 from pycparser.c_ast import ParamList
 
@@ -39,7 +39,7 @@ class _MyriadBase(object):
         """Renders the internal C declaration"""
         return self._cgen.visit(self.decl)
 
-
+# XXX: Replace with Metaclass
 class MyriadCType(PyEnum):
     """Base C types available for scalars."""
     m_float = IdentifierType(names=["float"])
@@ -48,19 +48,21 @@ class MyriadCType(PyEnum):
     m_uint = IdentifierType(names=["unsigned int"])
     m_void = IdentifierType(names=["void"])
     m_va_list = IdentifierType(names=["va_list"])
-    m_struct = IdentifierType(names=["struct"])
+    m_struct = IdentifierType(names=["struct"])  # XXX: BROKEN
 
 
 class MyriadScalar(_MyriadBase):
     """Object for representing any individual C scalar variable."""
 
+    # pylint: disable=R0913
     @enforce_annotations
     def __init__(self,
                  ident: str,
                  base_type: MyriadCType,
                  ptr: bool=False,
                  quals: list=None,
-                 storage: list=None):
+                 storage: list=None,
+                 init=None):
         # Always call super first
         super().__init__(ident, quals=quals, storage=storage)
 
@@ -81,8 +83,20 @@ class MyriadScalar(_MyriadBase):
                          storage=self.storage,
                          funcspec=[],
                          type=self.ptr_decl if ptr else self.type_decl,
-                         init=None,
+                         init=init,  # TODO: Process init
                          bitsize=None)
+
+    @enforce_annotations
+    def typematch(self, other) -> bool:
+        """ Checks if other is of an equivalent type. """
+
+        if other is None or not issubclass(other, _MyriadBase):
+            return False
+
+        if issubclass(other, MyriadScalar):
+            return other.base_type is self.base_type
+        else:  # TODO: Figure out what to do when given non-scalar type
+            pass
 
 
 class MyriadStructType(_MyriadBase):
@@ -102,14 +116,16 @@ class MyriadStructType(_MyriadBase):
         self.base_type = MyriadCType.m_struct
 
         # Set struct members
-        # TODO: Struct members must be unique
-        self.members = {v.decl for v in members}
+        self.members = {v.ident: v.decl for v in members}
+
+        # Set struct type
+        self.struct_c_ast = Struct(self.struct_name, list(self.members))
 
         _tmp_decl = Decl(name=None,
                          quals=[],
                          storage=[],
                          funcspec=[],
-                         type=Struct(self.struct_name, list(self.members)),
+                         type=self.struct_c_ast,
                          init=None,
                          bitsize=None)
 
@@ -119,33 +135,79 @@ class MyriadStructType(_MyriadBase):
     class MyriadStructVar(MyriadScalar):
         """ Actual struct variable instance. """
 
-        # TODO: Provide a robust mechanism for initialization of members.
-        # Most likely this would involve enforcing kwargs variables to be of
-        # the form (member_name, init_value) where init_value may be set to
-        # None to indicate no initialization (NULL is just 0). Probably would
-        # be a good idea to seperate out initialization of the struct members
-        # into a seperate function. Initial values for members should NOT be
-        # supported for pointer types. Members should be attributes.
+        # pylint: disable=R0913
         def __init__(self,
                      prototype: MyriadStructType,  # NOQA
                      ident: str,
                      ptr: bool=False,
                      quals: list=None,
                      storage: list=None,
+                     init=None,
                      **kwargs):
             """ TODO """
-            # TODO: Eventually call super()
 
-            self.prototype = prototype  # TODO: Do other things with this?
+            # If we're a pointer, default initial value is NULL
+            init = ID("NULL") if ptr is True and init is None else init
 
             # Initialize members as attributes
-            # TODO: do actual initialization of mmebers values elsewhere
-            for member_name in kwargs.keys():
-                self.__dict__[member_name] = None
+            for member_name, member_val in kwargs.items():
+                self.__dict__[member_name] = member_val
 
-    def __call__(self):
-        # TODO: Return an instance of MyriadStructVar w/ arg passthrough
-        pass
+            # TODO: Create initialization Assignments (including init?)
+
+            
+            # XXX: Broken until CType is metaclass'd
+            # Call super for initialization purpose; however we override decl
+            super().__init__(self, ident, MyriadCType.m_struct, ptr, quals,
+                             storage, init)
+            self.decl = Decl(name=self.ident,
+                             quals=self.quals,
+                             storage=self.storage,
+                             funcspec=[],
+                             type=self.ptr_decl if ptr else self.type_decl,
+                             init=None,
+                             bitsize=None)
+
+    # pylint: disable=R0913
+    def __call__(self,
+                 ident: str,
+                 ptr: bool=False,
+                 quals: list=None,
+                 storage: list=None,
+                 init=None,
+                 **kwargs):
+        """ Factory method for making struct instances from template. """
+
+        # Assert we receive at least a subset of arguments
+        prot_idents = set(self.members.keys())
+        given_idents = set(kwargs.keys())
+        if not given_idents.issubset(prot_idents):
+            diff = given_idents - prot_idents
+            raise NameError("{0} not valid member(s) of struct {1}".format(
+                str(diff), self.ident))
+
+        # TODO: Do more robust checking with namespace lookups
+        # Assert argument initial values match protoype's
+        new_kwargs = {}
+        for arg_id, arg_val in kwargs.items():
+            if issubclass(arg_val, MyriadScalar):
+                # Check if underlying types match
+                if self.members[arg_id].typematch(arg_val) is False:
+                    msg = "Member {0} is of type {1}, argument is of type {2}."
+                    raise TypeError(msg.format(arg_id,
+                                               self.members[arg_id].base_type,
+                                               arg_val))
+                else:
+                    # If a scalar, pass forward as ID
+                    new_kwargs[arg_id] = ID(arg_val.ident)
+
+        return MyriadStructType.MyriadStructVar(self,
+                                                ident,
+                                                ptr,
+                                                quals,
+                                                storage,
+                                                init,
+                                                **new_kwargs)
 
 
 @unique
