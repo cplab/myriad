@@ -2,22 +2,22 @@
 """
 TODO: Docstring
 """
-# Python standard library imports
+
 from enum import Enum as PyEnum
 from enum import unique
 import copy
 
-# pycparser imports
 from pycparser import parse_file, c_generator
 from pycparser.c_ast import IdentifierType, Typedef
 from pycparser.c_ast import Decl, PtrDecl, TypeDecl
 from pycparser.c_ast import Struct, FuncDecl
 from pycparser.c_ast import ParamList
 
-# utility imports
 from myriad_utils import enforce_annotations
 
-# TODO: add support for modifiers (e.g. "const")
+# Global TODOs
+# TODO: add support for __hash__ and __eq__ for set purposes
+
 
 class _MyriadBase(object):
     """Common core class for Myriad types"""
@@ -90,32 +90,62 @@ class MyriadStructType(_MyriadBase):
 
     @enforce_annotations
     def __init__(self,
-                 ident: str,
                  struct_name: str,
-                 members: list=[],
+                 members: set={},
                  storage: list=None):
 
         # Make sure we got the right parameter types
         if not all(issubclass(m.__class__, _MyriadBase) for m in members):
             raise TypeError("Invalid struct member(s) type(s).")
 
-        self.ident = ident
         self.struct_name = struct_name
         self.base_type = MyriadCType.m_struct
 
         # Set struct members
-        self.members = [v.decl for v in members]
+        # TODO: Struct members must be unique
+        self.members = {v.decl for v in members}
 
-        _tmp_decl = Decl(name=self.ident,
+        _tmp_decl = Decl(name=None,
                          quals=[],
                          storage=[],
                          funcspec=[],
-                         type=Struct(self.struct_name, self.members),
+                         type=Struct(self.struct_name, list(self.members)),
                          init=None,
                          bitsize=None)
 
         # Need to call super last in this instance
-        super().__init__(ident, _tmp_decl, storage=storage)
+        super().__init__(None, _tmp_decl, storage=storage)
+
+    class MyriadStructVar(MyriadScalar):
+        """ Actual struct variable instance. """
+
+        # TODO: Provide a robust mechanism for initialization of members.
+        # Most likely this would involve enforcing kwargs variables to be of
+        # the form (member_name, init_value) where init_value may be set to
+        # None to indicate no initialization (NULL is just 0). Probably would
+        # be a good idea to seperate out initialization of the struct members
+        # into a seperate function. Initial values for members should NOT be
+        # supported for pointer types. Members should be attributes.
+        def __init__(self,
+                     prototype: MyriadStructType,  # NOQA
+                     ident: str,
+                     ptr: bool=False,
+                     quals: list=None,
+                     storage: list=None,
+                     **kwargs):
+            """ TODO """
+            # TODO: Eventually call super()
+
+            self.prototype = prototype  # TODO: Do other things with this?
+
+            # Initialize members as attributes
+            # TODO: do actual initialization of mmebers values elsewhere
+            for member_name in kwargs.keys():
+                self.__dict__[member_name] = None
+
+    def __call__(self):
+        # TODO: Return an instance of MyriadStructVar w/ arg passthrough
+        pass
 
 
 @unique
@@ -126,14 +156,14 @@ class MyriadFunType(PyEnum):
     m_method = 3
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=R0902
 class MyriadFunction(_MyriadBase):
     """Function container for Myriad functions"""
 
     @enforce_annotations
     def __init__(self,
                  ident: str,
-                 args_list: list=None,
+                 args_list: set=None,
                  ret_var: MyriadScalar=None,
                  fun_type: MyriadFunType=MyriadFunType.m_module):
         # Always call super first
@@ -160,9 +190,9 @@ class MyriadFunction(_MyriadBase):
             raise TypeError("Invalid function argument(s) type(s).")
 
         # Args list stores the MyriadScalars
-        self.args_list = [] if args_list is None else args_list
+        self.args_list = [] if args_list is None else list(args_list)
 
-        # Param list stores the scalar's declarations
+        # Param list stores the scalar's declarations in a C AST object.
         self.param_list = ParamList([v.decl for v in self.args_list])
 
         # ------------------------------------------
@@ -251,12 +281,12 @@ def main():
     void_ptr = MyriadScalar("self", MyriadCType.m_void, True, quals=["const"])
     print(void_ptr.stringify_decl())
     # Test Function
-    myriad_dtor = MyriadFunction("myriad_dtor", [void_ptr])
+    myriad_dtor = MyriadFunction("myriad_dtor", {void_ptr})
     myriad_dtor.gen_typedef()
     print(myriad_dtor.stringify_decl())
     print(myriad_dtor.stringify_typedef())
     # Test struct
-    myriad_class = MyriadStructType(None, "MyriadClass", [void_ptr])
+    myriad_class = MyriadStructType("MyriadClass", {void_ptr})
     print(myriad_class.stringify_decl())
 
 

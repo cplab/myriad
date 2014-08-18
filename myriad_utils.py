@@ -101,17 +101,26 @@ class TypeEnforcer(type):
         return super(TypeEnforcer, mcs).__new__(mcs, name, bases, attrs)
 
 
-class _Foo(object, metaclass=TypeEnforcer):
-    """ Dummy class to test enforcement """
+def test_type_enforcer():
+    """ Tests TypeEnforcer functionality """
 
-    def __init__(self, a: int=0):
-        self.a = a
+    class _Foo(object, metaclass=TypeEnforcer):
+        def __init__(self, myint: int=0):
+            self.myint = myint
+
+    my_foo = None
+
+    try:
+        my_foo = _Foo(5.)
+    except TypeError:
+        pass
+
+    if my_foo is not None:
+        print("TypeEnforcer test failed!")
 
 
 def main():
-    f = _Foo(5.)
-    print(f.a)
-
+    test_type_enforcer()
 
 if __name__ == "__main__":
     main()
