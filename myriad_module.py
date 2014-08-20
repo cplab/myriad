@@ -46,7 +46,7 @@ for m_var in module_vars:
 ## Print methods forward declarations
 <%
 for fun in functions:
-    if fun.is_global:
+    if fun.fun_type is myriad_types.MyriadFunType.m_module:
         context.write("extern "+f.stringify_decl()+";")
 %>
 
@@ -170,12 +170,12 @@ class MyriadModule(object, metaclass=TypeEnforcer):
             raise ValueError("Flags strict and override cannot both be True.")
 
         v_obj = myriad_types.MyriadScalar(self.object_name,
-                                          myriad_types.MyriadCType.m_void,
+                                          myriad_types.MVoid,
                                           True,
                                           quals=["const"])
         self.module_vars.add(v_obj)
         v_cls = myriad_types.MyriadScalar(self.class_name,
-                                          myriad_types.MyriadCType.m_void,
+                                          myriad_types.MVoid,
                                           True,
                                           quals=["const"])
         self.module_vars.add(v_cls)

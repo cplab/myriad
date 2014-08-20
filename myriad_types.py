@@ -39,16 +39,42 @@ class _MyriadBase(object):
         """Renders the internal C declaration"""
         return self._cgen.visit(self.decl)
 
-# XXX: Replace with Metaclass
-class MyriadCType(PyEnum):
-    """Base C types available for scalars."""
-    m_float = IdentifierType(names=["float"])
-    m_double = IdentifierType(names=["double"])
-    m_int = IdentifierType(names=["int"])
-    m_uint = IdentifierType(names=["unsigned int"])
-    m_void = IdentifierType(names=["void"])
-    m_va_list = IdentifierType(names=["va_list"])
-    m_struct = IdentifierType(names=["struct"])  # XXX: BROKEN
+
+# ----------------------------------------
+#                 CTYPES
+# ----------------------------------------
+
+MyriadCType = type("MyriadCType", (object,), {'mtype': None})
+MFloat = type("MFloat",
+              (MyriadCType,),
+              {
+                  'mtype': IdentifierType(names=["float"]),
+              })()
+MDouble = type("MDouble",
+               (MyriadCType,),
+               {
+                   'mtype': IdentifierType(names=["double"]),
+               })()
+MInt = type("MInt",
+            (MyriadCType,),
+            {
+                'mtype': IdentifierType(names=["int64_t"]),
+            })()
+MUInt = type("MUInt",
+             (MyriadCType,),
+             {
+                 'mtype': IdentifierType(names=["uint64_t"]),
+             })()
+MVoid = type("MVoid",
+             (MyriadCType,),
+             {
+                 'mtype': IdentifierType(names=["void"]),
+             })()
+MVarArgs = type("MVarArgs",
+                (MyriadCType,),
+                {
+                    'mtype': IdentifierType(names=["va_list"]),
+                })()
 
 
 class MyriadScalar(_MyriadBase):
@@ -72,7 +98,7 @@ class MyriadScalar(_MyriadBase):
         # Initialize internal C type declaration
         self.type_decl = TypeDecl(declname=self.ident,
                                   quals=self.quals,
-                                  type=self.base_type.value)
+                                  type=self.base_type.mtype)
 
         # Initialize internal C ptr declaration (might not be used)
         self.ptr_decl = PtrDecl(quals=[], type=self.type_decl)
@@ -113,13 +139,17 @@ class MyriadStructType(_MyriadBase):
             raise TypeError("Invalid struct member(s) type(s).")
 
         self.struct_name = struct_name
-        self.base_type = MyriadCType.m_struct
 
         # Set struct members
         self.members = {v.ident: v.decl for v in members}
 
         # Set struct type
-        self.struct_c_ast = Struct(self.struct_name, list(self.members))
+        self.struct_c_ast = Struct(self.struct_name, self.members.values())
+
+        # Setup instance generator (i.e. "the factory" class)
+        self.base_type = type(self.struct_name,
+                              (MyriadCType,),
+                              {'mtype': Struct(self.struct_name, None)})()
 
         _tmp_decl = Decl(name=None,
                          quals=[],
@@ -132,43 +162,6 @@ class MyriadStructType(_MyriadBase):
         # Need to call super last in this instance
         super().__init__(None, _tmp_decl, storage=storage)
 
-    class MyriadStructVar(MyriadScalar):
-        """ Actual struct variable instance. """
-
-        # pylint: disable=R0913
-        def __init__(self,
-                     prototype: MyriadStructType,  # NOQA
-                     ident: str,
-                     ptr: bool=False,
-                     quals: list=None,
-                     storage: list=None,
-                     init=None,
-                     **kwargs):
-            """ TODO """
-
-            # If we're a pointer, default initial value is NULL
-            init = ID("NULL") if ptr is True and init is None else init
-
-            # Initialize members as attributes
-            for member_name, member_val in kwargs.items():
-                self.__dict__[member_name] = member_val
-
-            # TODO: Create initialization Assignments (including init?)
-
-            
-            # XXX: Broken until CType is metaclass'd
-            # Call super for initialization purpose; however we override decl
-            super().__init__(self, ident, MyriadCType.m_struct, ptr, quals,
-                             storage, init)
-            self.decl = Decl(name=self.ident,
-                             quals=self.quals,
-                             storage=self.storage,
-                             funcspec=[],
-                             type=self.ptr_decl if ptr else self.type_decl,
-                             init=None,
-                             bitsize=None)
-
-    # pylint: disable=R0913
     def __call__(self,
                  ident: str,
                  ptr: bool=False,
@@ -183,8 +176,8 @@ class MyriadStructType(_MyriadBase):
         given_idents = set(kwargs.keys())
         if not given_idents.issubset(prot_idents):
             diff = given_idents - prot_idents
-            raise NameError("{0} not valid member(s) of struct {1}".format(
-                str(diff), self.ident))
+            msg = "{0} not valid member(s) of struct {1}"
+            raise NameError(msg.format(str(diff), self.ident))
 
         # TODO: Do more robust checking with namespace lookups
         # Assert argument initial values match protoype's
@@ -201,13 +194,16 @@ class MyriadStructType(_MyriadBase):
                     # If a scalar, pass forward as ID
                     new_kwargs[arg_id] = ID(arg_val.ident)
 
-        return MyriadStructType.MyriadStructVar(self,
-                                                ident,
-                                                ptr,
-                                                quals,
-                                                storage,
-                                                init,
-                                                **new_kwargs)
+        # CONSTRUCTOR GOES HERE
+        new_instance = MyriadScalar(ident, self.base_type, ptr,
+                                    quals, storage, init)
+
+        # TODO: Actually initialize versus just setting blindly
+        # Initialize members as attributes
+        for member_name, member_val in new_kwargs.items():
+            new_instance.__dict__[member_name] = member_val
+
+        return new_instance
 
 
 @unique
@@ -236,7 +232,7 @@ class MyriadFunction(_MyriadBase):
         # --------------------------------------------
         self.ret_var = ret_var
         if self.ret_var is None:
-            self.ret_var = MyriadScalar(self.ident, MyriadCType.m_void)
+            self.ret_var = MyriadScalar(self.ident, MVoid)
 
         # -----------------------------------------------------
         # Set function type/scope: module, method, or delegator
@@ -340,7 +336,7 @@ def test_ast():
 def main():
     """Test basic functionality"""
     # Test Scalar
-    void_ptr = MyriadScalar("self", MyriadCType.m_void, True, quals=["const"])
+    void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
     print(void_ptr.stringify_decl())
     # Test Function
     myriad_dtor = MyriadFunction("myriad_dtor", {void_ptr})
@@ -350,6 +346,8 @@ def main():
     # Test struct
     myriad_class = MyriadStructType("MyriadClass", {void_ptr})
     print(myriad_class.stringify_decl())
+    class_m = myriad_class("class_m", quals=["const"])
+    print(class_m.stringify_decl())
 
 
 if __name__ == "__main__":
