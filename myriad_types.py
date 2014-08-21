@@ -16,8 +16,8 @@ from pycparser.c_ast import ParamList
 from myriad_utils import enforce_annotations
 
 # Global TODOs
-# TODO: add support for __hash__ and __eq__ for set purposes
-
+# TODO: add support for __hash__ and __eq__ for dict/set purposes
+# XXX: Change usage of set to OrderedDict for struct members and fxn args
 
 class _MyriadBase(object):
     """Common core class for Myriad types"""
@@ -70,6 +70,11 @@ MVoid = type("MVoid",
              {
                  'mtype': IdentifierType(names=["void"]),
              })()
+MSizeT = type("MSizeT",
+              (MyriadCType,),
+              {
+                  'mtype': IdentifierType(names=["size_t"]),
+              })()
 MVarArgs = type("MVarArgs",
                 (MyriadCType,),
                 {
@@ -244,6 +249,7 @@ class MyriadFunction(_MyriadBase):
         # --------------------------------------------
 
         # Make sure we got the right parameter types
+        args_list = set() if args_list is None else args_list
         if not all(issubclass(e.__class__, _MyriadBase) for e in args_list):
             raise TypeError("Invalid function argument(s) type(s).")
 
