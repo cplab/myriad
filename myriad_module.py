@@ -3,6 +3,8 @@
 TODO: Docstring
 """
 
+import copy
+
 from myriad_utils import enforce_annotations, TypeEnforcer
 from myriad_mako_wrapper import MakoFileTemplate
 
@@ -143,6 +145,9 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
         # TODO: Dictionaries or sets?
         self.functions = set()
+
+        # XXX: Create stand-alone "method" object in myriad_types
+        # methods = {method_ident: (delegator, super delegator, instance)}
         self.methods = set()
         self.instance_methods = set()
         self.super_delegators = set()
@@ -216,9 +221,20 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         if strict is True and override is True:
             raise ValueError("Flags strict and override cannot both be True.")
 
-        # TODO: How to relate instance method with global delegators?
-        # _delegator = myriad_types.MyriadFunction("super" + method.ident,
-        # args_list=
+        # Prepend 
+        super_args = copy.copy(method.args_list)
+        super_class_arg = myriad_types.MyriadScalar("_class",
+                                                    myriad_types.MVoid,
+                                                    True,
+                                                    ["const"])
+        tmp_arg_indx = len(super_args.values())+1
+        super_args[tmp_arg_indx] = super_class_arg
+        super_args.move_to_end(tmp_arg_indx, last=False)
+        _delg = myriad_types.MyriadFunction("super" + method.ident,
+                                            super_args,
+                                            method.ret_var,
+                                            myriad_types.MyriadFunType.m_delegator)
+        # XXX: Register method and delegator
 
         # TODO: Make "override"/"strict" modes check for existance better.
         if method in self.methods:
@@ -255,7 +271,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         self.module_vars.add(var)
 
     def initialize_header_template(self, context_dict: dict=None):
-        """ Initializes internal Mako template for C header file """
+        """ Initializes internal Mako template for C header file. """
         if context_dict is None:
             context_dict = vars(self)
         self.header_template = MakoFileTemplate(self.object_name+".h",
@@ -263,7 +279,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
                                                 context_dict)
 
     def render_header_template(self, printout: bool=False):
-        """ Renders the header file template """
+        """ Renders the header file template. """
 
         # Reset buffer if necessary
         if self.header_template.buffer is not '':

@@ -5,6 +5,7 @@ TODO: Docstring
 
 from enum import Enum as PyEnum
 from enum import unique
+from collections import OrderedDict
 import copy
 
 from pycparser import parse_file, c_generator
@@ -20,7 +21,7 @@ from myriad_utils import enforce_annotations
 # XXX: Change usage of set to OrderedDict for struct members and fxn args
 
 class _MyriadBase(object):
-    """Common core class for Myriad types"""
+    """ Common core class for Myriad types. """
     _cgen = c_generator.CGenerator()
 
     def __init__(self,
@@ -145,8 +146,11 @@ class MyriadStructType(_MyriadBase):
 
         self.struct_name = struct_name
 
-        # Set struct members
-        self.members = {v.ident: v.decl for v in members}
+        # Set struct members using ordered dict: order matters for memory!
+        _tmp_members = {v.ident: v.decl for v in members}
+        self.members = OrderedDict()
+        for member_ident, member in _tmp_members.items():
+            self.members[member_ident] = member
 
         # Set struct type
         self.struct_c_ast = Struct(self.struct_name, self.members.values())
@@ -253,11 +257,13 @@ class MyriadFunction(_MyriadBase):
         if not all(issubclass(e.__class__, _MyriadBase) for e in args_list):
             raise TypeError("Invalid function argument(s) type(s).")
 
-        # Args list stores the MyriadScalars
-        self.args_list = [] if args_list is None else list(args_list)
+        # Args list stores the MyriadScalars as ordered parameters
+        self.args_list = OrderedDict()
+        for index, arg in enumerate(args_list):
+            self.args_list[index] = arg
 
         # Param list stores the scalar's declarations in a C AST object.
-        self.param_list = ParamList([v.decl for v in self.args_list])
+        self.param_list = ParamList([v.decl for v in self.args_list.values()])
 
         # ------------------------------------------
         # Create internal c_ast function declaration
