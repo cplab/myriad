@@ -8,6 +8,12 @@ from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
 
+def assert_list_type(m_list: list, m_type: type):
+    """ Raises an error if m_list's members are not all of m_type. """
+    msg = "Invalid argument(s) type(s): expected {0}"
+    if not all(issubclass(type(e), m_type) for e in m_list):
+        raise TypeError(msg.format(str(m_type)))
+
 
 class wrap_file_function(object):
     """
@@ -99,6 +105,58 @@ class TypeEnforcer(type):
                 attrs[attr_name] = enforce_annotations(attr_value)
 
         return super(TypeEnforcer, mcs).__new__(mcs, name, bases, attrs)
+
+
+class IndexedSet(object):
+
+    def __init__(self, elems=None):
+        """
+        Initializes an indexed set with the given elements.
+        """
+        self._my_dict = dict()
+        self._curr_indx = -1
+        if elems is None:
+            return
+
+        for index, elem in enumerate(elems):
+            self._curr_indx += 1
+            self._my_dict[index] = elem
+
+    def append(self, n_elem):
+        """
+        Appends an element to the end of the set.
+
+        TODO: If the element is already in the set, it is moved to the end.
+        """
+        if n_elem not in self._my_dict.values():
+            self._curr_indx += 1
+            self._my_dict[self._curr_indx] = n_elem
+
+    def prepend(self, n_elem):
+        """
+        Prepends an element to the start of the set.
+
+        TODO: If the element is already in the set, it is moved to the start.
+        """
+        if n_elem not in self._my_dict.values():
+            items = list(self._my_dict.items())
+            self._my_dict = {0: n_elem}
+            for orig_indx, elem in items:
+                self._my_dict[orig_indx+1] = elem
+
+    def __getitem__(self, key):
+        if type(key) is not int:
+            msg = "IndexedSet indices must be integers, not {0}."
+            raise TypeError(msg.format(type(key)))
+        elif key > self._curr_indx or key < 0:
+            raise IndexError("Index out of bounds.")
+        return self._my_dict[key]
+
+    def __repr__(self):
+        _lst = list(range(self._curr_indx+1))
+        for indx, value in self._my_dict.items():
+            _lst[indx] = value
+        return str(_lst)
 
 
 def test_type_enforcer():

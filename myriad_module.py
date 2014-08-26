@@ -5,6 +5,8 @@ TODO: Docstring
 
 import copy
 
+from collections import OrderedDict
+
 from myriad_utils import enforce_annotations, TypeEnforcer
 from myriad_mako_wrapper import MakoFileTemplate
 
@@ -114,6 +116,60 @@ struct MyriadClass
 
 """
 
+DELEGATOR_TEMPLATE = """
+${method.delegator.stringify_decl()}
+{
+    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
+
+    assert(m_class->${Class method variable});
+
+    % if return variable is MVoid not Ptr:
+    m_class->${Class method variable}(${Function declaration args});
+    return;
+    % else:
+    return m_class->${Class method variable}(${Function declaration args});
+    % endif
+}
+"""
+
+
+class MyriadMethod(object):
+
+    @enforce_annotations
+    def __init__(self,
+                 m_fxn: myriad_types.MyriadFunction,
+                 instance_method: myriad_types.MyriadFunction=None):
+        """
+        Initializes a method from a function.
+
+        The point of this class is to automatically create delegators for a
+        method. This makes inheritance of methods easier since the delegators
+        are not implemented by the subclass, only the instance methods are
+        overwritten.
+        """
+
+        # Need to ensure this function has a typedef
+        m_fxn.gen_typedef()
+        self.delegator = m_fxn
+
+        # Initialize (default: None) instance method
+        self.instance_method = instance_method
+
+        # Create super delegator
+        super_args = copy.copy(m_fxn.args_list)
+        super_class_arg = myriad_types.MyriadScalar("_class",
+                                                    myriad_types.MVoid,
+                                                    True,
+                                                    ["const"])
+        tmp_arg_indx = len(super_args)+1
+        super_args[tmp_arg_indx] = super_class_arg
+        super_args.move_to_end(tmp_arg_indx, last=False)
+        _delg = myriad_types.MyriadFunction("super" + m_fxn.ident,
+                                            super_args,
+                                            m_fxn.ret_var,
+                                            myriad_types.MyriadFunType.m_delg)
+        self.super_delegator = _delg
+
 
 # pylint: disable=R0902
 class MyriadModule(object, metaclass=TypeEnforcer):
@@ -126,49 +182,60 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
     DEFAULT_CUDA_INCLUDES = {"cuda_runtime.h", "cuda_runtime_api.h"}
 
+    @enforce_annotations
     def __init__(self,
-                 object_name: str,
-                 class_name: str=None,
-                 cuda: bool=False,
-                 lib_includes: set=None):
+                 supermodule,
+                 obj_name: str,
+                 cls_name: str=None,
+                 obj_vars: OrderedDict=None,
+                 methods: set=None,
+                 cuda: bool=False):
         """Initializes a module"""
 
         # Set CUDA support status
         self.cuda = cuda
 
         # Set internal names for classes
-        self.object_name = object_name
-        if class_name is None:
-            self.class_name = object_name + "Class"
+        self.obj_name = obj_name
+        if cls_name is None:
+            self.cls_name = obj_name + "Class"
         else:
-            self.class_name = class_name
+            self.cls_name = cls_name
+
+        # methods = delegator, super delegator, instance
+        # We assume (for now) that the instance methods are uninitialized
+        self.methods = set()
+        for method in methods:
+            self.methods.add(MyriadMethod(method))
+
+        # Initialize class object and object class
+
+        # Add implicit superclass to start of struct definition
+        tmp_arg_indx = len(obj_vars)+1
+        obj_vars[tmp_arg_indx] = supermodule.cls_struct("_", quals=["const"])
+        obj_vars.move_to_end(tmp_arg_indx, last=False)
+
+        self.obj_struct = myriad_types.MyriadStructType(self.obj_name,
+                                                        obj_vars)
 
         # TODO: Dictionaries or sets?
         self.functions = set()
 
-        # XXX: Create stand-alone "method" object in myriad_types
-        # methods = {method_ident: (delegator, super delegator, instance)}
-        self.methods = set()
-        self.instance_methods = set()
-        self.super_delegators = set()
-
         # Initialize module global variables
         self.module_vars = set()
-        v_obj = myriad_types.MyriadScalar(self.object_name,
+        v_obj = myriad_types.MyriadScalar(self.obj_name,
                                           myriad_types.MVoid,
                                           True,
                                           quals=["const"])
         self.module_vars.add(v_obj)
-        v_cls = myriad_types.MyriadScalar(self.class_name,
+        v_cls = myriad_types.MyriadScalar(self.cls_name,
                                           myriad_types.MVoid,
                                           True,
                                           quals=["const"])
         self.module_vars.add(v_cls)
 
         # Initialize standard library imports, by default with fail-safes
-        self.lib_includes = lib_includes
-        if self.lib_includes is None:
-            self.lib_includes = MyriadModule.DEFAULT_LIB_INCLUDES
+        self.lib_includes = MyriadModule.DEFAULT_LIB_INCLUDES
 
         # TODO: Initialize local header imports
         self.local_includes = set()
@@ -202,49 +269,6 @@ class MyriadModule(object, metaclass=TypeEnforcer):
                 self.functions.discard(function)
         self.functions.add(function)
 
-    def register_module_method(self,
-                               method: myriad_types.MyriadFunction,
-                               instance: myriad_types.MyriadFunction,
-                               strict: bool=False,
-                               override: bool=False):
-        """
-        Registers a method in the module, with the given instance method.
-        A super delegator is generated and registered automatically.
-
-        Note: strict and override are mutually exclusive.
-
-        Keyword arguments:
-        method -- method to be registered
-        strict -- if True, raises an error if a collision occurs when joining.
-        override -- if True, overrides superclass methods.
-        """
-        if strict is True and override is True:
-            raise ValueError("Flags strict and override cannot both be True.")
-
-        # Prepend 
-        super_args = copy.copy(method.args_list)
-        super_class_arg = myriad_types.MyriadScalar("_class",
-                                                    myriad_types.MVoid,
-                                                    True,
-                                                    ["const"])
-        tmp_arg_indx = len(super_args.values())+1
-        super_args[tmp_arg_indx] = super_class_arg
-        super_args.move_to_end(tmp_arg_indx, last=False)
-        _delg = myriad_types.MyriadFunction("super" + method.ident,
-                                            super_args,
-                                            method.ret_var,
-                                            myriad_types.MyriadFunType.m_delegator)
-        # XXX: Register method and delegator
-
-        # TODO: Make "override"/"strict" modes check for existance better.
-        if method in self.methods:
-            if strict:
-                raise ValueError("Cannot add duplicate methods.")
-            elif override:
-                self.methods.discard(method)
-        self.methods.add(method)
-        self.instance_methods.add(instance)
-
     def register_module_var(self,
                             var: myriad_types.MyriadScalar,
                             strict: bool=False,
@@ -274,7 +298,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         """ Initializes internal Mako template for C header file. """
         if context_dict is None:
             context_dict = vars(self)
-        self.header_template = MakoFileTemplate(self.object_name+".h",
+        self.header_template = MakoFileTemplate(self.obj_name+".h",
                                                 HEADER_FILE_TEMPLATE,
                                                 context_dict)
 

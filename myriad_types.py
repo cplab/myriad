@@ -14,11 +14,12 @@ from pycparser.c_ast import Decl, PtrDecl, TypeDecl, ID
 from pycparser.c_ast import Struct, FuncDecl
 from pycparser.c_ast import ParamList
 
-from myriad_utils import enforce_annotations
+from myriad_utils import enforce_annotations, assert_list_type
 
 # Global TODOs
 # TODO: add support for __hash__ and __eq__ for dict/set purposes
 # XXX: Change usage of set to OrderedDict for struct members and fxn args
+
 
 class _MyriadBase(object):
     """ Common core class for Myriad types. """
@@ -137,19 +138,19 @@ class MyriadStructType(_MyriadBase):
     @enforce_annotations
     def __init__(self,
                  struct_name: str,
-                 members: set={},
+                 members: OrderedDict=None,
                  storage: list=None):
 
         # Make sure we got the right parameter types
-        if not all(issubclass(m.__class__, _MyriadBase) for m in members):
-            raise TypeError("Invalid struct member(s) type(s).")
+        assert_list_type(list(members.values()), _MyriadBase)
 
         self.struct_name = struct_name
 
         # Set struct members using ordered dict: order matters for memory!
-        _tmp_members = {v.ident: v.decl for v in members}
+        members = OrderedDict() if members is None else members
+        members = {v.ident: v.decl for v in members.values()}
         self.members = OrderedDict()
-        for member_ident, member in _tmp_members.items():
+        for member_ident, member in members.items():
             self.members[member_ident] = member
 
         # Set struct type
@@ -218,7 +219,7 @@ class MyriadStructType(_MyriadBase):
 @unique
 class MyriadFunType(PyEnum):
     """ Enumerator for different function types """
-    m_delegator = 1
+    m_delg = 1
     m_module = 2
     m_method = 3
 
@@ -230,7 +231,7 @@ class MyriadFunction(_MyriadBase):
     @enforce_annotations
     def __init__(self,
                  ident: str,
-                 args_list: set=None,
+                 args_list: OrderedDict=None,
                  ret_var: MyriadScalar=None,
                  fun_type: MyriadFunType=MyriadFunType.m_module):
         # Always call super first
@@ -253,14 +254,10 @@ class MyriadFunction(_MyriadBase):
         # --------------------------------------------
 
         # Make sure we got the right parameter types
-        args_list = set() if args_list is None else args_list
-        if not all(issubclass(e.__class__, _MyriadBase) for e in args_list):
-            raise TypeError("Invalid function argument(s) type(s).")
+        assert_list_type(list(args_list.values()), _MyriadBase)
 
         # Args list stores the MyriadScalars as ordered parameters
-        self.args_list = OrderedDict()
-        for index, arg in enumerate(args_list):
-            self.args_list[index] = arg
+        self.args_list = OrderedDict() if args_list is None else args_list
 
         # Param list stores the scalar's declarations in a C AST object.
         self.param_list = ParamList([v.decl for v in self.args_list.values()])
@@ -351,12 +348,12 @@ def main():
     void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
     print(void_ptr.stringify_decl())
     # Test Function
-    myriad_dtor = MyriadFunction("myriad_dtor", {void_ptr})
+    myriad_dtor = MyriadFunction("myriad_dtor", OrderedDict({0: void_ptr}))
     myriad_dtor.gen_typedef()
     print(myriad_dtor.stringify_decl())
     print(myriad_dtor.stringify_typedef())
     # Test struct
-    myriad_class = MyriadStructType("MyriadClass", {void_ptr})
+    myriad_class = MyriadStructType("MyriadClass", OrderedDict({0: void_ptr}))
     print(myriad_class.stringify_decl())
     class_m = myriad_class("class_m", quals=["const"])
     print(class_m.stringify_decl())
