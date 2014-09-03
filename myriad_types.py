@@ -148,13 +148,14 @@ class MyriadStructType(_MyriadBase):
 
         # Set struct members using ordered dict: order matters for memory!
         members = OrderedDict() if members is None else members
+        sorted_members = [members[idx].decl for idx in sorted(members.keys())]
         members = {v.ident: v.decl for v in members.values()}
         self.members = OrderedDict()
         for member_ident, member in members.items():
             self.members[member_ident] = member
 
         # Set struct type
-        self.struct_c_ast = Struct(self.struct_name, self.members.values())
+        self.struct_c_ast = Struct(self.struct_name, sorted_members)
 
         # Setup instance generator (i.e. "the factory" class)
         self.base_type = type(self.struct_name,
@@ -287,8 +288,8 @@ class MyriadFunction(_MyriadBase):
         # Generate typedef depending on function type
         # -------------------------------------------
         self.fun_typedef = None
-        if self.fun_type is MyriadFunType.m_method:
-            self.gen_typedef()
+        self.base_type = None
+        self.gen_typedef()
 
         # -----------------------------------------------
         # TODO: Create internal c_ast function definition
@@ -299,12 +300,18 @@ class MyriadFunction(_MyriadBase):
     def gen_typedef(self, typedef_name: str=None):
         """Generates a typedef definition for this function."""
 
+        # TODO: Do we need to prevent double generation?
+
         if typedef_name is None:
             typedef_name = self.ident + "_t"
 
         _tmp = IdentifierType(names=self.func_decl.type.type.names)
         tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
+
+        self.base_type = type(typedef_name,
+                              (MyriadCType,),
+                              {'mtype': IdentifierType([typedef_name])})()
 
         self.fun_typedef = Typedef(name=typedef_name,
                                    quals=[],
