@@ -305,7 +305,11 @@ class MyriadFunction(_MyriadBase):
         if typedef_name is None:
             typedef_name = self.ident + "_t"
 
-        _tmp = IdentifierType(names=self.func_decl.type.type.names)
+        _tmp = None
+        if type(self.func_decl.type.type) is TypeDecl:
+            _tmp = IdentifierType(names=self.func_decl.type.type.declname)
+        else:
+            _tmp = IdentifierType(names=self.func_decl.type.type.names)
         tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
 
@@ -321,7 +325,7 @@ class MyriadFunction(_MyriadBase):
 
     @enforce_annotations
     def stringify_typedef(self) -> str:
-        """Returns string representation of this function's typedef"""
+        """ Returns string representation of this function's typedef. """
         return self._cgen.visit(self.fun_typedef)
 
 

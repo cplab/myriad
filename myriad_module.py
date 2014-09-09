@@ -9,7 +9,7 @@ from collections import OrderedDict
 from types import MethodType
 
 from myriad_utils import enforce_annotations, TypeEnforcer
-from myriad_mako_wrapper import MakoFileTemplate
+from myriad_mako_wrapper import MakoFileTemplate, MakoTemplate
 
 from pycparser.c_ast import Decl, TypeDecl, Struct, PtrDecl
 
@@ -120,24 +120,27 @@ struct MyriadClass
 
 """
 
-DELEGATOR_TEMPLATE = """
-${method.delegator.stringify_decl()}
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-
-    assert(m_class->${Class method variable});
-
-    % if return variable is MVoid not Ptr:
-    m_class->${Class method variable}(${Function declaration args});
-    return;
-    % else:
-    return m_class->${Class method variable}(${Function declaration args});
-    % endif
-}
-"""
-
 
 class MyriadMethod(object):
+
+    DELEGATOR_TEMPLATE = """
+<%
+    fun_args = ','.join([arg.ident for arg in delegator.args_list.values()])
+%>
+
+${delegator.stringify_decl()}
+{
+    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(${delegator.args_list[0].ident});
+
+    assert(m_class->${delegator.fun_typedef.name});
+
+    % if delegator.ret_var.base_type is MVoid and not delegator.ret_var.base_type.ptr:
+    m_class->my_${delegator.fun_typedef.name}(${fun_args});
+    return;
+    % else:
+    return m_class->my_${delegator.fun_typedef.name}(${fun_args});
+    % endif
+}"""
 
     @enforce_annotations
     def __init__(self,
@@ -173,6 +176,8 @@ class MyriadMethod(object):
                                             m_fxn.ret_var,
                                             myriad_types.MyriadFunType.m_delg)
         self.super_delegator = _delg
+        self.delg_template = MakoTemplate(MyriadMethod.DELEGATOR_TEMPLATE,
+                                          vars(self))
 
 
 # pylint: disable=R0902
@@ -331,19 +336,25 @@ class MyriadObject(MyriadModule):
 
         # extern void* myriad_ctor(void* _self, va_list* app);
         _app = MyriadScalar("app", myriad_types.MVarArgs, ptr=True)
+        _ret_var = MyriadScalar('', myriad_types.MVoid, ptr=True)
         _ctor_fun = MyriadFunction("myriad_ctor",
-                                   OrderedDict({0: _self, 1: _app}))
+                                   OrderedDict({0: _self, 1: _app}),
+                                   ret_var=_ret_var)
         self.methods.add(MyriadMethod(_ctor_fun))
 
         # extern int myriad_dtor(void* _self);
+        _ret_var = MyriadScalar('', myriad_types.MInt)
         _dtor_fun = MyriadFunction("myriad_dtor",
-                                   OrderedDict({0: _self}))
+                                   OrderedDict({0: _self}),
+                                   ret_var=_ret_var)
         self.methods.add(MyriadMethod(_dtor_fun))
 
         # extern void* myriad_cudafy(void* _self, int clobber);
         _clobber = MyriadScalar("clobber", myriad_types.MInt)
+        _ret_var = MyriadScalar('', myriad_types.MVoid, ptr=True)
         _cudafy_fun = MyriadFunction("myriad_cudafy",
-                                     OrderedDict({0: _self, 1: _clobber}))
+                                     OrderedDict({0: _self, 1: _clobber}),
+                                     ret_var=_ret_var)
         self.methods.add(MyriadMethod(_cudafy_fun))
 
         # extern void myriad_decudafy(void* _self, void* cu_self);
@@ -422,28 +433,15 @@ class MyriadObject(MyriadModule):
         self.header_template = None
         self.initialize_header_template()
 
-"""
-extern int initCUDAObjects();
-
-extern void* myriad_new(const void* _class, ...);
-
-extern const void* myriad_class_of(const void* _self);
-
-extern size_t myriad_size_of(const void* self);
-
-extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
-
-extern int myriad_is_of(const void* _self, const struct MyriadClass* m_class);
-
-extern const void* myriad_super(const void* _self);
-"""
-
 
 def create_myriad_object():
     obj = MyriadObject()
     from pprint import PrettyPrinter
     pp = PrettyPrinter()
     pp.pprint(obj.obj_struct.stringify_decl())
+    for method in obj.methods:
+        method.delg_template.render()
+        print(method.delg_template.buffer)
 
 
 def main():

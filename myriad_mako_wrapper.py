@@ -9,19 +9,11 @@ from mako.runtime import Context
 from io import StringIO
 
 
-class MakoFileTemplate(object, metaclass=TypeEnforcer):
-    """ Wraps a mako template, context, and I/O buffer """
+class MakoTemplate(object, metaclass=TypeEnforcer):
+    """ Wraps a mako template, context, and I/O Buffer """
 
-    def __init__(self,
-                 filename: str,
-                 template,
-                 context: dict=None,
-                 buf: StringIO=None):
+    def __init__(self, template, context: dict=None, buf: StringIO=None):
         """ Initializes a template relevant data """
-
-        # Sets filename
-        self.filename = filename
-
         # Sets template
         self._template = None
         if type(template) is str:
@@ -64,6 +56,23 @@ class MakoFileTemplate(object, metaclass=TypeEnforcer):
     def render(self):
         """ Renders the template to the internal buffer."""
         self._template.render_context(self._context)
+
+
+class MakoFileTemplate(MakoTemplate):
+    """ A MakoTemplate wrapper with file I/O functionality. """
+
+    def __init__(self,
+                 filename: str,
+                 template,
+                 context: dict=None,
+                 buf: StringIO=None):
+        """ Initializes a template relevant data """
+
+        # Sets filename
+        self.filename = filename
+
+        # Superclass does the rest of the work for us
+        super().__init__(template, context, buf)
 
     def render_to_file(self, filename: str=None):
         """
