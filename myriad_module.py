@@ -26,7 +26,7 @@ HEADER_FILE_TEMPLATE = """
 %>
 
 ## Add include guards
-<% include_guard = object_name.upper() + "_H" %>
+<% include_guard = obj_name.upper() + "_H" %>
 #ifndef ${include_guard}
 #define ${include_guard}
 
@@ -41,26 +41,17 @@ HEADER_FILE_TEMPLATE = """
 % endfor
 
 ## Declare typedefs
-% for fun in methods:
-    % if fun.gen_typedef is not None:
-${fun.stringify_typedef()};
-    % endif
+% for method in methods:
+${method.delegator.stringify_typedef()};
 % endfor
 
 ## Struct forward declarations
-struct ${class_name};
-struct ${object_name};
+struct ${cls_name};
+struct ${obj_name};
 
 ## Module variables
 % for m_var in module_vars:
 extern ${m_var.stringify_decl()};
-% endfor
-
-## Print methods forward declarations
-% for fun in functions:
-    % if fun.fun_type is myriad_types.MyriadFunType.m_module:
-extern ${fun.stringify_decl()};
-    % endif
 % endfor
 
 // Top-level functions
@@ -81,13 +72,9 @@ extern const void* myriad_super(const void* _self);
 
 // Methods
 
-extern void* myriad_ctor(void* _self, va_list* app);
-
-extern int myriad_dtor(void* _self);
-
-extern void* myriad_cudafy(void* _self, int clobber);
-
-extern void myriad_decudafy(void* _self, void* cuda_self);
+% for method in methods:
+extern ${method.delegator.stringify_decl()};
+% endfor
 
 // Super delegators
 
@@ -99,22 +86,10 @@ extern void* super_cudafy(const void* _class, void* _self, int clobber);
 
 extern void super_decudafy(const void* _class, void* _self, void* cuda_self);
 
-struct MyriadObject
-{
-    const struct MyriadClass* m_class; //! Object's class/description
-};
+// Class/Object structs
 
-struct MyriadClass
-{
-    const struct MyriadObject _;
-    const struct MyriadClass* super;
-    const struct MyriadClass* device_class;
-    size_t size;
-    ctor_t my_ctor;
-    dtor_t my_dtor;
-    cudafy_t my_cudafy;
-    de_cudafy_t my_decudafy;
-};
+${obj_struct.stringify_decl()}
+${cls_struct.stringify_decl()}
 
 #endif
 
@@ -436,12 +411,8 @@ class MyriadObject(MyriadModule):
 
 def create_myriad_object():
     obj = MyriadObject()
-    from pprint import PrettyPrinter
-    pp = PrettyPrinter()
-    pp.pprint(obj.obj_struct.stringify_decl())
-    for method in obj.methods:
-        method.delg_template.render()
-        print(method.delg_template.buffer)
+    obj.render_header_template(True)
+
 
 
 def main():

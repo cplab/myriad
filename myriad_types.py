@@ -307,7 +307,7 @@ class MyriadFunction(_MyriadBase):
 
         _tmp = None
         if type(self.func_decl.type.type) is TypeDecl:
-            _tmp = IdentifierType(names=self.func_decl.type.type.declname)
+            _tmp = self.func_decl.type.type.type
         else:
             _tmp = IdentifierType(names=self.func_decl.type.type.names)
         tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
