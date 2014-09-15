@@ -6,17 +6,13 @@ TODO: Docstring
 import copy
 
 from collections import OrderedDict
-from types import MethodType
 
 from myriad_utils import enforce_annotations, TypeEnforcer
 from myriad_mako_wrapper import MakoFileTemplate, MakoTemplate
 
-from pycparser.c_ast import Decl, TypeDecl, Struct, PtrDecl
+from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
+from myriad_types import MVoid, MyriadFunType
 
-import myriad_types
-from myriad_types import MyriadStructType, MyriadScalar, MyriadFunction
-
-# XXX: Change usage of "set" to collections.OrderedDict
 
 HEADER_FILE_TEMPLATE = """
 
@@ -78,13 +74,9 @@ extern ${method.delegator.stringify_decl()};
 
 // Super delegators
 
-extern void* super_ctor(const void* _class, void* _self, va_list* app);
-
-extern int super_dtor(const void* _class, void* _self);
-
-extern void* super_cudafy(const void* _class, void* _self, int clobber);
-
-extern void super_decudafy(const void* _class, void* _self, void* cuda_self);
+% for method in methods:
+extern ${method.super_delegator.stringify_decl()};
+% endfor
 
 // Class/Object structs
 
@@ -95,10 +87,18 @@ ${cls_struct.stringify_decl()}
 
 """
 
-
+# pylint: disable=R0902
+# pylint: disable=R0903
 class MyriadMethod(object):
+    """
+    Generic class for abstracting methods into 3 core components:
 
-    DELEGATOR_TEMPLATE = """
+    1) Delegator - API entry point for public method calls
+    2) Super Delegator - API entry point for subclasses
+    3) Instance Function - Internal definition of method on a per-class basis.
+    """
+
+    DELG_TEMPLATE = """
 <%
     fun_args = ','.join([arg.ident for arg in delegator.args_list.values()])
 %>
@@ -115,12 +115,33 @@ ${delegator.stringify_decl()}
     % else:
     return m_class->my_${delegator.fun_typedef.name}(${fun_args});
     % endif
-}"""
+}
+    """
+
+    SUPER_DELG_TEMPLATE = """
+<%
+    fun_args = ','.join([arg.ident for arg in super_delegator.args_list.values()])
+%>
+${supert_delegator.stringify_decl()}
+{
+    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(${super_delegator.args_list[0].ident});
+
+    assert(superclass->${delegator.fun_typedef.name});
+
+    % if delegator.ret_var.base_type is MVoid and not delegator.ret_var.base_type.ptr:
+    superclass->my_${delegator.fun_typedef.name}(${fun_args});
+    return;
+    % else:
+    return superclass->my_${delegator.fun_typedef.name}(${fun_args});
+    % endif
+}
+    """
 
     @enforce_annotations
     def __init__(self,
-                 m_fxn: myriad_types.MyriadFunction,
-                 instance_method: myriad_types.MyriadFunction=None):
+                 m_fxn: MyriadFunction,
+                 instance_method=None,
+                 obj_name: str=None):
         """
         Initializes a method from a function.
 
@@ -136,23 +157,46 @@ ${delegator.stringify_decl()}
 
         # Initialize (default: None) instance method
         self.instance_method = instance_method
+        # If we are given a string, assume this is the instance method body
+        # and auto-generate the MyriadFunction wrapper
+        if type(self.instance_method) is str:
+            if obj_name is None:
+                raise ValueError("Must provide instance method object name.")
+            self.gen_instance_method_from_str(self.instance_method, obj_name)
 
         # Create super delegator
         super_args = copy.copy(m_fxn.args_list)
-        super_class_arg = myriad_types.MyriadScalar("_class",
-                                                    myriad_types.MVoid,
-                                                    True,
-                                                    ["const"])
+        super_class_arg = MyriadScalar("_class",
+                                       MVoid,
+                                       True,
+                                       ["const"])
         tmp_arg_indx = len(super_args)+1
         super_args[tmp_arg_indx] = super_class_arg
         super_args.move_to_end(tmp_arg_indx, last=False)
-        _delg = myriad_types.MyriadFunction("super_" + m_fxn.ident,
-                                            super_args,
-                                            m_fxn.ret_var,
-                                            myriad_types.MyriadFunType.m_delg)
+        _delg = MyriadFunction("super_" + m_fxn.ident,
+                               super_args,
+                               m_fxn.ret_var,
+                               MyriadFunType.m_delg)
         self.super_delegator = _delg
-        self.delg_template = MakoTemplate(MyriadMethod.DELEGATOR_TEMPLATE,
+        self.delg_template = MakoTemplate(self.DELG_TEMPLATE,
                                           vars(self))
+        self.super_delg_template = MakoTemplate(self.SUPER_DELG_TEMPLATE,
+                                                vars(self))
+        # TODO: Implement instance method template
+        self.instance_method_template = None
+
+    def gen_instance_method_from_str(self,
+                                     method_body: str,
+                                     obj_name: str) -> MyriadFunction:
+        """
+        Automatically generate a MyriadFunction wrapper for a method body.
+        """
+        _tmp_f = MyriadFunction(obj_name + '_' + self.delegator.ident,
+                                args_list=self.delegator.args_list,
+                                ret_var=self.delegator.ret_var,
+                                fun_type=MyriadFunType.m_module,
+                                fun_def=method_body)
+        self.instance_method = _tmp_f
 
 
 # pylint: disable=R0902
@@ -221,15 +265,15 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
         # Initialize module global variables
         self.module_vars = set()
-        v_obj = myriad_types.MyriadScalar(self.obj_name,
-                                          myriad_types.MVoid,
-                                          True,
-                                          quals=["const"])
+        v_obj = MyriadScalar(self.obj_name,
+                             MVoid,
+                             True,
+                             quals=["const"])
         self.module_vars.add(v_obj)
-        v_cls = myriad_types.MyriadScalar(self.cls_name,
-                                          myriad_types.MVoid,
-                                          True,
-                                          quals=["const"])
+        v_cls = MyriadScalar(self.cls_name,
+                             MVoid,
+                             True,
+                             quals=["const"])
         self.module_vars.add(v_cls)
 
         # Initialize standard library imports, by default with fail-safes
@@ -243,7 +287,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         self.initialize_header_template()
 
     def register_module_function(self,
-                                 function: myriad_types.MyriadFunction,
+                                 function: MyriadFunction,
                                  strict: bool=False,
                                  override: bool=False):
         """
@@ -290,133 +334,8 @@ class MyriadModule(object, metaclass=TypeEnforcer):
             self.header_template.render_to_file()
 
 
-# Cheater class
-class MyriadObject(MyriadModule):
-
-    def __init__(self):
-        # Set CUDA support status
-        self.cuda = True
-
-        # Set internal names for classes
-        self.obj_name = "MyriadObject"
-        self.cls_name = "MyriadClass"
-
-        # ---------------------------------------------------------------------
-        # Cheat by hardcoding methods in constructor
-        # methods = delegator, super delegator, instance
-
-        # TODO: Hardcode instance methods
-        self.methods = set()
-        _self = MyriadScalar("self", myriad_types.MVoid, True, quals=["const"])
-
-        # extern void* myriad_ctor(void* _self, va_list* app);
-        _app = MyriadScalar("app", myriad_types.MVarArgs, ptr=True)
-        _ret_var = MyriadScalar('', myriad_types.MVoid, ptr=True)
-        _ctor_fun = MyriadFunction("myriad_ctor",
-                                   OrderedDict({0: _self, 1: _app}),
-                                   ret_var=_ret_var)
-        self.methods.add(MyriadMethod(_ctor_fun))
-
-        # extern int myriad_dtor(void* _self);
-        _ret_var = MyriadScalar('', myriad_types.MInt)
-        _dtor_fun = MyriadFunction("myriad_dtor",
-                                   OrderedDict({0: _self}),
-                                   ret_var=_ret_var)
-        self.methods.add(MyriadMethod(_dtor_fun))
-
-        # extern void* myriad_cudafy(void* _self, int clobber);
-        _clobber = MyriadScalar("clobber", myriad_types.MInt)
-        _ret_var = MyriadScalar('', myriad_types.MVoid, ptr=True)
-        _cudafy_fun = MyriadFunction("myriad_cudafy",
-                                     OrderedDict({0: _self, 1: _clobber}),
-                                     ret_var=_ret_var)
-        self.methods.add(MyriadMethod(_cudafy_fun))
-
-        # extern void myriad_decudafy(void* _self, void* cu_self);
-        _cu_self = MyriadScalar("cu_self", myriad_types.MVoid, ptr=True)
-        _decudafy_fun = MyriadFunction("myriad_decudafy",
-                                       OrderedDict({0: _self, 1: _cu_self}))
-        self.methods.add(MyriadMethod(_decudafy_fun))
-
-        # ---------------------------------------------------------------------
-        # Initialize class object and object class
-        # Cheat here by hand-crafting our own object/class variables
-        def _gen_mclass_ptr_scalar(ident: str):
-            """ Quick-n-Dirty way of hard-coding MyriadClass struct ptrs. """
-            tmp = MyriadScalar(ident,
-                               myriad_types.MVoid,
-                               True,
-                               quals=["const"])
-            tmp.type_decl = TypeDecl(declname=ident,
-                                     quals=[],
-                                     type=Struct("MyriadClass", None))
-            tmp.ptr_decl = PtrDecl(quals=[],
-                                   type=tmp.type_decl)
-            tmp.decl = Decl(name=ident,
-                            quals=["const"],
-                            storage=[],
-                            funcspec=[],
-                            type=tmp.ptr_decl,
-                            init=None,
-                            bitsize=None)
-            return tmp
-
-        obj_vars = OrderedDict({0: _gen_mclass_ptr_scalar("m_class")})
-
-        self.obj_struct = MyriadStructType(self.obj_name, obj_vars)
-
-        # Initialize class variables, i.e. function pointers for methods
-
-        cls_vars = OrderedDict()
-        cls_vars[0] = self.obj_struct("_", quals=["const"])
-        cls_vars[1] = _gen_mclass_ptr_scalar("super")
-        cls_vars[2] = _gen_mclass_ptr_scalar("device_class")
-        cls_vars[3] = MyriadScalar("size", myriad_types.MSizeT)
-
-        for indx, method in enumerate(self.methods):
-            m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
-                                  method.delegator.base_type)
-            cls_vars[indx+4] = m_scal
-
-        self.cls_vars = cls_vars
-        self.cls_struct = MyriadStructType(self.cls_name, self.cls_vars)
-
-        # --------------------------------------------------------------------
-
-        self.functions = set()
-
-        # Initialize module global variables
-        self.module_vars = set()
-        v_obj = myriad_types.MyriadScalar(self.obj_name,
-                                          myriad_types.MVoid,
-                                          True,
-                                          quals=["const"])
-        self.module_vars.add(v_obj)
-        v_cls = myriad_types.MyriadScalar(self.cls_name,
-                                          myriad_types.MVoid,
-                                          True,
-                                          quals=["const"])
-        self.module_vars.add(v_cls)
-
-        # Initialize standard library imports, by default with fail-safes
-        self.lib_includes = MyriadModule.DEFAULT_LIB_INCLUDES
-
-        # TODO: Initialize local header imports
-        self.local_includes = set()
-
-        # Initialize C header template
-        self.header_template = None
-        self.initialize_header_template()
-
-
-def create_myriad_object():
-    obj = MyriadObject()
-    obj.render_header_template(True)
-
-
-
 def main():
-    create_myriad_object()
+    pass
 
 
 if __name__ == "__main__":

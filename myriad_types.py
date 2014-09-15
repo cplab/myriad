@@ -18,7 +18,6 @@ from myriad_utils import enforce_annotations, assert_list_type
 
 # Global TODOs
 # TODO: add support for __hash__ and __eq__ for dict/set purposes
-# XXX: Change usage of set to OrderedDict for struct members and fxn args
 
 
 class _MyriadBase(object):
@@ -234,7 +233,8 @@ class MyriadFunction(_MyriadBase):
                  ident: str,
                  args_list: OrderedDict=None,
                  ret_var: MyriadScalar=None,
-                 fun_type: MyriadFunType=MyriadFunType.m_module):
+                 fun_type: MyriadFunType=MyriadFunType.m_module,
+                 fun_def=None):
         # Always call super first
         super().__init__(ident)
 
@@ -294,7 +294,7 @@ class MyriadFunction(_MyriadBase):
         # -----------------------------------------------
         # TODO: Create internal c_ast function definition
         # -----------------------------------------------
-        self.func_def = None
+        self.fun_def = fun_def
 
     @enforce_annotations
     def gen_typedef(self, typedef_name: str=None):
@@ -323,10 +323,16 @@ class MyriadFunction(_MyriadBase):
                                    type=_tmp_fdecl,
                                    coord=None)
 
-    @enforce_annotations
     def stringify_typedef(self) -> str:
         """ Returns string representation of this function's typedef. """
         return self._cgen.visit(self.fun_typedef)
+
+    def stringify_def(self) -> str:
+        """ Returns string representation of this function's definition. """
+        if type(self.fun_def) is str:
+            return self.fun_def
+        else:
+            raise NotImplementedError("Non-string representations unsupported")
 
 
 def test_ast():
