@@ -216,14 +216,6 @@ class MyriadStructType(_MyriadBase):
         return new_instance
 
 
-@unique
-class MyriadFunType(PyEnum):
-    """ Enumerator for different function types """
-    m_delg = 1
-    m_module = 2
-    m_method = 3
-
-
 # pylint: disable=R0902
 class MyriadFunction(_MyriadBase):
     """Function container for Myriad functions"""
@@ -233,7 +225,7 @@ class MyriadFunction(_MyriadBase):
                  ident: str,
                  args_list: OrderedDict=None,
                  ret_var: MyriadScalar=None,
-                 fun_type: MyriadFunType=MyriadFunType.m_module,
+                 storage=None,
                  fun_def=None):
         # Always call super first
         super().__init__(ident)
@@ -244,11 +236,6 @@ class MyriadFunction(_MyriadBase):
         self.ret_var = ret_var
         if self.ret_var is None:
             self.ret_var = MyriadScalar(self.ident, MVoid)
-
-        # -----------------------------------------------------
-        # Set function type/scope: module, method, or delegator
-        # -----------------------------------------------------
-        self.fun_type = fun_type
 
         # --------------------------------------------
         #  Create internal representation of args list
@@ -278,7 +265,7 @@ class MyriadFunction(_MyriadBase):
 
         self.decl = Decl(name=self.ident,
                          quals=[],
-                         storage=[],
+                         storage=storage,
                          funcspec=[],
                          type=self.func_decl,
                          init=None,

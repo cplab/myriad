@@ -19,39 +19,83 @@ class MyriadObject(MyriadModule):
     """
 
     # TODO: Probably make these templates a little more generic...
-    CTOR_TEMPLATE = """
+    OBJ_CTOR_T = """
     return _self;
     """
 
-    DTOR_TEMPLATE = """
+    CLS_CTOR_T = """
+    struct MyriadClass* self = (struct MyriadClass*) _self;
+    const size_t offset = offsetof(struct MyriadClass, my_ctor);
+
+    self->super = va_arg(*app, struct MyriadClass*);
+    self->size = va_arg(*app, size_t);
+
+    assert(self->super);
+
+    memcpy((char*) self + offset,
+           (char*) self->super + offset,
+           myriad_size_of(self->super) - offset);
+
+    va_list ap;
+    va_copy(ap, *app);
+
+    voidf selector = NULL; selector = va_arg(ap, voidf);
+
+    while (selector)
+    {
+        const voidf curr_method = va_arg(ap, voidf);
+
+        if (selector == (voidf) myriad_ctor)
+        {
+            *(voidf *) &self->my_ctor = curr_method;
+        } else if (selector == (voidf) myriad_cudafy) {
+            *(voidf *) &self->my_cudafy = curr_method;
+        } else if (selector == (voidf) myriad_dtor) {
+            *(voidf *) &self->my_dtor = curr_method;
+        } else if (selector == (voidf) myriad_decudafy) {
+            *(voidf *) &self->my_decudafy = curr_method;
+        }
+
+        selector = va_arg(ap, voidf);
+    }
+
+    return self;
+    """
+
+    OBJ_DTOR_T = """
     free(_self);
     return EXIT_SUCCESS;
     """
 
-    CUDAFY_TEMPLATE = """
+    CLS_DTOR_T = """
+    fprintf(stderr, "Destroying a Class is undefined behavior.\n");
+    return EXIT_FAILURE;
+    """
+
+    OBJ_CUDAFY_T = """
     #ifdef CUDA
     {
         struct MyriadObject* self = (struct MyriadObject*) self_obj;
         void* n_dev_obj = NULL;
-	size_t my_size = myriad_size_of(self);
+        size_t my_size = myriad_size_of(self);
 
-	const struct MyriadClass* tmp = self->m_class;
-	self->m_class = self->m_class->device_class;
+        const struct MyriadClass* tmp = self->m_class;
+        self->m_class = self->m_class->device_class;
 
-	CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
+        CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
 
-	CUDA_CHECK_RETURN(
-		cudaMemcpy(
-			n_dev_obj,
-			self,
-			my_size,
-			cudaMemcpyHostToDevice
-			)
-		);
+        CUDA_CHECK_RETURN(
+                cudaMemcpy(
+                        n_dev_obj,
+                        self,
+                        my_size,
+                        cudaMemcpyHostToDevice
+                        )
+                );
 
-	self->m_class = tmp;
+        self->m_class = tmp;
 
-	return n_dev_obj;
+        return n_dev_obj;
     }
     #else
     {
@@ -60,11 +104,223 @@ class MyriadObject(MyriadModule):
     #endif
     """
 
-    DECUDAFY_TEMPLATE = """
+    CLS_CUDAFY_T = """
+    #ifdef CUDA
+    {
+        struct MyriadClass* self = (struct MyriadClass*) _self;
+
+        const struct MyriadClass* dev_class = NULL;
+
+        const size_t class_size = myriad_size_of(self);
+
+        CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
+
+        const struct MyriadClass* class_cpy = (const struct MyriadClass*) calloc(1, class_size);
+        memcpy((void*)class_cpy, _self, class_size);
+
+        memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*));
+
+        CUDA_CHECK_RETURN(
+            cudaMemcpy(
+                (void*)dev_class,
+                class_cpy,
+                class_size,
+                cudaMemcpyHostToDevice
+                )
+            );
+
+        free((void*)class_cpy);
+
+        return (void*) dev_class;
+    }
+    #else
+    {
+        return NULL;
+    }
+    #endif
+    """
+
+    OBJ_DECUDAFY_T = """
     return;
     """
 
-    # pylint: disable=R0914
+    CLS_DECUDAFY_T = """
+    fprintf(stderr, "De-CUDAfying a class is undefined behavior. Aborted.\n");
+    return;
+    """
+
+    # -------------------------------------------------------------------------
+    # Global function templates
+    # -------------------------------------------------------------------------
+
+    MYRIAD_NEW_T = """
+    const struct MyriadClass* prototype_class = (const struct MyriadClass*) _class;
+    struct MyriadObject* curr_obj;
+    va_list ap;
+
+    assert(prototype_class && prototype_class->size);
+
+    curr_obj = (struct MyriadObject*) calloc(1, prototype_class->size);
+    assert(curr_obj);
+
+    curr_obj->m_class = prototype_class;
+
+    va_start(ap, _class);
+    curr_obj = (struct MyriadObject*) myriad_ctor(curr_obj, &ap);
+    va_end(ap);
+
+    return curr_obj;
+    """
+
+    MYRIAD_CLASS_OF_T = """
+    const struct MyriadObject* self = (const struct MyriadObject*) _self;
+    return self->m_class;
+    """
+
+    MYRIAD_SIZE_OF_T = """
+    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
+    return m_class->size;
+    """
+
+    MYRIAD_IS_A_T = """
+    return _self && myriad_class_of(_self) == m_class;
+    """
+
+    MYRIAD_IS_OF_T = """
+    if (_self)
+    {   
+        const struct MyriadClass * myClass = (const struct MyriadClass*) myriad_class_of(_self);
+
+        if (m_class != MyriadObject)
+        {
+            while (myClass != m_class)
+            {
+                if (myClass != MyriadObject)
+                {
+                    myClass = (const struct MyriadClass*) myriad_super(myClass);
+                } else {
+                    return 0;
+                }
+            }
+        }
+
+        return 1;
+    }
+
+    return 0;
+    """
+
+    MYRIAD_INIT_CUDA_T = """
+    #ifdef CUDA
+    {
+        const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
+        const size_t obj_size = sizeof(struct MyriadObject);
+        const size_t class_size = sizeof(struct MyriadClass);
+
+        CUDA_CHECK_RETURN(cudaMalloc((void**)&obj_addr, class_size));
+        CUDA_CHECK_RETURN(cudaMalloc((void**)&class_addr, class_size));
+
+        const struct MyriadClass anon_class_class = {
+            {class_addr},
+            obj_addr,
+            class_addr,
+            class_size,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+        };
+
+        CUDA_CHECK_RETURN(
+            cudaMemcpy(
+                (void**) class_addr,
+                &anon_class_class,
+                sizeof(struct MyriadClass),
+                cudaMemcpyHostToDevice
+                )
+            );
+
+        object[1].device_class = class_addr;
+
+        const struct MyriadClass anon_obj_class = {
+            {class_addr},
+            obj_addr,
+            class_addr,
+            obj_size,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+        };
+
+        CUDA_CHECK_RETURN(
+            cudaMemcpy(
+                (void**) obj_addr,
+                &anon_obj_class,
+                sizeof(struct MyriadClass),
+                cudaMemcpyHostToDevice
+                )
+            );
+
+        object[0].device_class = (const struct MyriadClass*) obj_addr;
+
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &MyriadClass_dev_t,
+                &class_addr,
+                sizeof(void*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &MyriadObject_dev_t,
+                &obj_addr,
+                sizeof(void*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+
+        return 0;
+    }
+    #else
+    {
+        return EXIT_FAILURE;
+    }
+    #endif
+    """
+
+    MYRIAD_SUPER_T = """
+    const struct MyriadClass* self = (const struct MyriadClass*) _self;
+
+    assert(self && self->super);
+    return self->super;
+    """
+
+    @staticmethod
+    def _gen_mclass_ptr_scalar(ident: str):
+        """ Quick-n-Dirty way of hard-coding MyriadClass struct ptrs. """
+        tmp = MyriadScalar(ident,
+                           MVoid,
+                           True,
+                           quals=["const"])
+        tmp.type_decl = TypeDecl(declname=ident,
+                                 quals=[],
+                                 type=Struct("MyriadClass", None))
+        tmp.ptr_decl = PtrDecl(quals=[],
+                               type=tmp.type_decl)
+        tmp.decl = Decl(name=ident,
+                        quals=["const"],
+                        storage=[],
+                        funcspec=[],
+                        type=tmp.ptr_decl,
+                        init=None,
+                        bitsize=None)
+        return tmp
+
     def __init__(self):
         # Set CUDA support status
         self.cuda = True
@@ -73,85 +329,28 @@ class MyriadObject(MyriadModule):
         self.obj_name = "MyriadObject"
         self.cls_name = "MyriadClass"
 
-        # ---------------------------------------------------------------------
         # Cheat by hardcoding methods in constructor
-        # ---------------------------------------------------------------------
-
-        # TODO: Hardcode instance methods
         self.methods = set()
-        _self = MyriadScalar("self", MVoid, True, quals=["const"])
+        self._setup_methods()
 
-        # extern void* myriad_ctor(void* _self, va_list* app);
-        _app = MyriadScalar("app", MVarArgs, ptr=True)
-        _ret_var = MyriadScalar('', MVoid, ptr=True)
-        _ctor_fun = MyriadFunction("myriad_ctor",
-                                   OrderedDict({0: _self, 1: _app}),
-                                   ret_var=_ret_var)
-        self.methods.add(MyriadMethod(_ctor_fun,
-                                      MyriadObject.CTOR_TEMPLATE,
-                                      self.obj_name))
-
-        # extern int myriad_dtor(void* _self);
-        _ret_var = MyriadScalar('', MInt)
-        _dtor_fun = MyriadFunction("myriad_dtor",
-                                   OrderedDict({0: _self}),
-                                   ret_var=_ret_var)
-        self.methods.add(MyriadMethod(_dtor_fun,
-                                      MyriadObject.DTOR_TEMPLATE,
-                                      self.obj_name))
-
-        # extern void* myriad_cudafy(void* _self, int clobber);
-        _clobber = MyriadScalar("clobber", MInt)
-        _ret_var = MyriadScalar('', MVoid, ptr=True)
-        _cudafy_fun = MyriadFunction("myriad_cudafy",
-                                     OrderedDict({0: _self, 1: _clobber}),
-                                     ret_var=_ret_var)
-        self.methods.add(MyriadMethod(_cudafy_fun,
-                                      MyriadObject.CUDAFY_TEMPLATE,
-                                      self.obj_name))
-
-        # extern void myriad_decudafy(void* _self, void* cu_self);
-        _cu_self = MyriadScalar("cu_self", MVoid, ptr=True)
-        _decudafy_fun = MyriadFunction("myriad_decudafy",
-                                       OrderedDict({0: _self, 1: _cu_self}))
-        self.methods.add(MyriadMethod(_decudafy_fun,
-                                      MyriadObject.DECUDAFY_TEMPLATE,
-                                      self.obj_name))
+        # Hardcode functions, too, while we're at it
+        self.functions = set()
+        self._init_module_funs()
 
         # ---------------------------------------------------------------------
         # Initialize class object and object class
         # ---------------------------------------------------------------------
 
-        # Cheat here by hand-crafting our own object/class variables
-        def _gen_mclass_ptr_scalar(ident: str):
-            """ Quick-n-Dirty way of hard-coding MyriadClass struct ptrs. """
-            tmp = MyriadScalar(ident,
-                               MVoid,
-                               True,
-                               quals=["const"])
-            tmp.type_decl = TypeDecl(declname=ident,
-                                     quals=[],
-                                     type=Struct("MyriadClass", None))
-            tmp.ptr_decl = PtrDecl(quals=[],
-                                   type=tmp.type_decl)
-            tmp.decl = Decl(name=ident,
-                            quals=["const"],
-                            storage=[],
-                            funcspec=[],
-                            type=tmp.ptr_decl,
-                            init=None,
-                            bitsize=None)
-            return tmp
-
-        obj_vars = OrderedDict({0: _gen_mclass_ptr_scalar("m_class")})
+        obj_vars = {0: MyriadObject._gen_mclass_ptr_scalar("m_class")}
+        obj_vars = OrderedDict(obj_vars)
 
         self.obj_struct = MyriadStructType(self.obj_name, obj_vars)
 
         # Initialize class variables, i.e. function pointers for methods
         cls_vars = OrderedDict()
         cls_vars[0] = self.obj_struct("_", quals=["const"])
-        cls_vars[1] = _gen_mclass_ptr_scalar("super")
-        cls_vars[2] = _gen_mclass_ptr_scalar("device_class")
+        cls_vars[1] = MyriadObject._gen_mclass_ptr_scalar("super")
+        cls_vars[2] = MyriadObject._gen_mclass_ptr_scalar("device_class")
         cls_vars[3] = MyriadScalar("size", MSizeT)
 
         for indx, method in enumerate(self.methods):
@@ -161,11 +360,6 @@ class MyriadObject(MyriadModule):
 
         self.cls_vars = cls_vars
         self.cls_struct = MyriadStructType(self.cls_name, self.cls_vars)
-
-        # --------------------------------------------------------------------
-
-        self.functions = set()
-        self._init_module_funs()
 
         # --------------------------------------------------------------------
 
@@ -192,28 +386,103 @@ class MyriadObject(MyriadModule):
         self.header_template = None
         self.initialize_header_template()
 
+    def _setup_methods(self):
+        """ Hardcode of the various methods w/ pre-written templates. """
+
+        # Everyone uses self...
+        _self = MyriadScalar("self", MVoid, True, quals=["const"])
+
+        # extern void* myriad_ctor(void* _self, va_list* app);
+        _app = MyriadScalar("app", MVarArgs, ptr=True)
+        _ret_var = MyriadScalar('', MVoid, ptr=True)
+        _ctor_fun = MyriadFunction("myriad_ctor",
+                                   OrderedDict({0: _self, 1: _app}),
+                                   ret_var=_ret_var)
+        _dict = {self.obj_name: MyriadObject.OBJ_CTOR_T,
+                 self.cls_name: MyriadObject.CLS_CTOR_T}
+        self.methods.add(MyriadMethod(_ctor_fun, _dict))
+
+        # extern int myriad_dtor(void* _self);
+        _ret_var = MyriadScalar('', MInt)
+        _dtor_fun = MyriadFunction("myriad_dtor",
+                                   OrderedDict({0: _self}),
+                                   ret_var=_ret_var)
+        _dict = {self.obj_name: MyriadObject.OBJ_DTOR_T,
+                 self.cls_name: MyriadObject.CLS_DTOR_T}
+        self.methods.add(MyriadMethod(_dtor_fun, _dict))
+
+        # extern void* myriad_cudafy(void* _self, int clobber);
+        _clobber = MyriadScalar("clobber", MInt)
+        _ret_var = MyriadScalar('', MVoid, ptr=True)
+        _cudafy_fun = MyriadFunction("myriad_cudafy",
+                                     OrderedDict({0: _self, 1: _clobber}),
+                                     ret_var=_ret_var)
+        _dict = {self.obj_name: MyriadObject.OBJ_CUDAFY_T,
+                 self.cls_name: MyriadObject.CLS_CUDAFY_T}
+        self.methods.add(MyriadMethod(_cudafy_fun, _dict))
+
+        # extern void myriad_decudafy(void* _self, void* cu_self);
+        _cu_self = MyriadScalar("cu_self", MVoid, ptr=True)
+        _decudafy_fun = MyriadFunction("myriad_decudafy",
+                                       OrderedDict({0: _self, 1: _cu_self}))
+        _dict = {self.obj_name: MyriadObject.OBJ_DECUDAFY_T,
+                 self.cls_name: MyriadObject.CLS_DECUDAFY_T}
+        self.methods.add(MyriadMethod(_decudafy_fun, _dict))
+
     def _init_module_funs(self):
-        _init_cu = MyriadFunction("initCUDAObjects",
-                                  None,
-                                  MyriadScalar('', MInt),
-                                  fun_def=None)
-        self.functions.add(_init_cu)
-        """
-extern int initCUDAObjects();
+        """ Hardcode module functions using pre-made templates. """
 
-extern void* myriad_new(const void* _class, ...);
+        # Some functions share these; best we save the heap space
+        _m_class = MyriadObject._gen_mclass_ptr_scalar("m_class")
+        _self = MyriadScalar("self", MVoid, True, quals=["const"])
 
-extern const void* myriad_class_of(const void* _self);
+        # int initCUDAObjects()
+        _ret_var = MyriadScalar('', MInt)
+        self.functions.add(MyriadFunction("initCUDAObjects",
+                                          None,
+                                          _ret_var,
+                                          MyriadObject.MYRIAD_INIT_CUDA_T))
 
-extern size_t myriad_size_of(const void* self);
+        # const void* myriad_class_of(const void* _self)
+        _ret_var = MyriadScalar('', MVoid, True)
+        self.functions.add(MyriadFunction("myriad_class_of",
+                                          OrderedDict({0: _self}),
+                                          _ret_var,
+                                          MyriadObject.MYRIAD_CLASS_OF_T))
 
-extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
+        # size_t myriad_size_of(const void* self);
+        _ret_var = MyriadScalar('', MSizeT)
+        self.functions.add(MyriadFunction("myriad_size_of",
+                                          OrderedDict({0: _self}),
+                                          _ret_var,
+                                          MyriadObject.MYRIAD_SIZE_OF_T))
 
-extern int myriad_is_of(const void* _self, const struct MyriadClass* m_class);
+        # int myriad_is_a(const void* _self, const struct MyriadClass* m_class)
+        _ret_var = MyriadScalar('', MInt)
+        _args = OrderedDict({0: _self, 1: _m_class})
+        self.functions.add(MyriadFunction("myriad_is_a",
+                                          _args,
+                                          _ret_var,
+                                          MyriadObject.MYRIAD_IS_A_T))
 
-extern const void* myriad_super(const void* _self);
-        """
-        pass
+        # int myriad_is_of(const void* _self,const struct MyriadClass* m_class)
+        _ret_var = MyriadScalar('', MInt)
+        _args = OrderedDict({0: _self, 1: _m_class})
+        self.functions.add(MyriadFunction("myriad_is_of",
+                                          _args,
+                                          _ret_var,
+                                          MyriadObject.MYRIAD_IS_OF_T))
+
+        # extern const void* myriad_super(const void* _self);
+        _ret_var = MyriadScalar('', MVoid, ptr=True, quals=['const'])
+        self.functions.add(MyriadFunction("myriad_super",
+                                          OrderedDict({0: _self}),
+                                          _ret_var,
+                                          MyriadObject.MYRIAD_SUPER_T))
+
+        # extern void* myriad_new(const void* _class, ...);
+        # XXX: Figure out how to handle new's ...
+
 
 def create_myriad_object():
     obj = MyriadObject()
