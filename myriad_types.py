@@ -242,7 +242,8 @@ class MyriadFunction(_MyriadBase):
         # --------------------------------------------
 
         # Make sure we got the right parameter types
-        assert_list_type(list(args_list.values()), _MyriadBase)
+        if args_list is not None and len(args_list) > 0:
+            assert_list_type(list(args_list.values()), _MyriadBase)
 
         # Args list stores the MyriadScalars as ordered parameters
         self.args_list = OrderedDict() if args_list is None else args_list
@@ -287,23 +288,31 @@ class MyriadFunction(_MyriadBase):
     def gen_typedef(self, typedef_name: str=None):
         """Generates a typedef definition for this function."""
 
-        # TODO: Do we need to prevent double generation?
-
+        # Use the convention of appending _t to a type name (e.g. int64_t)
         if typedef_name is None:
             typedef_name = self.ident + "_t"
 
-        _tmp = None
+        _tmp, tmp = None, None
+
+        # Fix for an insiduous bug with printing identifiers (e.g. int64_t)
         if type(self.func_decl.type.type) is TypeDecl:
             _tmp = self.func_decl.type.type.type
         else:
             _tmp = IdentifierType(names=self.func_decl.type.type.names)
-        tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
+
+        # Use TypeDecl/PtrDecl depending on whether return value is a pointer
+        if self.ret_var.ptr:
+            tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
+        else:
+            tmp = TypeDecl(typedef_name, [], _tmp)
+
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
 
+        # Update base type so its registered a MyriadCType subclass
         self.base_type = type(typedef_name,
                               (MyriadCType,),
                               {'mtype': IdentifierType([typedef_name])})()
-
+        # Create typedef so its registered by the pycparser AST
         self.fun_typedef = Typedef(name=typedef_name,
                                    quals=[],
                                    storage=['typedef'],

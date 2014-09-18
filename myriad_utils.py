@@ -8,6 +8,7 @@ from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
 
+
 def assert_list_type(m_list: list, m_type: type):
     """ Raises an error if m_list's members are not all of m_type. """
     msg = "Invalid argument(s) type(s): expected {0}"

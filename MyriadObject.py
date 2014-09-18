@@ -3,9 +3,11 @@
 TODO: Docstring
 """
 
+from copy import deepcopy
 from collections import OrderedDict
 
-from pycparser.c_ast import Decl, TypeDecl, Struct, PtrDecl
+from pycparser.c_ast import Decl, TypeDecl, Struct, PtrDecl, ParamList
+from pycparser.c_ast import EllipsisParam, FuncDecl
 
 from myriad_module import MyriadModule, MyriadMethod
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
@@ -386,6 +388,9 @@ class MyriadObject(MyriadModule):
         self.header_template = None
         self.initialize_header_template()
 
+        self.c_file_template = None
+        self.initialize_c_file_template()
+
     def _setup_methods(self):
         """ Hardcode of the various methods w/ pre-written templates. """
 
@@ -441,6 +446,7 @@ class MyriadObject(MyriadModule):
         self.functions.add(MyriadFunction("initCUDAObjects",
                                           None,
                                           _ret_var,
+                                          None,
                                           MyriadObject.MYRIAD_INIT_CUDA_T))
 
         # const void* myriad_class_of(const void* _self)
@@ -448,6 +454,7 @@ class MyriadObject(MyriadModule):
         self.functions.add(MyriadFunction("myriad_class_of",
                                           OrderedDict({0: _self}),
                                           _ret_var,
+                                          None,
                                           MyriadObject.MYRIAD_CLASS_OF_T))
 
         # size_t myriad_size_of(const void* self);
@@ -455,6 +462,7 @@ class MyriadObject(MyriadModule):
         self.functions.add(MyriadFunction("myriad_size_of",
                                           OrderedDict({0: _self}),
                                           _ret_var,
+                                          None,
                                           MyriadObject.MYRIAD_SIZE_OF_T))
 
         # int myriad_is_a(const void* _self, const struct MyriadClass* m_class)
@@ -463,6 +471,7 @@ class MyriadObject(MyriadModule):
         self.functions.add(MyriadFunction("myriad_is_a",
                                           _args,
                                           _ret_var,
+                                          None,
                                           MyriadObject.MYRIAD_IS_A_T))
 
         # int myriad_is_of(const void* _self,const struct MyriadClass* m_class)
@@ -471,6 +480,7 @@ class MyriadObject(MyriadModule):
         self.functions.add(MyriadFunction("myriad_is_of",
                                           _args,
                                           _ret_var,
+                                          None,
                                           MyriadObject.MYRIAD_IS_OF_T))
 
         # extern const void* myriad_super(const void* _self);
@@ -478,15 +488,35 @@ class MyriadObject(MyriadModule):
         self.functions.add(MyriadFunction("myriad_super",
                                           OrderedDict({0: _self}),
                                           _ret_var,
+                                          None,
                                           MyriadObject.MYRIAD_SUPER_T))
 
         # extern void* myriad_new(const void* _class, ...);
-        # XXX: Figure out how to handle new's ...
+        # TODO: Make sure myriad_new works
+        _ret_var = MyriadScalar('', MVoid, ptr=True)
+        _vclass = MyriadScalar('', MVoid, ptr=True, quals=["const"])
+        _new = MyriadFunction("myriad_new",
+                              OrderedDict(),
+                              _ret_var,
+                              fun_def=MyriadObject.MYRIAD_NEW_T)
+        _new.param_list = ParamList([_vclass.decl, EllipsisParam()])
+        _tmp_decl = deepcopy(_new.ret_var.decl.type)
+        _tmp_decl.type.declname = _new.ident
+        _new.func_decl = FuncDecl(_new.param_list, _tmp_decl)
+        _new.decl = Decl(name=_new.ident,
+                         quals=[],
+                         storage=[],
+                         funcspec=[],
+                         type=_new.func_decl,
+                         init=None,
+                         bitsize=None)
+        self.functions.add(_new)
 
 
 def create_myriad_object():
     obj = MyriadObject()
-    obj.render_header_template(True)
+    obj.c_file_template.render()
+    print(obj.c_file_template.buffer)
 
 
 def main():
