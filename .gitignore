@@ -25,3 +25,4 @@ doc/
 /.settings/
 /__pycache__/
 /.ropeproject/
+/pymyriad/__pycache__/

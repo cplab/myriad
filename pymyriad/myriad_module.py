@@ -46,8 +46,8 @@ struct ${cls_name};
 struct ${obj_name};
 
 ## Module variables
-% for m_var in module_vars:
-    % if 'static' not in m_var.decl.storage:
+% for m_var in module_vars.valuesif:
+    % if type(m_var) is not str and 'static' not in m_var.decl.storage:
 extern ${m_var.stringify_decl()};
     % endif
 % endfor
@@ -85,43 +85,25 @@ C_FILE_TEMPLATE = """
 
 #include "${obj_name}.h"
 
+## Print methods forward declarations
 % for method in methods:
     % for i_method in method.instance_methods.values():
 ${i_method.stringify_decl()};
     % endfor
 % endfor
 
-## Static, on-stack initialization of MyriadObject and MyriadClass classes.
-## Necessary because of circular dependencies.
-static struct MyriadClass object[] =
-{
-    ## MyriadObject "anonymous" class
-    {
-        { object + 1 },              ## MyriadClass is it's class
-        object,                      ## Superclass is itself (MyriadObject)
-        NULL,
-        sizeof(struct MyriadObject),
-        MyriadObject_ctor,
-        MyriadObject_dtor,
-        MyriadObject_cudafy,
-        MyriadObject_decudafy,
-    },
-    ## MyriadClass class
-    {
-        { object + 1 },             ## MyriadClass is it's class
-        object,                     ## Superclass is MyriadObject
-        NULL,
-        sizeof(struct MyriadClass),
-        MyriadClass_ctor,
-        MyriadClass_dtor,
-        MyriadClass_cudafy,
-        MyriadClass_decudafy,
-    }
-};
-
-## Pointers to static class definition for new()/super()/classof() purposes
-const void* MyriadObject = object;
-const void* MyriadClass = object + 1;
+## Print top-level module variables
+% for module_var in module_vars.values():
+    % if type(module_var) is str:
+${module_var}
+    % else:
+        % if module_var.init is not None:
+${module_var.stringify_decl()} = ${module_var.init};
+        % else:
+${module_var.stringify_decl()};
+        % endif
+    % endif
+% endfor
 
 ## Method definitions
 % for method in methods:
@@ -132,6 +114,7 @@ ${i_method.stringify_decl()}
 }
     % endfor
 
+## Use this trick to force rendering before printing the buffer in one line
 ${method.delg_template.render() or method.delg_template.buffer}
 
 ${method.super_delg_template.render() or method.super_delg_template.buffer}
@@ -275,7 +258,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
                  obj_name: str,
                  cls_name: str=None,
                  obj_vars: OrderedDict=None,
-                 methods: set=None,
+                 methods: OrderedDict=None,
                  cuda: bool=False):
         """Initializes a module"""
 
@@ -291,7 +274,9 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
         # methods = delegator, super delegator, instance
         # TODO: Implement method setting
-        self.methods = set()
+        self.methods = OrderedDict()
+        for m_ident, method in methods:
+            self.methods[m_ident] = MyriadMethod(method)
 
         # Initialize class object and object class
 

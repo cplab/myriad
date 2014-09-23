@@ -3,8 +3,6 @@
 TODO: Docstring
 """
 
-from enum import Enum as PyEnum
-from enum import unique
 from collections import OrderedDict
 import copy
 
@@ -109,16 +107,18 @@ class MyriadScalar(_MyriadBase):
         # Initialize internal C ptr declaration (might not be used)
         self.ptr_decl = PtrDecl(quals=[], type=self.type_decl)
 
+        # TODO: Process init
+        self.init = init
+
         # Initialize internal top-level declaration
         self.decl = Decl(name=self.ident,
                          quals=self.quals,
                          storage=self.storage,
                          funcspec=[],
                          type=self.ptr_decl if ptr else self.type_decl,
-                         init=init,  # TODO: Process init
+                         init=None,
                          bitsize=None)
 
-    @enforce_annotations
     def typematch(self, other) -> bool:
         """ Checks if other is of an equivalent type. """
 

@@ -366,17 +366,8 @@ class MyriadObject(MyriadModule):
         # --------------------------------------------------------------------
 
         # Initialize module global variables
-        self.module_vars = set()
-        v_obj = MyriadScalar(self.obj_name,
-                             MVoid,
-                             True,
-                             quals=["const"])
-        self.module_vars.add(v_obj)
-        v_cls = MyriadScalar(self.cls_name,
-                             MVoid,
-                             True,
-                             quals=["const"])
-        self.module_vars.add(v_cls)
+        self.module_vars = OrderedDict()
+        self._init_module_vars()
 
         # Initialize standard library imports, by default with fail-safes
         self.lib_includes = MyriadModule.DEFAULT_LIB_INCLUDES
@@ -433,6 +424,46 @@ class MyriadObject(MyriadModule):
         _dict = {self.obj_name: MyriadObject.OBJ_DECUDAFY_T,
                  self.cls_name: MyriadObject.CLS_DECUDAFY_T}
         self.methods.add(MyriadMethod(_decudafy_fun, _dict))
+
+    def _init_module_vars(self):
+        SPEC_TEMPLATE = """
+static struct MyriadClass object[] =
+{
+    {
+        { object + 1 },
+        object,
+        NULL,
+        sizeof(struct MyriadObject),
+        MyriadObject_ctor,
+        MyriadObject_dtor,
+        MyriadObject_cudafy,
+        MyriadObject_decudafy,
+    },
+    {
+        { object + 1 },
+        object,
+        NULL,
+        sizeof(struct MyriadClass),
+        MyriadClass_ctor,
+        MyriadClass_dtor,
+        MyriadClass_cudafy,
+        MyriadClass_decudafy,
+    }
+};
+        """
+        self.module_vars['object'] = SPEC_TEMPLATE
+        v_obj = MyriadScalar(self.obj_name,
+                             MVoid,
+                             True,
+                             quals=["const"],
+                             init="object")
+        self.module_vars['MyriadObject'] = v_obj
+        v_cls = MyriadScalar(self.cls_name,
+                             MVoid,
+                             True,
+                             quals=["const"],
+                             init="object + 1")
+        self.module_vars['MyriadClass'] = v_cls
 
     def _init_module_funs(self):
         """ Hardcode module functions using pre-made templates. """
@@ -515,8 +546,13 @@ class MyriadObject(MyriadModule):
 
 def create_myriad_object():
     obj = MyriadObject()
-    obj.c_file_template.render()
-    print(obj.c_file_template.buffer)
+
+    from mako import exceptions
+    try:
+        obj.c_file_template.render()
+        print(obj.c_file_template.buffer)
+    except:
+        print(exceptions.text_error_template().render())
 
 
 def main():
