@@ -332,7 +332,7 @@ class MyriadObject(MyriadModule):
         self.cls_name = "MyriadClass"
 
         # Cheat by hardcoding methods in constructor
-        self.methods = set()
+        self.methods = OrderedDict()
         self._setup_methods()
 
         # Hardcode functions, too, while we're at it
@@ -355,7 +355,7 @@ class MyriadObject(MyriadModule):
         cls_vars[2] = MyriadObject._gen_mclass_ptr_scalar("device_class")
         cls_vars[3] = MyriadScalar("size", MSizeT)
 
-        for indx, method in enumerate(self.methods):
+        for indx, method in enumerate(self.methods.values()):
             m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
                                   method.delegator.base_type)
             cls_vars[indx+4] = m_scal
@@ -396,7 +396,7 @@ class MyriadObject(MyriadModule):
                                    ret_var=_ret_var)
         _dict = {self.obj_name: MyriadObject.OBJ_CTOR_T,
                  self.cls_name: MyriadObject.CLS_CTOR_T}
-        self.methods.add(MyriadMethod(_ctor_fun, _dict))
+        self.methods["myriad_ctor"] = MyriadMethod(_ctor_fun, _dict)
 
         # extern int myriad_dtor(void* _self);
         _ret_var = MyriadScalar('', MInt)
@@ -405,7 +405,7 @@ class MyriadObject(MyriadModule):
                                    ret_var=_ret_var)
         _dict = {self.obj_name: MyriadObject.OBJ_DTOR_T,
                  self.cls_name: MyriadObject.CLS_DTOR_T}
-        self.methods.add(MyriadMethod(_dtor_fun, _dict))
+        self.methods["myriad_dtor"] = MyriadMethod(_dtor_fun, _dict)
 
         # extern void* myriad_cudafy(void* _self, int clobber);
         _clobber = MyriadScalar("clobber", MInt)
@@ -415,7 +415,7 @@ class MyriadObject(MyriadModule):
                                      ret_var=_ret_var)
         _dict = {self.obj_name: MyriadObject.OBJ_CUDAFY_T,
                  self.cls_name: MyriadObject.CLS_CUDAFY_T}
-        self.methods.add(MyriadMethod(_cudafy_fun, _dict))
+        self.methods["myriad_cudafy"] = MyriadMethod(_cudafy_fun, _dict)
 
         # extern void myriad_decudafy(void* _self, void* cu_self);
         _cu_self = MyriadScalar("cu_self", MVoid, ptr=True)
@@ -423,7 +423,7 @@ class MyriadObject(MyriadModule):
                                        OrderedDict({0: _self, 1: _cu_self}))
         _dict = {self.obj_name: MyriadObject.OBJ_DECUDAFY_T,
                  self.cls_name: MyriadObject.CLS_DECUDAFY_T}
-        self.methods.add(MyriadMethod(_decudafy_fun, _dict))
+        self.methods["myriad_decudafy"] = MyriadMethod(_decudafy_fun, _dict)
 
     def _init_module_vars(self):
         SPEC_TEMPLATE = """

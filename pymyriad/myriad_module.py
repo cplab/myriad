@@ -37,7 +37,7 @@ HEADER_FILE_TEMPLATE = """
 % endfor
 
 ## Declare typedefs
-% for method in methods:
+% for method in methods.values():
 ${method.delegator.stringify_typedef()};
 % endfor
 
@@ -58,12 +58,12 @@ extern ${fun.stringify_decl()};
 % endfor
 
 ## Methods
-% for method in methods:
+% for method in methods.values():
 extern ${method.delegator.stringify_decl()};
 % endfor
 
 ## Super delegators
-% for method in methods:
+% for method in methods.values():
 extern ${method.super_delegator.stringify_decl()};
 % endfor
 
@@ -86,7 +86,7 @@ C_FILE_TEMPLATE = """
 #include "${obj_name}.h"
 
 ## Print methods forward declarations
-% for method in methods:
+% for method in methods.values():
     % for i_method in method.instance_methods.values():
 ${i_method.stringify_decl()};
     % endfor
@@ -106,7 +106,7 @@ ${module_var.stringify_decl()};
 % endfor
 
 ## Method definitions
-% for method in methods:
+% for method in methods.values():
     % for i_method in method.instance_methods.values():
 ${i_method.stringify_decl()}
 {
@@ -275,8 +275,6 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         # methods = delegator, super delegator, instance
         # TODO: Implement method setting
         self.methods = OrderedDict()
-        for m_ident, method in methods:
-            self.methods[m_ident] = MyriadMethod(method)
 
         # Initialize class object and object class
 
@@ -293,7 +291,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         cls_vars = OrderedDict()
         cls_vars[0] = supermodule.cls_struct("_", quals=["const"])
 
-        for indx, method in enumerate(self.methods):
+        for indx, method in enumerate(self.methods.values()):
             m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
                                   method.delegator.base_type)
             cls_vars[indx+1] = m_scal
@@ -331,30 +329,18 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         self.c_file_template = None
         self.initialize_c_file_template()
 
-    def register_module_function(self,
-                                 function: MyriadFunction,
-                                 strict: bool=False,
-                                 override: bool=False):
+    def register_method(self,
+                        super_methods: OrderedDict, 
+                        function: MyriadFunction):
         """
         Registers a global function in the module.
 
-        Note: strict and override are mutually exclusive.
-
         Keyword arguments:
-        method -- method to be registered
-        strict -- if True, raises an error if a collision occurs when joining.
-        override -- if True, overrides superclass methods.
+        function -- method to be registered
         """
-        if strict is True and override is True:
-            raise ValueError("Flags strict and override cannot both be True.")
-
-        # TODO: Make "override"/"strict" modes check for existance better.
-        if function in self.functions:
-            if strict:
-                raise ValueError("Cannot add duplicate functions.")
-            elif override:
-                self.functions.discard(function)
-        self.functions.add(function)
+        if function.ident in super_methods:
+            # TODO: Figure out how to override instance method only
+            pass
 
     def initialize_c_file_template(self, context_dict: dict=None):
         """ Initializes internal Mako template for C file. """
