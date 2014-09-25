@@ -26,3 +26,4 @@ doc/
 /__pycache__/
 /.ropeproject/
 /pymyriad/__pycache__/
+/pymyriad/docs/_build

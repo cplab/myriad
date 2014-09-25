@@ -1,12 +1,26 @@
 #!/usr/bin/python3
 """
-TODO: Docstring
+.. module:: myriad_types
+   :platform: Unix, Windows, Mac OS X
+   :synopsis: Provides the underlying C-API type system interface.
+
+.. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
+
+Purpose of this module is to allow for in-memory variables that contain
+C type information, presented as mutable Python variables. C code can be
+generated using the various stringify_* functions.
+
+Run-time type information is done through extending the 'abstract',
+programmatically-generated toplevel MyriadCType class. Struct types and
+function typedefs are both dynamically generated to subclass this type
+to allow for robust run-time type checking. A set of default MyriadCType
+subclasses is provided for normal use (e.g. MVoid, MInt, etc.)
 """
 
 from collections import OrderedDict
 import copy
 
-from pycparser import parse_file, c_generator
+from pycparser import c_generator
 from pycparser.c_ast import IdentifierType, Typedef
 from pycparser.c_ast import Decl, PtrDecl, TypeDecl, ID
 from pycparser.c_ast import Struct, FuncDecl
@@ -17,25 +31,39 @@ from myriad_utils import enforce_annotations, assert_list_type
 # Global TODOs
 # TODO: add support for __hash__ and __eq__ for dict/set purposes
 
-
 class _MyriadBase(object):
-    """ Common core class for Myriad types. """
+    """
+    Common core class for Myriad types.
+
+    All myriad types extend from this class, since it provides the most
+    basic of all C features: declarations. Note that declarations are purely
+    of the form "<qualifiers> <type> <declaration name>" and do not include
+    initialization information by default.
+    """
+
     _cgen = c_generator.CGenerator()
+    """ Class-level c generator using pycparser's C AST traversal tool. """
 
     def __init__(self,
-                 ident,
-                 decl=None,
+                 ident: str,
+                 decl: Decl=None,
                  quals: list=None,
                  storage: list=None):
-        self.ident = ident
-        self.decl = decl
-        # TODO: check valid quals, storage types
-        self.quals = [] if quals is None else quals
-        self.storage = [] if storage is None else storage
 
-    @enforce_annotations
+        self.ident = ident
+        """ String identifier at the C level. """
+
+        self.decl = decl
+        """ pycparser's C ast declaration node. """
+
+        self.quals = [] if quals is None else quals
+        """ C scope qualifiers for the declaration (e.g. "static"). """
+
+        self.storage = [] if storage is None else storage
+        """ C storage qualifiers for the declaration (e.g. "const"). """
+
     def stringify_decl(self) -> str:
-        """Renders the internal C declaration"""
+        """ Renders the internal C declaration and returns it as a string. """
         return self._cgen.visit(self.decl)
 
 
@@ -43,6 +71,11 @@ class _MyriadBase(object):
 #                 CTYPES
 # ----------------------------------------
 
+# Top-level C types are programmatically-generated classes that are used
+# for providing IdentifierType information in a "Pythonic" way. The advantage
+# is that these declarations are all childern of MyriadCType, allowing for
+# run-time typechecking for valid C types and extension of the type system
+# via subclassing.
 MyriadCType = type("MyriadCType", (object,), {'mtype': None})
 MFloat = type("MFloat",
               (MyriadCType,),
@@ -82,9 +115,16 @@ MVarArgs = type("MVarArgs",
 
 
 class MyriadScalar(_MyriadBase):
-    """Object for representing any individual C scalar variable."""
+    """
+    Object for representing any individual C scalar variable.
 
-    # pylint: disable=R0913
+    Represents a 'scalar', meaning any individual variable declaration,
+    complete with information about its scope and storage qualifiers.
+    Enforcing having to pass a valid MyriadCType means that only scalars of
+    pre-registered types (e.g. MInt) can be instantiated, allowing for run-time
+    and parse-time type checking.
+    """
+
     @enforce_annotations
     def __init__(self,
                  ident: str,
@@ -97,20 +137,26 @@ class MyriadScalar(_MyriadBase):
         super().__init__(ident, quals=quals, storage=storage)
 
         self.base_type = base_type
+        """ Represents the underlying C type via a MyriadCType subclass. """
+
         self.ptr = ptr
+        """ Indicates if this is a pointer. """
 
         # Initialize internal C type declaration
         self.type_decl = TypeDecl(declname=self.ident,
                                   quals=self.quals,
                                   type=self.base_type.mtype)
+        """ Underlying C AST type declaration, used for C generation. """
 
         # Initialize internal C ptr declaration (might not be used)
         self.ptr_decl = PtrDecl(quals=[], type=self.type_decl)
+        """ Optional pointer declaration, used for scalar pointers. """
 
-        # TODO: Process init
+        # TODO: Process init in some way
         self.init = init
+        """ Initial value of this scalar at the C level. """
 
-        # Initialize internal top-level declaration
+        # Override superclass and re-initialize internal top-level declaration
         self.decl = Decl(name=self.ident,
                          quals=self.quals,
                          storage=self.storage,
@@ -120,7 +166,7 @@ class MyriadScalar(_MyriadBase):
                          bitsize=None)
 
     def typematch(self, other) -> bool:
-        """ Checks if other is of an equivalent type. """
+        """ Checks if other is of an equivalent C type. """
 
         if other is None or not issubclass(other, _MyriadBase):
             return False
@@ -132,35 +178,65 @@ class MyriadScalar(_MyriadBase):
 
 
 class MyriadStructType(_MyriadBase):
-    """Struct construct"""
+    """
+    Struct type factory.
+
+    This class operates as a 'struct' type factory, where users declare a
+    new struct type with ordered members since memory layout matters.
+
+    Members are restricted to Myriad base types, including even other
+    struct types.
+
+    Once a MyriadStructType object is instantiated, it can be called as a
+    function/pseudo-constructor to generate struct declarations of the
+    new base C type.
+
+    New base C types are 'registered' in the Myriad system by simply
+    programmatically creating an instance class that inherets MyriadCType,
+    ensuring run-time type safety checks correctly identify struct declarations
+    generated from the factory instance object.
+    """
 
     @enforce_annotations
     def __init__(self,
                  struct_name: str,
                  members: OrderedDict=None,
                  storage: list=None):
+        """
+        Initializes a new struct type.
+
+        :param OrderedDict members: _MyriadBase-derived members of the struct
+        :param list storage: List of C AST storage qualifiers (e.g. "const")
+        :raises AssertionError: if members are not _MyriadBase subclassed
+        """
 
         # Make sure we got the right parameter types
         assert_list_type(list(members.values()), _MyriadBase)
 
         self.struct_name = struct_name
+        """ Struct type identifier, i.e. the name after 'struct' in C. """
 
         # Set struct members using ordered dict: order matters for memory!
+        self.members = OrderedDict()
+        """ Ordered members of the struct, derived from _MyriadBase. """
+
         members = OrderedDict() if members is None else members
         sorted_members = [members[idx].decl for idx in sorted(members.keys())]
         members = {v.ident: v.decl for v in members.values()}
-        self.members = OrderedDict()
         for member_ident, member in members.items():
             self.members[member_ident] = member
 
         # Set struct type
         self.struct_c_ast = Struct(self.struct_name, sorted_members)
+        """ pycparser C AST struct node. """
 
         # Setup instance generator (i.e. "the factory" class)
         self.base_type = type(self.struct_name,
                               (MyriadCType,),
                               {'mtype': Struct(self.struct_name, None)})()
+        """ Programmatically-generated base type for run-time checking. """
 
+        # Manually build declaration to pass to super constructor
         _tmp_decl = Decl(name=None,
                          quals=[],
                          storage=[],
@@ -168,8 +244,6 @@ class MyriadStructType(_MyriadBase):
                          type=self.struct_c_ast,
                          init=None,
                          bitsize=None)
-
-        # Need to call super last in this instance
         super().__init__(None, _tmp_decl, storage=storage)
 
     def __call__(self,
@@ -178,10 +252,24 @@ class MyriadStructType(_MyriadBase):
                  quals: list=None,
                  storage: list=None,
                  init=None,
-                 **kwargs):
-        """ Factory method for making struct instances from template. """
+                 **kwargs) -> MyriadScalar:
+        """
+        Factory method for making struct instances from template.
 
-        # Assert we receive at least a subset of arguments
+        Further keyword arguments provided in the form of kwargs are used to
+        set the initial values (if any) of the struct for static initialization
+        purposes. TODO: Check if this actually works.
+
+        :param bool ptr: Indicates whether this is a pointer to a struct
+        :param list quals: C AST scope qualifiers (e.g. "static")
+        :param list storage: C AST storage qualifiers (e.g. "const")
+        :param init: Initial value given to this struct (TODO: NOT IMPLEMENTED)
+        :return: New scalar instance of the struct type this object represents
+        :rtype: MyriadScalar
+        :raises TypeError: if given members' types mismatch expected types
+        """
+
+        # Assert we receive at least a subset of valid struct members to init
         prot_idents = set(self.members.keys())
         given_idents = set(kwargs.keys())
         if not given_idents.issubset(prot_idents):
@@ -189,7 +277,6 @@ class MyriadStructType(_MyriadBase):
             msg = "{0} not valid member(s) of struct {1}"
             raise NameError(msg.format(str(diff), self.ident))
 
-        # TODO: Do more robust checking with namespace lookups
         # Assert argument initial values match protoype's
         new_kwargs = {}
         for arg_id, arg_val in kwargs.items():
@@ -209,7 +296,7 @@ class MyriadStructType(_MyriadBase):
                                     quals, storage, init)
 
         # TODO: Actually initialize versus just setting blindly
-        # Initialize members as attributes
+        # Initialize members as object attributes
         for member_name, member_val in new_kwargs.items():
             new_instance.__dict__[member_name] = member_val
 
@@ -218,24 +305,44 @@ class MyriadStructType(_MyriadBase):
 
 # pylint: disable=R0902
 class MyriadFunction(_MyriadBase):
-    """Function container for Myriad functions"""
+    """
+    Function container for Myriad functions.
+
+    Currently MyriadFunction acts as a shell for a C AST function declaration
+    node and a string body for the definition. TODO: Use Mako template?
+    """
 
     @enforce_annotations
     def __init__(self,
                  ident: str,
                  args_list: OrderedDict=None,
                  ret_var: MyriadScalar=None,
-                 storage=None,
+                 storage: list=None,
                  fun_def=None):
+        """
+        Initializes a new MyriadFunction.
+
+        :param args_list: Ordered dict of identifiers:_MyriadBase fxn args
+        :type args_list: OrderedDict or None
+        :param ret_var: Return value as a MyriadScalar
+        :type ret_var: MyriadScalar or None
+        :param storage: C AST storage qualifiers (e.g. "const")
+        :type storage: list or None
+        :param fun_def: Function definition in form of a string or template
+        :raise AssertionError: if args_list has non-_MyriadBase members
+        """
+
         # Always call super first
         super().__init__(ident)
 
         # --------------------------------------------
         # Set return value; none is given, assume void
         # --------------------------------------------
+        if ret_var is None:
+            ret_var = MyriadScalar(self.ident, MVoid)
+
         self.ret_var = ret_var
-        if self.ret_var is None:
-            self.ret_var = MyriadScalar(self.ident, MVoid)
+        """ Return value for the function as a MyriadScalar, default MVoid. """
 
         # --------------------------------------------
         #  Create internal representation of args list
@@ -245,11 +352,11 @@ class MyriadFunction(_MyriadBase):
         if args_list is not None and len(args_list) > 0:
             assert_list_type(list(args_list.values()), _MyriadBase)
 
-        # Args list stores the MyriadScalars as ordered parameters
         self.args_list = OrderedDict() if args_list is None else args_list
+        """ Stores the MyriadScalars as ordered parameters. """
 
-        # Param list stores the scalar's declarations in a C AST object.
         self.param_list = ParamList([v.decl for v in self.args_list.values()])
+        """ Stores the scalar's declarations in a C AST object. """
 
         # ------------------------------------------
         # Create internal c_ast function declaration
@@ -263,6 +370,7 @@ class MyriadFunction(_MyriadBase):
             _tmp_decl.declname = self.ident
 
         self.func_decl = FuncDecl(self.param_list, _tmp_decl)
+        """ C AST function declaration with parameter list and return type. """
 
         self.decl = Decl(name=self.ident,
                          quals=[],
@@ -272,21 +380,25 @@ class MyriadFunction(_MyriadBase):
                          init=None,
                          bitsize=None)
 
-        # -------------------------------------------
-        # Generate typedef depending on function type
-        # -------------------------------------------
         self.fun_typedef = None
+        """ C AST typedef, must be generated using gen_typedef. """
+
         self.base_type = None
+        """ Underlying MyriadCType for this function (based on typedef). """
+
+        # Automaticall generate typedef depending on function type
         self.gen_typedef()
 
-        # -----------------------------------------------
         # TODO: Create internal c_ast function definition
-        # -----------------------------------------------
         self.fun_def = fun_def
 
-    @enforce_annotations
     def gen_typedef(self, typedef_name: str=None):
-        """Generates a typedef definition for this function."""
+        """
+        Generates an internal typedef definition for this function.
+
+        Keyword arguments:
+        typedef_name -- Overrides automatic type name generation with value.
+        """
 
         # Use the convention of appending _t to a type name (e.g. int64_t)
         if typedef_name is None:
@@ -294,7 +406,7 @@ class MyriadFunction(_MyriadBase):
 
         _tmp, tmp = None, None
 
-        # Fix for an insiduous bug with printing identifiers (e.g. int64_t)
+        # Fix for an insiduous bug with string identifiers (e.g. int64_t)
         if type(self.func_decl.type.type) is TypeDecl:
             _tmp = self.func_decl.type.type.type
         else:
@@ -312,6 +424,7 @@ class MyriadFunction(_MyriadBase):
         self.base_type = type(typedef_name,
                               (MyriadCType,),
                               {'mtype': IdentifierType([typedef_name])})()
+
         # Create typedef so its registered by the pycparser AST
         self.fun_typedef = Typedef(name=typedef_name,
                                    quals=[],
@@ -331,32 +444,8 @@ class MyriadFunction(_MyriadBase):
             raise NotImplementedError("Non-string representations unsupported")
 
 
-def test_ast():
-    """Inspect C soure code using AST and re-render"""
-    filename = 'test.c'
-    ast = parse_file(filename,
-                     use_cpp=True,
-                     cpp_path='gcc',
-                     cpp_args=['-E', r'-I../utils/fake_libc_include'])
-
-    ast.show()
-
-    cgen = c_generator.CGenerator()
-
-    with open("test.c", 'w', encoding="utf-8") as test_file:
-        for node in ast.ext:
-            test_file.write(cgen.visit(node) + ";\n")
-
-    void_id = IdentifierType(names=["void"])
-    self_arg = Decl("self", [], [], [],
-                    PtrDecl([], TypeDecl("self", [], void_id)), None, None)
-
-    print(cgen.visit(self_arg))
-    print(cgen.visit(ast.ext[121].type.type.args.params[0]))
-
-
 def main():
-    """Test basic functionality"""
+    """ Test basic functionality. """
     # Test Scalar
     void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
     print(void_ptr.stringify_decl())
