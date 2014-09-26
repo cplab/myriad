@@ -38,7 +38,9 @@ HEADER_FILE_TEMPLATE = """
 
 ## Declare typedefs
 % for method in methods.values():
+    % if not method.inherited:
 ${method.delegator.stringify_typedef()};
+    % endif
 % endfor
 
 ## Struct forward declarations
@@ -57,14 +59,13 @@ extern ${m_var.stringify_decl()};
 extern ${fun.stringify_decl()};
 % endfor
 
-## Methods
-% for method in methods.values():
-extern ${method.delegator.stringify_decl()};
-% endfor
+## Method delegators
+% for method in [m for m in methods.values() if not m.inherited]:
 
-## Super delegators
-% for method in methods.values():
+extern ${method.delegator.stringify_decl()};
+
 extern ${method.super_delegator.stringify_decl()};
+
 % endfor
 
 ## Class/Object structs
@@ -82,6 +83,11 @@ C_FILE_TEMPLATE = """
 %>
 
 #include "myriad_debug.h"
+
+## Add local includes
+% for lib in local_includes:
+#include "${lib}"
+% endfor
 
 #include "${obj_name}.h"
 
@@ -143,6 +149,7 @@ class MyriadMethod(object):
     """
 
     DELG_TEMPLATE = """
+% if not inherited:
 <%
     fun_args = ','.join([arg.ident for arg in delegator.args_list.values()])
 %>
@@ -160,9 +167,11 @@ ${delegator.stringify_decl()}
     return m_class->my_${delegator.fun_typedef.name}(${fun_args});
     % endif
 }
+% endif
     """
 
     SUPER_DELG_TEMPLATE = """
+% if not inherited:
 <%
     fun_args = ','.join([arg.ident for arg in super_delegator.args_list.values()])
 %>
@@ -179,12 +188,14 @@ ${super_delegator.stringify_decl()}
     return superclass->my_${delegator.fun_typedef.name}(${fun_args});
     % endif
 }
+% endif
     """
 
     @enforce_annotations
     def __init__(self,
                  m_fxn: MyriadFunction,
-                 instance_methods: dict=None):
+                 instance_methods: dict=None,
+                 inherited: bool=False):
         """
         Initializes a method from a function.
 
@@ -192,7 +203,12 @@ ${super_delegator.stringify_decl()}
         method. This makes inheritance of methods easier since the delegators
         are not implemented by the subclass, only the instance methods are
         overwritten.
+
+        Note that inherited methods do not create delegators, only instance
+        methods.
         """
+
+        self.inherited = inherited
 
         # Need to ensure this function has a typedef
         m_fxn.gen_typedef()
@@ -214,7 +230,7 @@ ${super_delegator.stringify_decl()}
                                        MVoid,
                                        True,
                                        ["const"])
-        tmp_arg_indx = len(super_args)+1
+        tmp_arg_indx = len(super_args) + 1
         super_args[tmp_arg_indx] = super_class_arg
         super_args.move_to_end(tmp_arg_indx, last=False)
         _delg = MyriadFunction("super_" + m_fxn.ident,
@@ -224,6 +240,7 @@ ${super_delegator.stringify_decl()}
         self.delg_template = MakoTemplate(self.DELG_TEMPLATE, vars(self))
         self.super_delg_template = MakoTemplate(self.SUPER_DELG_TEMPLATE,
                                                 vars(self))
+
         # TODO: Implement instance method template
         self.instance_method_template = None
 
@@ -254,11 +271,10 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
     @enforce_annotations
     def __init__(self,
-                 supermodule,
                  obj_name: str,
                  cls_name: str=None,
                  obj_vars: OrderedDict=None,
-                 methods: OrderedDict=None,
+                 methods: OrderedDict=None,  # Looks like str:MyriadFunction
                  cuda: bool=False):
         """Initializes a module"""
 
@@ -272,16 +288,64 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         else:
             self.cls_name = cls_name
 
-        # methods = delegator, super delegator, instance
-        # TODO: Implement method setting
+        # Set new methods and inherit old ones
+        #
+        # The idea here is to preserve all methods from the supermodule,
+        # so that our subclasses can overwrite our implementations even though
+        # the methods originated in a class farther up the tree (the best
+        # example of this is myriad_ctor, which nearly everyone overwrites).
+        #
+        # In order to do this, we need to copy all methods from our superclass,
+        # taking care to set the "inherited" flag to True for each of them.
+        # Resetting the instance methods dict is crucial to prevent double-
+        # -declarations. After reset but before adding to our own methods,
+        # we inject our overrides (if any). It is also important that new
+        # methods are added to the dictionary last and in the same order
+        # as provided in the arguments, in order to ensure proper ordering
+        # in the class struct.
         self.methods = OrderedDict()
+
+        # Import super methods
+        super_methods = copy.deepcopy(super().methods)
+        for m_ident, method in super_methods:
+            method.inherited = True
+            method.instance_methods = {}
+            # If method is going to be overriden, add instance method provided
+            if m_ident in methods:
+                # This assumes `methods` is str:MyriadFunction
+                method.instance_methods[m_ident] = methods[m_ident].fun_def
+                del methods[m_ident]
+            self.methods[m_ident] = method
+
+        # Add new methods.
+        #
+        # Currently using str:MyriadFunction because it is cleanest method,
+        # since this means parity with supermodule's method lists, however
+        # this doesn't work when we need both object and class to have the
+        # same method. However, outside of MyriadObject/Class (which is a
+        # special case) I don't think ^that will ever be needed by a user.
+        #
+        # We only use str:MyriadFunction for incoming methods. Why? Because the
+        # delegator will be automatically generated. This means that the
+        # function we are passed is actually the method in and of itself:
+        # it is a declaration and a function body. The declaration is SHARED
+        # between the delegator generated by MyriadMethod AND the instance
+        # method declaration generator of the same. Since the user only writes
+        # one method anyways (the instance method), we can safely extrapolate
+        # from its function annotations what its delegators will look like,
+        # since they must share the same function signature and typedef. The
+        # body of the delegator already uses an internal template, it is the
+        # body of the instance method that is passed to us.
+        for method_ident, fxn in methods:
+            tmp_dict = {self.obj_name: fxn.fun_def}
+            self.methods[method_ident] = MyriadMethod(fxn, tmp_dict)
 
         # Initialize class object and object class
 
         # Add implicit superclass to start of struct definition
         if obj_vars is not None:
             _arg_indx = len(obj_vars)+1
-            obj_vars[_arg_indx] = supermodule.cls_struct("_", quals=["const"])
+            obj_vars[_arg_indx] = super().cls_struct("_", quals=["const"])
             obj_vars.move_to_end(_arg_indx, last=False)
         else:
             obj_vars = OrderedDict()
@@ -289,7 +353,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
         # Initialize class variables, i.e. function pointers for methods
         cls_vars = OrderedDict()
-        cls_vars[0] = supermodule.cls_struct("_", quals=["const"])
+        cls_vars[0] = super().cls_struct("_", quals=["const"])
 
         for indx, method in enumerate(self.methods.values()):
             m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
@@ -328,19 +392,6 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         # Initialize C file template
         self.c_file_template = None
         self.initialize_c_file_template()
-
-    def register_method(self,
-                        super_methods: OrderedDict, 
-                        function: MyriadFunction):
-        """
-        Registers a global function in the module.
-
-        Keyword arguments:
-        function -- method to be registered
-        """
-        if function.ident in super_methods:
-            # TODO: Figure out how to override instance method only
-            pass
 
     def initialize_c_file_template(self, context_dict: dict=None):
         """ Initializes internal Mako template for C file. """
