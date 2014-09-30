@@ -48,7 +48,7 @@ struct ${cls_name};
 struct ${obj_name};
 
 ## Module variables
-% for m_var in module_vars.valuesif:
+% for m_var in module_vars.values():
     % if type(m_var) is not str and 'static' not in m_var.decl.storage:
 extern ${m_var.stringify_decl()};
     % endif
@@ -259,7 +259,7 @@ ${super_delegator.stringify_decl()}
 
 
 # pylint: disable=R0902
-class MyriadModule(object, metaclass=TypeEnforcer):
+class MyriadModule(object):
     """
     Represents an independent Myriad module (e.g. MyriadObject).
     """
@@ -271,6 +271,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
     @enforce_annotations
     def __init__(self,
+                 supermodule,
                  obj_name: str,
                  cls_name: str=None,
                  obj_vars: OrderedDict=None,
@@ -306,7 +307,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         self.methods = OrderedDict()
 
         # Import super methods
-        super_methods = copy.deepcopy(super().methods)
+        super_methods = copy.deepcopy(supermodule.methods)
         for m_ident, method in super_methods:
             method.inherited = True
             method.instance_methods = {}
@@ -345,7 +346,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
         # Add implicit superclass to start of struct definition
         if obj_vars is not None:
             _arg_indx = len(obj_vars)+1
-            obj_vars[_arg_indx] = super().cls_struct("_", quals=["const"])
+            obj_vars[_arg_indx] = supermodule.cls_struct("_", quals=["const"])
             obj_vars.move_to_end(_arg_indx, last=False)
         else:
             obj_vars = OrderedDict()
@@ -353,7 +354,7 @@ class MyriadModule(object, metaclass=TypeEnforcer):
 
         # Initialize class variables, i.e. function pointers for methods
         cls_vars = OrderedDict()
-        cls_vars[0] = super().cls_struct("_", quals=["const"])
+        cls_vars[0] = supermodule.cls_struct("_", quals=["const"])
 
         for indx, method in enumerate(self.methods.values()):
             m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,

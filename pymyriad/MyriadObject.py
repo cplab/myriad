@@ -15,7 +15,7 @@ from myriad_types import MVoid, MInt, MVarArgs, MSizeT
 
 
 # pylint: disable=R0902
-class MyriadObject(MyriadModule):
+class _MyriadObject(MyriadModule):
     """
     Special initialization for core object.
     """
@@ -343,7 +343,7 @@ class MyriadObject(MyriadModule):
         # Initialize class object and object class
         # ---------------------------------------------------------------------
 
-        obj_vars = {0: MyriadObject._gen_mclass_ptr_scalar("m_class")}
+        obj_vars = {0: _MyriadObject._gen_mclass_ptr_scalar("m_class")}
         obj_vars = OrderedDict(obj_vars)
 
         self.obj_struct = MyriadStructType(self.obj_name, obj_vars)
@@ -351,8 +351,8 @@ class MyriadObject(MyriadModule):
         # Initialize class variables, i.e. function pointers for methods
         cls_vars = OrderedDict()
         cls_vars[0] = self.obj_struct("_", quals=["const"])
-        cls_vars[1] = MyriadObject._gen_mclass_ptr_scalar("super")
-        cls_vars[2] = MyriadObject._gen_mclass_ptr_scalar("device_class")
+        cls_vars[1] = _MyriadObject._gen_mclass_ptr_scalar("super")
+        cls_vars[2] = _MyriadObject._gen_mclass_ptr_scalar("device_class")
         cls_vars[3] = MyriadScalar("size", MSizeT)
 
         for indx, method in enumerate(self.methods.values()):
@@ -394,8 +394,8 @@ class MyriadObject(MyriadModule):
         _ctor_fun = MyriadFunction("myriad_ctor",
                                    OrderedDict({0: _self, 1: _app}),
                                    ret_var=_ret_var)
-        _dict = {self.obj_name: MyriadObject.OBJ_CTOR_T,
-                 self.cls_name: MyriadObject.CLS_CTOR_T}
+        _dict = {self.obj_name: _MyriadObject.OBJ_CTOR_T,
+                 self.cls_name: _MyriadObject.CLS_CTOR_T}
         self.methods["myriad_ctor"] = MyriadMethod(_ctor_fun, _dict)
 
         # extern int myriad_dtor(void* _self);
@@ -403,8 +403,8 @@ class MyriadObject(MyriadModule):
         _dtor_fun = MyriadFunction("myriad_dtor",
                                    OrderedDict({0: _self}),
                                    ret_var=_ret_var)
-        _dict = {self.obj_name: MyriadObject.OBJ_DTOR_T,
-                 self.cls_name: MyriadObject.CLS_DTOR_T}
+        _dict = {self.obj_name: _MyriadObject.OBJ_DTOR_T,
+                 self.cls_name: _MyriadObject.CLS_DTOR_T}
         self.methods["myriad_dtor"] = MyriadMethod(_dtor_fun, _dict)
 
         # extern void* myriad_cudafy(void* _self, int clobber);
@@ -413,16 +413,16 @@ class MyriadObject(MyriadModule):
         _cudafy_fun = MyriadFunction("myriad_cudafy",
                                      OrderedDict({0: _self, 1: _clobber}),
                                      ret_var=_ret_var)
-        _dict = {self.obj_name: MyriadObject.OBJ_CUDAFY_T,
-                 self.cls_name: MyriadObject.CLS_CUDAFY_T}
+        _dict = {self.obj_name: _MyriadObject.OBJ_CUDAFY_T,
+                 self.cls_name: _MyriadObject.CLS_CUDAFY_T}
         self.methods["myriad_cudafy"] = MyriadMethod(_cudafy_fun, _dict)
 
         # extern void myriad_decudafy(void* _self, void* cu_self);
         _cu_self = MyriadScalar("cu_self", MVoid, ptr=True)
         _decudafy_fun = MyriadFunction("myriad_decudafy",
                                        OrderedDict({0: _self, 1: _cu_self}))
-        _dict = {self.obj_name: MyriadObject.OBJ_DECUDAFY_T,
-                 self.cls_name: MyriadObject.CLS_DECUDAFY_T}
+        _dict = {self.obj_name: _MyriadObject.OBJ_DECUDAFY_T,
+                 self.cls_name: _MyriadObject.CLS_DECUDAFY_T}
         self.methods["myriad_decudafy"] = MyriadMethod(_decudafy_fun, _dict)
 
     def _init_module_vars(self):
@@ -469,7 +469,7 @@ static struct MyriadClass object[] =
         """ Hardcode module functions using pre-made templates. """
 
         # Some functions share these; best we save the heap space
-        _m_class = MyriadObject._gen_mclass_ptr_scalar("m_class")
+        _m_class = _MyriadObject._gen_mclass_ptr_scalar("m_class")
         _self = MyriadScalar("self", MVoid, True, quals=["const"])
 
         # int initCUDAObjects()
@@ -478,7 +478,7 @@ static struct MyriadClass object[] =
                                           None,
                                           _ret_var,
                                           None,
-                                          MyriadObject.MYRIAD_INIT_CUDA_T))
+                                          _MyriadObject.MYRIAD_INIT_CUDA_T))
 
         # const void* myriad_class_of(const void* _self)
         _ret_var = MyriadScalar('', MVoid, True)
@@ -486,7 +486,7 @@ static struct MyriadClass object[] =
                                           OrderedDict({0: _self}),
                                           _ret_var,
                                           None,
-                                          MyriadObject.MYRIAD_CLASS_OF_T))
+                                          _MyriadObject.MYRIAD_CLASS_OF_T))
 
         # size_t myriad_size_of(const void* self);
         _ret_var = MyriadScalar('', MSizeT)
@@ -494,7 +494,7 @@ static struct MyriadClass object[] =
                                           OrderedDict({0: _self}),
                                           _ret_var,
                                           None,
-                                          MyriadObject.MYRIAD_SIZE_OF_T))
+                                          _MyriadObject.MYRIAD_SIZE_OF_T))
 
         # int myriad_is_a(const void* _self, const struct MyriadClass* m_class)
         _ret_var = MyriadScalar('', MInt)
@@ -503,7 +503,7 @@ static struct MyriadClass object[] =
                                           _args,
                                           _ret_var,
                                           None,
-                                          MyriadObject.MYRIAD_IS_A_T))
+                                          _MyriadObject.MYRIAD_IS_A_T))
 
         # int myriad_is_of(const void* _self,const struct MyriadClass* m_class)
         _ret_var = MyriadScalar('', MInt)
@@ -512,7 +512,7 @@ static struct MyriadClass object[] =
                                           _args,
                                           _ret_var,
                                           None,
-                                          MyriadObject.MYRIAD_IS_OF_T))
+                                          _MyriadObject.MYRIAD_IS_OF_T))
 
         # extern const void* myriad_super(const void* _self);
         _ret_var = MyriadScalar('', MVoid, ptr=True, quals=['const'])
@@ -520,7 +520,7 @@ static struct MyriadClass object[] =
                                           OrderedDict({0: _self}),
                                           _ret_var,
                                           None,
-                                          MyriadObject.MYRIAD_SUPER_T))
+                                          _MyriadObject.MYRIAD_SUPER_T))
 
         # extern void* myriad_new(const void* _class, ...);
         # TODO: Make sure myriad_new works
@@ -529,7 +529,7 @@ static struct MyriadClass object[] =
         _new = MyriadFunction("myriad_new",
                               OrderedDict(),
                               _ret_var,
-                              fun_def=MyriadObject.MYRIAD_NEW_T)
+                              fun_def=_MyriadObject.MYRIAD_NEW_T)
         _new.param_list = ParamList([_vclass.decl, EllipsisParam()])
         _tmp_decl = deepcopy(_new.ret_var.decl.type)
         _tmp_decl.type.declname = _new.ident
@@ -544,20 +544,4 @@ static struct MyriadClass object[] =
         self.functions.add(_new)
 
 
-def create_myriad_object():
-    obj = MyriadObject()
-
-    from mako import exceptions
-    try:
-        obj.c_file_template.render()
-        print(obj.c_file_template.buffer)
-    except:
-        print(exceptions.text_error_template().render())
-
-
-def main():
-    create_myriad_object()
-
-
-if __name__ == "__main__":
-    main()
+MyriadObject = _MyriadObject()
