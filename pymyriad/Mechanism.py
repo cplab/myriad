@@ -13,17 +13,18 @@ from MyriadObject import MyriadObject
 
 class _Mechanism(myriad_module.MyriadModule):
 
+    # Mechanism Function
+    MECH_FUN_DEF = """
+    const struct Mechanism* self = (const struct Mechanism*) _self;
+    printf("My source id is %u\\n", self->source_id);
+    return 0.0;
+    """
+
     def __init__(self):
         # Object variables
         obj_vars = OrderedDict()
         obj_vars["source_id"] = MyriadScalar("source_id", MUInt)
 
-        # Mechanism Function
-        mech_fun_def = """
-        const struct Mechanism* self = (const struct Mechanism*) _self;
-        printf("My source id is %u\n", self->source_id);
-        return 0.0;
-        """
         mech_fun_args = OrderedDict()
         mech_fun_args["pre_comp"] = MyriadScalar("pre_comp",
                                                  MVoid,
@@ -47,7 +48,7 @@ class _Mechanism(myriad_module.MyriadModule):
         methods["mechanism_fxn"] = MyriadFunction("mechanism_fxn",
                                                   mech_fun_args,
                                                   mech_fun_ret_var,
-                                                  fun_def=mech_fun_def)
+                                                  fun_def=self.MECH_FUN_DEF)
         super().__init__(MyriadObject,
                          "Mechanism",
                          obj_vars=obj_vars,

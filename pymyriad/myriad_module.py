@@ -156,7 +156,8 @@ class MyriadMethod(object):
 
 ${delegator.stringify_decl()}
 {
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(${delegator.args_list[0].ident});
+    const struct MyriadClass* m_class = (const struct MyriadClass*)
+        myriad_class_of(${list(delegator.args_list.values())[0].ident});
 
     assert(m_class->${delegator.fun_typedef.name});
 
@@ -177,7 +178,8 @@ ${delegator.stringify_decl()}
 %>
 ${super_delegator.stringify_decl()}
 {
-    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(${super_delegator.args_list[0].ident});
+    const struct MyriadClass* superclass = (const struct MyriadClass*)
+        myriad_super(${list(super_delegator.args_list.values())[0].ident});
 
     assert(superclass->${delegator.fun_typedef.name});
 
@@ -307,16 +309,18 @@ class MyriadModule(object):
         self.methods = OrderedDict()
 
         # Import super methods
-        super_methods = copy.deepcopy(supermodule.methods)
-        for m_ident, method in super_methods:
-            method.inherited = True
-            method.instance_methods = {}
+        super_methods = copy.copy(supermodule.methods)
+        for m_ident, method in super_methods.items():
+            method_instance_methods = {}
             # If method is going to be overriden, add instance method provided
             if m_ident in methods:
                 # This assumes `methods` is str:MyriadFunction
-                method.instance_methods[m_ident] = methods[m_ident].fun_def
+                method_instance_methods[m_ident] = methods[m_ident].fun_def
                 del methods[m_ident]
-            self.methods[m_ident] = method
+            new_method = MyriadMethod(method.delegator,
+                                      method_instance_methods,
+                                      True)
+            self.methods[m_ident] = new_method
 
         # Add new methods.
         #
@@ -337,7 +341,7 @@ class MyriadModule(object):
         # since they must share the same function signature and typedef. The
         # body of the delegator already uses an internal template, it is the
         # body of the instance method that is passed to us.
-        for method_ident, fxn in methods:
+        for method_ident, fxn in methods.items():
             tmp_dict = {self.obj_name: fxn.fun_def}
             self.methods[method_ident] = MyriadMethod(fxn, tmp_dict)
 
@@ -354,12 +358,12 @@ class MyriadModule(object):
 
         # Initialize class variables, i.e. function pointers for methods
         cls_vars = OrderedDict()
-        cls_vars[0] = supermodule.cls_struct("_", quals=["const"])
+        cls_vars["_"] = supermodule.cls_struct("_", quals=["const"])
 
-        for indx, method in enumerate(self.methods.values()):
+        for method in self.methods.values():
             m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
                                   method.delegator.base_type)
-            cls_vars[indx+1] = m_scal
+            cls_vars[m_scal.ident] = m_scal
 
         self.cls_vars = cls_vars
         self.cls_struct = MyriadStructType(self.cls_name, self.cls_vars)
@@ -368,17 +372,15 @@ class MyriadModule(object):
         self.functions = set()
 
         # Initialize module global variables
-        self.module_vars = set()
-        v_obj = MyriadScalar(self.obj_name,
-                             MVoid,
-                             True,
-                             quals=["const"])
-        self.module_vars.add(v_obj)
-        v_cls = MyriadScalar(self.cls_name,
-                             MVoid,
-                             True,
-                             quals=["const"])
-        self.module_vars.add(v_cls)
+        self.module_vars = OrderedDict()
+        self.module_vars[self.obj_name] = MyriadScalar(self.obj_name,
+                                                       MVoid,
+                                                       True,
+                                                       quals=["const"])
+        self.module_vars[self.cls_name] = MyriadScalar(self.cls_name,
+                                                       MVoid,
+                                                       True,
+                                                       quals=["const"])
 
         # Initialize standard library imports, by default with fail-safes
         self.lib_includes = MyriadModule.DEFAULT_LIB_INCLUDES

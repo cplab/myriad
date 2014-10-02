@@ -221,7 +221,7 @@ class MyriadStructType(_MyriadBase):
         """ Ordered members of the struct, derived from _MyriadBase. """
 
         members = OrderedDict() if members is None else members
-        sorted_members = [members[idx].decl for idx in sorted(members.keys())]
+        sorted_members = [members[idx].decl for idx in members.keys()]
         members = {v.ident: v.decl for v in members.values()}
         for member_ident, member in members.items():
             self.members[member_ident] = member

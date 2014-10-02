@@ -3,15 +3,16 @@
 Common wrapper for Mako templates
 """
 
-from myriad_utils import TypeEnforcer
+from myriad_utils import enforce_annotations
 from mako.template import Template
 from mako.runtime import Context
 from io import StringIO
 
 
-class MakoTemplate(object, metaclass=TypeEnforcer):
+class MakoTemplate(object):
     """ Wraps a mako template, context, and I/O Buffer """
 
+    @enforce_annotations
     def __init__(self, template, context: dict=None, buf: StringIO=None):
         """ Initializes a template relevant data """
         # Sets template
@@ -55,12 +56,14 @@ class MakoTemplate(object, metaclass=TypeEnforcer):
 
     def render(self):
         """ Renders the template to the internal buffer."""
+        print(type(self._context))
         self._template.render_context(self._context)
 
 
 class MakoFileTemplate(MakoTemplate):
     """ A MakoTemplate wrapper with file I/O functionality. """
 
+    @enforce_annotations
     def __init__(self,
                  filename: str,
                  template,
@@ -74,6 +77,7 @@ class MakoFileTemplate(MakoTemplate):
         # Superclass does the rest of the work for us
         super().__init__(template, context, buf)
 
+    @enforce_annotations
     def render_to_file(self, filename: str=None):
         """
         Renders the template to a file with the given filename
