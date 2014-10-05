@@ -2,13 +2,17 @@ from ast import *
 from CTypes import *
 
 #TODO: regex on all strings
-#Answer: ", blah blah, "
+	#Answer: ", blah blah, "
 #TODO: what if people need external modules?
 #TODO: add comparison chaining
 #TODO: sort CLine master variables list
 #TODO: implement slicing/subscripting
 #TODO: use a switch system to determine which stringify method to use
 #TODO: write all control flow functions
+#TODO: implement function calls for simple mathematical functions
+#TODO: work out implementation of while loops - requires identification of index
+
+
 
 
 
@@ -32,14 +36,16 @@ from CTypes import *
 # No not
 # No bit operations
 # No is operator	
-# No augmented assignments	
+# No augmented assignments
+# No breaks
+# No use of in	
 
 def stringify_node(node):
 	nodeClassName = node.__class__.__name__
 
 
 	literals = ["Num", "Str", "List", "NameConstant"]
-	expressionValues = ["Expr", "Name", "UnaryOp", "BinOp", "BoolOp", "Compare", "Attribute"]
+	expressionValues = ["Expr", "Name", "UnaryOp", "BinOp", "BoolOp", "Compare", "Attribute", ]
 
 	if nodeClassName == "Expr":
 		return stringify_expr(node)
@@ -49,9 +55,14 @@ def stringify_node(node):
 		return stringify_expr_contents(node)
 	if nodeClassName == "Assign":
 		return stringify_assign(node)
+	if nodeClassName == "For":
+		return stringify_for_loop(node)
+	if nodeClassName == "While":
+		return stringify_while_loop(node)
+	if nodeClassName == "If":
+		return stringify_if_statement(node)
 	
 
-	
 
 def stringify_expr_contents(node):
 
@@ -75,6 +86,16 @@ def stringify_expr_contents(node):
 		return stringify_compare(node)
 	elif nodeClassName == "Attribute":
 		return stringify_attribute(node)
+	elif nodeClassName == "Assign":
+		return stringify_assign(node)
+	if nodeClassName == "For":
+		return stringify_for_loop(node)
+	if nodeClassName == "While":
+		return stringify_while_loop(node)
+	if nodeClassName == "If":
+		return stringify_if_statement(node)
+	if nodeClassName == "Return":
+		return stringify_return(node)
 
 		
 		
@@ -110,6 +131,7 @@ def stringify_var(node):
 		ctx = node.ctx.__class__.__name__
 		return CVar(node.id, node.ctx.__class__.__name__)
 
+
 def stringify_unaryop(node):
 	nodeOp = node.op.__class__.__name__
 	
@@ -117,6 +139,8 @@ def stringify_unaryop(node):
 		return CUnaryOp("+", stringify_expr_contents(node.operand))
 	if nodeOp == "USub":
 		return CUnaryOp("-", stringify_expr_contents(node.operand))
+	if nodeOp == "Not":
+		return CUnaryOp("!", stringify_expr_contents(node.operand))
 
 def stringify_binaryop(node):
 	nodeOp = node.op.__class__.__name__
@@ -167,39 +191,45 @@ def stringify_assign(node):
 
 	return CAssign(target, val)
 	
-def stringify_if(node):
-	#TODO: write all control flow functions
-	test = stringify_expr_contents(node.test)
-	
+
 	
 		
 
-def stringify_expr(node):
+
+def stringify_for_loop(node):
 	
-	return stringify_expr_contents(node.value)
+	target = stringify_expr_contents(node.target)
+	iterateOver = stringify_expr_contents(node.iter)
+	body = []
+	for child in node.body:
+		newNode = stringify_expr_contents(child)
+		body.append(newNode)
+	return CForLoop(target, iterateOver, body)
 
-def stringify_expr_contents(node):
+def stringify_while_loop(node):
+	cond = stringify_expr_contents(node.test)
+	body = []
+	for child in node.body:
+		newNode = stringify_expr_contents(child)
+		body.append(newNode)
+	return CWhileLoop(cond, body)
 
-	literals = ["Num", "Str", "List", "NameConstant"]
+def stringify_if_statement(node):
+	cond = stringify_expr_contents(node.test)
+	true = []
+	for child in node.body:
+		newNode = stringify_expr_contents(child)
+		true.append(newNode)
+	false = []
+	for child in node.orelse:
+		newNode = stringify_expr_contents(child)
+		false.append(newNode)
+	return CIf(cond, true, false)
 
-	nodeClassName = node.__class__.__name__
+def stringify_return(node):
 
-	if nodeClassName in literals:
-		return stringify_literal(node)
-	elif nodeClassName == "Expr":
-		return stringify_expr_contents(node.value)
-	elif nodeClassName == "Name":
-		return stringify_var(node)
-	elif nodeClassName == "UnaryOp":
-		return stringify_unaryop(node)
-	elif nodeClassName == "BinOp":
-		return stringify_binaryop(node)
-	elif nodeClassName == "BoolOp":
-		return stringify_boolop(node)
-	elif nodeClassName == "Compare":
-		return stringify_compare(node)
-	elif nodeClassName == "Attribute":
-		return stringify_attribute(node)
+	return CReturn(stringify_expr_contents(node.value))
+	
 	
 def determine_type(t):
 	tType = type(t)
