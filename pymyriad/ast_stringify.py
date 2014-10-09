@@ -2,14 +2,10 @@ from ast import *
 from CTypes import *
 
 #TODO: add comparison chaining
-#TODO: implement slicing/subscripting
 #TODO: implement function calls for simple mathematical functions
-#TODO: work out implementation of while loops - requires identification of index
 #TODO: add certain mathematical functions ready made. They put in a dummy call
 #	and the call to the C function is stringified.
-
-
-
+#TODO: sort line endings
 
 
 # Pointers are built-in with the Starred node. Yay.
@@ -33,6 +29,7 @@ from CTypes import *
 # No breaks
 # No use of in
 # While loops require tracker assignment immediately before loop initaliser	
+# Single line requirements on many nodes,
 
 def stringify_node(node):
 
@@ -100,7 +97,7 @@ def stringify_literal(node):
 
 def stringify_subscript(node):
 	
-	return CSubscript(node.value.id, node.slice)	
+	return CSubscript(node.value, node.slice)	
 
 
 
@@ -109,32 +106,28 @@ def stringify_var(node):
 	nodeClassName = node.__class__.__name__
 
 	if nodeClassName == "Name":
-		ctx = node.ctx.__class__.__name__
-		return CVar(node.id, node.ctx.__class__.__name__)
+		return CVar(node)
 
 
 def stringify_unaryop(node):
-	nodeOp = node.op.__class__.__name__
 	
-	return CUnaryOp(nodeOp, stringif_node(node.operand))
+	return CUnaryOp(node, stringify_node(node.operand))
 
 
 def stringify_binaryop(node):
-	nodeOp = node.op.__class__.__name__
 	l = stringify_node(node.left)
 	r = stringify_node(node.right)
 	
-	return CBinaryOp(nodeOp, l, r)
+	return CBinaryOp(node, l, r)
 
 
 def stringify_boolop(node):
-	nodeOp = node.op.__class__.__name__
-	vals = []
 
+	vals = []
 	for v in node.values:
 		vals.append(stringify_node(v))
 
-	return CBoolOp(nodeOp, vals)
+	return CBoolOp(node, vals)
 
 
 def stringify_compare(node):
@@ -143,20 +136,17 @@ def stringify_compare(node):
 	comparator = stringify_node(node.comparators[0])
 	
 	
-	return CCompare(nodeOp, left, comparator)
+	return CCompare(node, left, comparator)
 
 
 def stringify_attribute(node):
 	
-	var = node.value.id
-	ctx = node.value.ctx.__class__.__name__
-	attr = node.attr
 	
-	return CVarAttr(var, ctx, attr)
+	return CVarAttr(node)
 
 
 def stringify_assign(node):
-	target = stringify_var(node.targets[0])
+	target = stringify_node(node.targets[0])
 	val = stringify_node(node.value)
 
 	return CAssign(target, val)

@@ -27,6 +27,15 @@ class CFunc(object):
 			if isinstance(self.nodeList[i], CForLoop) and isinstance(self.nodeList[i-1], CAssign):
 				self.nodeList[i].set_tracker(self.nodeList[i-1].target)
 			i = i + 1
+
+	def stringify(self):
+		retString = ""
+		for node in self.nodeList:
+			print(node.stringify())
+			retString = retString + node.stringify() + "\n"
+		print("---")
+		print(retString)
+
 			
 
 	

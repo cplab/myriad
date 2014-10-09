@@ -17,32 +17,33 @@ class CList(CObject):
 		self.cargo = l
 		self.cargoType = determine_type(l[0])
 		self.length = len(l)
+		self.numStringifyCalls = 0
 
 	def stringify(self):
-		pass
+		return self.stringify_assignment()
 
 	def stringify_assignment(self):
-		retString = "{"
-		for elt in self.cargo:
+		retString = "{" + stringify(self.cargo[0])
+		for elt in self.cargo[1:]:
 			retString = retString + ", " + stringify(elt) 
 		retString = retString + "}"
 		return retString
 	
 class CSubscript(CObject):
 
-	def __init__(self, v, s):
-		self.val = v
-		self.sliceClass = s.__class__.__name__
+	def __init__(self, variableNode, sliceNode):
+		self.val = variableNode.id
+		self.sliceClass = sliceNode.__class__.__name__
 		
 		#TODO: fix for variables	
 	
 		if self.sliceClass == "Index":
-			indexValue = s.value.n
+			indexValue = sliceNode.value.n
 			self.sliceDict = {"Index" : indexValue}
 
 		if self.sliceClass == "Slice":
-			lowerValue = s.lower.n
-			upperValue = s.upper.n
+			lowerValue = sliceNode.lower.n		
+			upperValue = sliceNode.upper.n
 			self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}
 
 	def stringify(self):
@@ -51,7 +52,7 @@ class CSubscript(CObject):
 			return str(self.val) + "[" + str(self.sliceDict["Index"]) + "]"
 		
 		if self.sliceClass == "Slice":
-			#TODO: this is not legal C.
+			#TODO: slicing is not valid C.
 			return str(self.val) + "[" + str(self.sliceDict["Lower"]) + ", " + str(self.sliceDict["Upper"]) + "]"
 
 
@@ -82,9 +83,9 @@ class CString(CObject):
 
 class CVar(CObject):
 	
-	def __init__(self, v, ctx):
-		self.var = v
-		self.ctx = ctx
+	def __init__(self, variableNode):
+		self.var = variableNode.id
+		self.ctx = variableNode.ctx.__class__.__name__
 		self.attributes = []
 
 	def stringify(self):
@@ -92,9 +93,11 @@ class CVar(CObject):
 
 class CVarAttr(CVar):
 	
-	def __init__(self, v, ctx, attr):
-		super().__init__(v, ctx)
-		self.attr = attr
+	def __init__(self, node):
+		CVar.__init__(self, node.value)
+		self.attr = node.attr
+
+	
 
 	#TODO: work out how to implement stringify
 
@@ -102,26 +105,27 @@ class CVarAttr(CVar):
 class CUnaryOp(CObject):
 
 	
-	def __init__(self, nodeOp, operand):
+	def __init__(self, unaryOpNode, operand):
 		self.operand = operand
+		nodeOp = unaryOpNode.__class__.__name__
 
 		if nodeOp == "UAdd":
-			self.operand = "+"
+			self.op = "+"
 		if nodeOp == "USub":
-			self.operand = "-"
+			self.op = "-"
 		if nodeOp == "Not":
-			self.operand = "!"
+			self.op = "!"
 	
 	def stringify(self):
 		return str(self.op + stringify(self.operand))
-
-
+	
 	
 class CBinaryOp(CObject):
 	
 	def __init__(self, nodeOp, left, right):
 		self.left = left
 		self.right = right
+		nodeOp = node.op.__class__.__name__
 
 		if nodeOp == "Add":
 			self.op = "+"
@@ -146,10 +150,12 @@ class CBinaryOp(CObject):
 
 class CBoolOp(CObject):
 	
-	def __init__(self, op, vals):
-		if op == "Or":
+	def __init__(self, node, vals):
+		nodeOp = node.op.__class__.__name__
+
+		if nodeOp == "Or":
 			self.op = "||"
-		if op == "And":
+		if nodeOp == "And":
 			self.op = "&&"
 		self.vals = vals
 
@@ -161,21 +167,23 @@ class CBoolOp(CObject):
 
 class CCompare(CObject):
 	
-	def __init__(self, op, l, r):
-		if op == "Eq":
+	def __init__(self, node, l, r):
+		nodeOp = node.ops[0].__class__.__name__
+
+		if nodeOp == "Eq":
 			self.op = "=="
-		if op == "NotEq":
+		if nodeOp == "NotEq":
 			self.op = "!="
-		if op == "Lt":
+		if nodeOp == "Lt":
 			self.op = "<"
-		if op == "LtE":
+		if nodeOp == "LtE":
 			self.op = "<="
-		if op == "Gt":
+		if nodeOp == "Gt":
 			self.op = ">"
-		if op == "GtE":
+		if nodeOp == "GtE":
 			self.op = ">="
 		#TODO: What is the C implementation for this?
-		if op == "In":
+		if nodeOp == "In":
 			self.op = "in"
 		self.left = l
 		self.right = r
@@ -190,7 +198,9 @@ class CAssign(CObject):
 		self.val = val
 
 	def stringify(self):
-		return str(stringify(self.target) + " = " + stringify(self.val))
+		return str(stringify(self.target) + " = " + stringify(self.val)) + ";"
+		# Assignment is always single line.
+
 		#TODO: work out tracking for this (?)
 
 class CForLoop(CObject):
@@ -206,7 +216,7 @@ class CForLoop(CObject):
 		"""Must be called with lists list supplied."""
 		iterateOverLPair = get_lPair_from_var(lists, self.iterateOver.var)
 		length = iterateOverLPair[1].length
-		initialString = "for(int64_t i = 0; " + "i < " + str(length) + "; i++;)"
+		initialString = "for (int64_t i = 0; " + "i < " + str(length) + "; i++;)"
 		bodyString = "{"
 		for node in self.body:
 			bodyString = bodyString + "\n" + stringify(node)
@@ -258,7 +268,7 @@ class CReturn(CObject):
 		self.val = v
 
 	def stringify(self):
-		return str("return " + stringify(self.val))
+		return "return " + stringify(self.val) + ";"
 
 def stringify(node):
 	if not isinstance(node, CObject):
