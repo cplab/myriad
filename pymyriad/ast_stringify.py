@@ -1,29 +1,18 @@
 from ast import *
 from CTypes import *
 
-#TODO: regex on all strings
-	#Answer: ", blah blah, "
-#TODO: what if people need external modules?
 #TODO: add comparison chaining
-#TODO: sort CLine master variables list
-#TODO: implement slicing/subscripting
-#TODO: use a switch system to determine which stringify method to use
-#TODO: write all control flow functions
 #TODO: implement function calls for simple mathematical functions
-#TODO: work out implementation of while loops - requires identification of index
-
-
-
+#TODO: add certain mathematical functions ready made. They put in a dummy call
+#	and the call to the C function is stringified.
+#TODO: sort line endings
 
 
 # Pointers are built-in with the Starred node. Yay.
 # How do we inform users about pointers though?
-# Convert to MyriadType or just stringify?
-# Control flow will be handled with a C style syntax.
 # Build lists of variables to be initialised.
 # Build lists of functions for typedefs.
 # Do we need print statements?
-# No need for imports (?)
 
 
 # No sets
@@ -38,33 +27,14 @@ from CTypes import *
 # No is operator	
 # No augmented assignments
 # No breaks
-# No use of in	
+# No use of in
+# While loops require tracker assignment immediately before loop initaliser	
+# Single line requirements on many nodes,
 
 def stringify_node(node):
-	nodeClassName = node.__class__.__name__
 
 
-	literals = ["Num", "Str", "List", "NameConstant"]
-	expressionValues = ["Expr", "Name", "UnaryOp", "BinOp", "BoolOp", "Compare", "Attribute", ]
 
-	if nodeClassName == "Expr":
-		return stringify_expr(node)
-	if nodeClassName in literals:
-		return stringify_literal(node)
-	if nodeClassName in expressionValues:
-		return stringify_expr_contents(node)
-	if nodeClassName == "Assign":
-		return stringify_assign(node)
-	if nodeClassName == "For":
-		return stringify_for_loop(node)
-	if nodeClassName == "While":
-		return stringify_while_loop(node)
-	if nodeClassName == "If":
-		return stringify_if_statement(node)
-	
-
-
-def stringify_expr_contents(node):
 
 	literals = ["Num", "Str", "List", "NameConstant"]
 
@@ -72,8 +42,10 @@ def stringify_expr_contents(node):
 
 	if nodeClassName in literals:
 		return stringify_literal(node)
+	elif nodeClassName == "Subscript":
+		return stringify_subscript(node)
 	elif nodeClassName == "Expr":
-		return stringify_expr_contents(node.value)
+		return stringify_node(node.value)
 	elif nodeClassName == "Name":
 		return stringify_var(node)
 	elif nodeClassName == "UnaryOp":
@@ -88,16 +60,15 @@ def stringify_expr_contents(node):
 		return stringify_attribute(node)
 	elif nodeClassName == "Assign":
 		return stringify_assign(node)
-	if nodeClassName == "For":
+	elif nodeClassName == "For":
 		return stringify_for_loop(node)
-	if nodeClassName == "While":
+	elif nodeClassName == "While":
 		return stringify_while_loop(node)
-	if nodeClassName == "If":
+	elif nodeClassName == "If":
 		return stringify_if_statement(node)
-	if nodeClassName == "Return":
+	elif nodeClassName == "Return":
 		return stringify_return(node)
 
-		
 		
 def stringify_literal(node):
 
@@ -119,116 +90,101 @@ def stringify_literal(node):
 		retList = []
 		for n in node.elts:
 			retList.append(stringify_literal(n))
-		valueType = determine_type(retList[0])
 		return CList(retList)	
 	elif nodeClassName == "NameConstant":
 		return node.value
+
+
+def stringify_subscript(node):
+	
+	return CSubscript(node.value, node.slice)	
+
+
+
 
 def stringify_var(node):
 	nodeClassName = node.__class__.__name__
 
 	if nodeClassName == "Name":
-		ctx = node.ctx.__class__.__name__
-		return CVar(node.id, node.ctx.__class__.__name__)
+		return CVar(node)
 
 
 def stringify_unaryop(node):
-	nodeOp = node.op.__class__.__name__
 	
-	if nodeOp == "UAdd":
-		return CUnaryOp("+", stringify_expr_contents(node.operand))
-	if nodeOp == "USub":
-		return CUnaryOp("-", stringify_expr_contents(node.operand))
-	if nodeOp == "Not":
-		return CUnaryOp("!", stringify_expr_contents(node.operand))
+	return CUnaryOp(node, stringify_node(node.operand))
+
 
 def stringify_binaryop(node):
-	nodeOp = node.op.__class__.__name__
-	l = stringify_expr_contents(node.left)
-	r = stringify_expr_contents(node.right)
+	l = stringify_node(node.left)
+	r = stringify_node(node.right)
+	
+	return CBinaryOp(node, l, r)
 
-	if nodeOp == "Add":
-		return CBinaryOp("+", l, r)
-	if nodeOp == "Sub":
-		return CBinaryOp("-", l, r)
-	if nodeOp == "Mult":
-		return CBinaryOp("*", l, r)
-	if nodeOp == "Div":
-		return CBinaryOp("/", l, r)
-	if nodeOp == "Mod":
-		return CBinaryOp("%", l, r)
-	if nodeOp == "Pow":
-		return CBinaryOp("**", l, r)
 
 def stringify_boolop(node):
-	nodeOp = node.op.__class__.__name__
+
 	vals = []
-
 	for v in node.values:
-		vals.append(stringify_expr_contents(v))
+		vals.append(stringify_node(v))
 
-	return CBoolOp(nodeOp, vals)
+	return CBoolOp(node, vals)
+
 
 def stringify_compare(node):
 	nodeOp = node.ops[0].__class__.__name__
-	left = stringify_expr_contents(node.left)
-	comparator = stringify_expr_contents(node.comparators[0])
+	left = stringify_node(node.left)
+	comparator = stringify_node(node.comparators[0])
 	
 	
-	return CCompare(nodeOp, left, comparator)
+	return CCompare(node, left, comparator)
+
 
 def stringify_attribute(node):
 	
-	var = node.value.id
-	ctx = node.value.ctx.__class__.__name__
-	attr = node.attr
 	
-	return CVarAttr(var, ctx, attr)
+	return CVarAttr(node)
+
 
 def stringify_assign(node):
-	target = stringify_var(node.targets[0])
+	target = stringify_node(node.targets[0])
 	val = stringify_node(node.value)
 
 	return CAssign(target, val)
 	
 
-	
-		
-
-
 def stringify_for_loop(node):
 	
-	target = stringify_expr_contents(node.target)
-	iterateOver = stringify_expr_contents(node.iter)
+	target = stringify_node(node.target)
+	iterateOver = stringify_node(node.iter)
 	body = []
 	for child in node.body:
-		newNode = stringify_expr_contents(child)
+		newNode = stringify_node(child)
 		body.append(newNode)
 	return CForLoop(target, iterateOver, body)
 
 def stringify_while_loop(node):
-	cond = stringify_expr_contents(node.test)
+	cond = stringify_node(node.test)
 	body = []
 	for child in node.body:
-		newNode = stringify_expr_contents(child)
+		newNode = stringify_node(child)
 		body.append(newNode)
 	return CWhileLoop(cond, body)
 
 def stringify_if_statement(node):
-	cond = stringify_expr_contents(node.test)
+	cond = stringify_node(node.test)
 	true = []
 	for child in node.body:
-		newNode = stringify_expr_contents(child)
+		newNode = stringify_node(child)
 		true.append(newNode)
 	false = []
 	for child in node.orelse:
-		newNode = stringify_expr_contents(child)
+		newNode = stringify_node(child)
 		false.append(newNode)
 	return CIf(cond, true, false)
 
 def stringify_return(node):
 
-	return CReturn(stringify_expr_contents(node.value))
+	return CReturn(stringify_node(node.value))
 	
 	
 def determine_type(t):
@@ -246,17 +202,6 @@ def determine_type(t):
 	if tType is tuple:
 		return "tuple"
 
-# Pointers are built-in with the Starred node. Yay.
-# How do we inform users about pointers though?
-
-# Convert to MyriadType or just stringify?
-
-# Control flow will be handled with a C style syntax.
-
-# Build lists of variables to be initialised.
-
-# Build lists of functions for typedefs.
-
 def test():
 	node = parse("1", mode="exec")
 	num_stringify(node)
@@ -264,5 +209,4 @@ def test():
 
 
 
-#TODO: use a switch system to determine which stringify method to use
 
