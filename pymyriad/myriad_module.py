@@ -7,7 +7,7 @@ import copy
 
 from collections import OrderedDict
 
-from myriad_utils import enforce_annotations, TypeEnforcer
+from myriad_utils import enforce_annotations
 from myriad_mako_wrapper import MakoFileTemplate, MakoTemplate
 
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
@@ -15,8 +15,6 @@ from myriad_types import MVoid
 
 
 HEADER_FILE_TEMPLATE = """
-
-## Python imports as a module-level block
 <%!
     import myriad_types
 %>
@@ -55,7 +53,7 @@ extern ${m_var.stringify_decl()};
 % endfor
 
 ## Top-level functions
-% for fun in functions:
+% for fun in functions.values():
 extern ${fun.stringify_decl()};
 % endfor
 
@@ -75,14 +73,48 @@ ${cls_struct.stringify_decl()}
 #endif
 """
 
-C_FILE_TEMPLATE = """
+CUH_FILE_TEMPLATE = """
+## Add include guards
+<% include_guard = obj_name.upper() + "_CUH" %>
+#ifndef ${include_guard}
+#define ${include_guard}
 
+#ifdef CUDA
+
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+
+## Add local includes
+% for lib in local_includes:
+#include "${lib}"
+% endfor
+
+extern __constant__ __device__ struct ${cls_name}* ${obj_name}_dev_t;
+extern __constant__ __device__ struct ${cls_name}* ${cls_name}_dev_t;
+
+% for fun in functions.values():
+<%
+    tmp_fun = fun.copy_init(ident="cuda_" + fun.ident)
+    context.write("extern __device__ " + tmp_fun.stringify_decl() + ";")
+%>
+% endfor
+
+#endif // IFDEF CUDA
+
+#endif
+"""
+
+C_FILE_TEMPLATE = """
 ## Python imports as a module-level block
 <%!
     import myriad_types
 %>
-
 #include "myriad_debug.h"
+
+## Add lib includes
+% for lib in lib_includes:
+#include <${lib}>
+% endfor
 
 ## Add local includes
 % for lib in local_includes:
@@ -120,15 +152,14 @@ ${i_method.stringify_decl()}
 }
     % endfor
 
-## Use this trick to force rendering before printing the buffer in one line
+## Use this trick to force rendering before printing the buffer
 ${method.delg_template.render() or method.delg_template.buffer}
 
 ${method.super_delg_template.render() or method.super_delg_template.buffer}
-
 % endfor
 
 ## Top-level functions
-% for fun in functions:
+% for fun in functions.values():
 ${fun.stringify_decl()}
 {
     ${fun.fun_def}
@@ -271,6 +302,62 @@ class MyriadModule(object):
 
     DEFAULT_CUDA_INCLUDES = {"cuda_runtime.h", "cuda_runtime_api.h"}
 
+    CLS_CTOR_TEMPLATE = """
+    struct ${cls_name}* self = (struct ${cls_name}*) super_ctor(${cls_name}, _self, app);
+
+    voidf selector = NULL; selector = va_arg(*app, voidf);
+
+    while (selector)
+    {
+        const voidf method = va_arg(*app, voidf);
+
+        % for mtd in [m for m in methods.values() if not m.inherited]:
+        if (selector == (voidf) ${mtd.delegator.ident})
+        {
+            *(voidf *) &self->${"my_" + mtd.delegator.fun_typedef.name} = method;
+        }
+        % endfor
+
+        selector = va_arg(*app, voidf);
+    }
+
+    return self;
+    """
+
+    CLS_CUDAFY_TEMPLATE = """
+    #ifdef CUDA
+    {
+        struct MechanismClass* my_class = (struct MechanismClass*) _self;
+
+        struct MechanismClass copy_class = *my_class; // Assignment to stack avoids calloc/memcpy
+        struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+
+        mech_fun_t my_mech_fun = NULL;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyFromSymbol(
+                (void**) &my_mech_fun,
+                (const void*) &Mechanism_cuda_mechanism_fxn_t,
+                sizeof(void*),
+                0,
+                cudaMemcpyDeviceToHost
+            )
+        );
+        copy_class.m_mech_fxn = my_mech_fun;
+
+        if (clobber)
+        {
+            const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
+            memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
+        }
+        return super_cudafy(MechanismClass, (void*) &copy_class, 0);
+    }
+    #else
+    {
+        return NULL;
+    }
+    #endif
+    """
+
     @enforce_annotations
     def __init__(self,
                  supermodule,
@@ -279,7 +366,7 @@ class MyriadModule(object):
                  obj_vars: OrderedDict=None,
                  methods: OrderedDict=None,  # Looks like str:MyriadFunction
                  cuda: bool=False):
-        """Initializes a module"""
+        """ Initializes a module. """
 
         # Set CUDA support status
         self.cuda = cuda
@@ -309,16 +396,15 @@ class MyriadModule(object):
         self.methods = OrderedDict()
 
         # Import super methods
-        super_methods = copy.copy(supermodule.methods)
-        for m_ident, method in super_methods.items():
-            method_instance_methods = {}
+        for m_ident, method in copy.copy(supermodule.methods).items():
+            new_instance_methods = {}
             # If method is going to be overriden, add instance method provided
             if m_ident in methods:
                 # This assumes `methods` is str:MyriadFunction
-                method_instance_methods[m_ident] = methods[m_ident].fun_def
+                new_instance_methods[self.obj_name] = methods[m_ident].fun_def
                 del methods[m_ident]
             new_method = MyriadMethod(method.delegator,
-                                      method_instance_methods,
+                                      new_instance_methods,
                                       True)
             self.methods[m_ident] = new_method
 
@@ -349,27 +435,37 @@ class MyriadModule(object):
 
         # Add implicit superclass to start of struct definition
         if obj_vars is not None:
-            _arg_indx = len(obj_vars)+1
-            obj_vars[_arg_indx] = supermodule.cls_struct("_", quals=["const"])
+            _arg_indx = len(obj_vars) + 1
+            obj_vars[_arg_indx] = supermodule.obj_struct("_", quals=["const"])
             obj_vars.move_to_end(_arg_indx, last=False)
         else:
             obj_vars = OrderedDict()
         self.obj_struct = MyriadStructType(self.obj_name, obj_vars)
 
-        # Initialize class variables, i.e. function pointers for methods
+        # Initialize class struct
+        # Struct variables are function pointers for methods
         cls_vars = OrderedDict()
         cls_vars["_"] = supermodule.cls_struct("_", quals=["const"])
 
-        for method in self.methods.values():
-            m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
-                                  method.delegator.base_type)
+        for mtd in [mtd for mtd in self.methods.values() if not mtd.inherited]:
+            m_scal = MyriadScalar("my_" + mtd.delegator.fun_typedef.name,
+                                  mtd.delegator.base_type)
             cls_vars[m_scal.ident] = m_scal
 
         self.cls_vars = cls_vars
         self.cls_struct = MyriadStructType(self.cls_name, self.cls_vars)
 
-        # TODO: Dictionaries or sets?
-        self.functions = set()
+        # Initialize Class constructor if new methods are created
+        # TODO: Check if superclass instance ctor exists, then delete it
+        if len(self.methods) > len(supermodule.methods):
+            _cls_tmplt = MakoTemplate(self.CLS_CTOR_TEMPLATE, vars(self))
+            _cls_tmplt.render()
+            _cls_ctor_mtd = self.methods["myriad_ctor"]
+            _cls_ctor_mtd.gen_instance_method_from_str(self.cls_name,
+                                                       _cls_tmplt.buffer)
+
+        # TODO: Add init* function
+        self.functions = OrderedDict()
 
         # Initialize module global variables
         self.module_vars = OrderedDict()
@@ -388,34 +484,28 @@ class MyriadModule(object):
         # TODO: Initialize local header imports
         self.local_includes = set()
 
-        # Initialize C header template
-        self.header_template = None
-        self.initialize_header_template()
+        # Initialize C file templates
+        self.header_template = self.create_file_template(".h",
+                                                         HEADER_FILE_TEMPLATE)
+        self.c_file_template = self.create_file_template(".c",
+                                                         C_FILE_TEMPLATE)
+        self.cuh_file_template = self.create_file_template(".cuh",
+                                                           CUH_FILE_TEMPLATE)
 
-        # Initialize C file template
-        self.c_file_template = None
-        self.initialize_c_file_template()
-
-    def initialize_c_file_template(self, context_dict: dict=None):
+    def create_file_template(self,
+                             suffix,
+                             template_str,
+                             context_dict: dict=None):
         """ Initializes internal Mako template for C file. """
         if context_dict is None:
             context_dict = vars(self)
-        self.c_file_template = MakoFileTemplate(self.obj_name+".c",
-                                                C_FILE_TEMPLATE,
-                                                context_dict)
-
-    def initialize_header_template(self, context_dict: dict=None):
-        """ Initializes internal Mako template for C header file. """
-        if context_dict is None:
-            context_dict = vars(self)
-        self.header_template = MakoFileTemplate(self.obj_name+".h",
-                                                HEADER_FILE_TEMPLATE,
-                                                context_dict)
+        return MakoFileTemplate(self.obj_name + suffix,
+                                template_str,
+                                context_dict)
 
 
 def main():
     pass
-
 
 if __name__ == "__main__":
     main()

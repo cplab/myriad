@@ -28,9 +28,9 @@ from pycparser.c_ast import ParamList
 
 from myriad_utils import enforce_annotations, assert_list_type
 
+
 # Global TODOs
 # TODO: add support for __hash__ and __eq__ for dict/set purposes
-
 class _MyriadBase(object):
     """
     Common core class for Myriad types.
@@ -392,14 +392,41 @@ class MyriadFunction(_MyriadBase):
         # TODO: Create internal c_ast function definition
         self.fun_def = fun_def
 
+    def copy_init(self,
+                  ident: str=None,
+                  args_list: OrderedDict=None,
+                  ret_var: MyriadScalar=None,
+                  storage: list=None,
+                  fun_def=None):
+        """
+        Generates a "copy" of this object with modified initial values.
+
+        :param args_list: Ordered dict of identifiers:_MyriadBase fxn args
+        :type args_list: OrderedDict or None
+        :param ret_var: Return value as a MyriadScalar
+        :type ret_var: MyriadScalar or None
+        :param storage: C AST storage qualifiers (e.g. "const")
+        :type storage: list or None
+        :param fun_def: Function definition in form of a string or template
+        """
+        if ident is None:
+            ident = self.ident
+        if args_list is None:
+            args_list = self.args_list
+        if ret_var is None:
+            ret_var = self.ret_var
+        if storage is None:
+            storage = self.storage
+        if fun_def is None:
+            fun_def = self.fun_def
+        return MyriadFunction(ident, args_list, ret_var, storage, fun_def)
+
     def gen_typedef(self, typedef_name: str=None):
         """
         Generates an internal typedef definition for this function.
 
-        Keyword arguments:
-        typedef_name -- Overrides automatic type name generation with value.
+        :param typedef_name: Overrides automatic type name generation w/ value.
         """
-
         # Use the convention of appending _t to a type name (e.g. int64_t)
         if typedef_name is None:
             typedef_name = self.ident + "_t"

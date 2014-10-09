@@ -56,7 +56,6 @@ class MakoTemplate(object):
 
     def render(self):
         """ Renders the template to the internal buffer."""
-        print(type(self._context))
         self._template.render_context(self._context)
 
 
