@@ -37,7 +37,8 @@ class CTypesTester(unittest.TestCase):
 		parsed = stringify_attribute(code.body[0].value)
 		self.assertEqual(parsed.var, "a")
 		self.assertEqual(parsed.attr, "foo")
-	
+		code = parse("a.foo.bar")
+		parsed = stringify_attribute(code.bod
 
 
 if __name__ == '__main__':

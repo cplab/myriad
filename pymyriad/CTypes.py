@@ -94,9 +94,18 @@ class CVar(CObject):
 class CVarAttr(CVar):
 	
 	def __init__(self, node):
-		CVar.__init__(self, node.value)
-		self.attr = node.attr
-
+		if node.__class__.__name__ == "Name":
+			self.var = CVar(node.value)
+			self.attr = node.attr
+		elif node.__class__.__name__ == "Attribute":
+			if node.value.__class__.__name__ == "Name":
+				self.var = CVar(node.value)
+			elif node.value.__class__.__name__ == "Attribute":
+				self.var = CVarAttr(node.value)
+			self.attr = node.attr
+			
+		
+	
 	
 
 	#TODO: work out how to implement stringify

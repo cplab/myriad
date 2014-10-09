@@ -6,6 +6,7 @@ from CTypes import *
 #TODO: add certain mathematical functions ready made. They put in a dummy call
 #	and the call to the C function is stringified.
 #TODO: sort line endings
+#TODO: change tabs to spaces.
 
 
 # Pointers are built-in with the Starred node. Yay.
@@ -32,8 +33,6 @@ from CTypes import *
 # Single line requirements on many nodes,
 
 def stringify_node(node):
-
-
 
 
 	literals = ["Num", "Str", "List", "NameConstant"]
