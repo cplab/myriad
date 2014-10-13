@@ -33,7 +33,7 @@ class CList(CObject):
                         raise TypeError("l must be set to a list.")
                 self.cargo = l  # List itself
                 self.cargoType = determine_type(l[0])  # Element type (eg char)
-                self.length = len(l)  # Static lenght of list
+                self.length = len(l)  # Static length of list
 
                 # TODO: Consider whether we need to keep track of this.
                 self.numStringifyCalls = 0
@@ -193,7 +193,7 @@ class CBinaryOp(CObject):
         """
         Container for simple binary operations (add, subtract, multiply, mod).
         """
-        def __init__(self, nodeOp, left, right):
+        def __init__(self, node, left, right):
                 """
                 :param nodeOp: actual operator stringified for C
                 :param left: LHS of the operation, either a CVar or a literal
@@ -314,7 +314,7 @@ class CForLoop(CObject):
                 Must be called with lists list supplied.
 
                 The C implementation of the for loop requires knowing the
-                length of the list, therefore we must find the lenght of the
+                length of the list, therefore we must find the length of the
                 list we're looping over by searching for the relevant
                 [variable, list] inside of the master list (i.e. lists).
 
@@ -397,19 +397,18 @@ def stringify(node) -> str:
 
 
 def determine_type(t):
-        # TODO: Change to elif
         tType = type(t)
         if tType is int:
                 return "int"
-        if tType is float:
+        elif tType is float:
                 return "float"
-        if tType is str and length(t) == 1:
+        elif tType is str and len(t) == 1:
                 return "char"
-        elif tType is str and length(t) != 1:
+        elif tType is str and len(t) != 1:
                 return "str"
-        if tType is list:
+        elif tType is list:
                 return "list"
-        if tType is tuple:
+        elif tType is tuple:
                 return "tuple"
 
 

@@ -12,6 +12,10 @@ tags
 # Doxygen
 doc/
 
+# Python
+*.pyc
+*.swp
+
 # Fuse crap
 .fuse*
 
