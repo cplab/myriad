@@ -178,8 +178,3 @@ def determine_type(t):
         return "list"
     elif tType is tuple:
         return "tuple"
-
-# TODO: This is broken; there is no num_stringify anywhere
-def test():
-    node = ast.parse("1", mode="exec")
-    num_stringify(node)
