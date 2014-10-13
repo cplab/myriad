@@ -309,7 +309,7 @@ class MyriadFunction(_MyriadBase):
     Function container for Myriad functions.
 
     Currently MyriadFunction acts as a shell for a C AST function declaration
-    node and a string body for the definition. TODO: Use Mako template?
+    node and a string body for the definition.
     """
 
     @enforce_annotations

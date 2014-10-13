@@ -240,7 +240,6 @@ ${super_delegator.stringify_decl()}
         Note that inherited methods do not create delegators, only instance
         methods.
         """
-
         self.inherited = inherited
 
         # Need to ensure this function has a typedef

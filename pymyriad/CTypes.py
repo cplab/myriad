@@ -15,29 +15,28 @@ class CObject(object):
 
 
 class CList(CObject):
+    """
+    List container class.
+
+    Constraints:
+    - All elements must be of the same C type
+    - Lists must be of fixed length
+    """
+
+    def __init__(self, l: list):
         """
-        List container class.
+        Initializes the CList with the given list.
 
-        Constraints:
-        - All elements must be of the same C type
-        - Lists must be of fixed length
-        """
-
-        def __init__(self, l: list):
+        :param l: list which we are wrapping
                 """
-                Initializes the CList with the given list.
+        if not isinstance(l, list):
+            raise TypeError("l must be set to a list.")
+        self.cargo = l  # List itself
+        self.cargoType = determine_type(l[0])  # Element type (eg char)
+        self.length = len(l)  # Static length of list
 
-                :param l: list which we are wrapping
-                """
-                if not isinstance(l, list):
-                        raise TypeError("l must be set to a list.")
-                self.cargo = l  # List itself
-                self.cargoType = determine_type(l[0])  # Element type (eg char)
-                self.length = len(l)  # Static length of list
-
-                # TODO: Consider whether we need to keep track of this.
-                self.numStringifyCalls = 0
-
+        # TODO: Consider whether we need to keep track of this.
+        self.numStringifyCalls = 0
 
         """
         We should consider whether we would ever need to represent the list
@@ -45,20 +44,20 @@ class CList(CObject):
         then we should merge stringify_assignment into stringify.
         """
         def stringify(self):
-                return self.stringify_assignment()
+            return self.stringify_assignment()
 
         def stringify_assignment(self):
-                """
-                Returns the literal C representation of this list.
+            """
+            Returns the literal C representation of this list.
 
-                Example:
-                [1, 2, 3] >>> {1, 2, 3}
-                """
-                retString = "{" + stringify(self.cargo[0])
-                for elt in self.cargo[1:]:
-                        retString = retString + ", " + stringify(elt) 
-                retString = retString + "}"
-                return retString
+            Example:
+            [1, 2, 3] >>> {1, 2, 3}
+            """
+            retString = "{" + stringify(self.cargo[0])
+            for elt in self.cargo[1:]:
+                retString = retString + ", " + stringify(elt) 
+            retString = retString + "}"
+            return retString
 
 
 class CSubscript(CObject):
@@ -69,36 +68,36 @@ class CSubscript(CObject):
         """
 
         def __init__(self, variableNode, sliceNode):
-                """
-                Initializes a CSubscript container.
+            """
+            Initializes a CSubscript container.
 
-                :param variableNode: variable on which the subscript is acting on
-                :param sliceNode: indicates whether it's an index or a slice
-                """
-                self.val = variableNode.id  # String identified of the variable
-                self.sliceClass = sliceNode.__class__.__name__  # Name of the slice class
+            :param variableNode: variable on which the subscript is acting on
+            :param sliceNode: indicates whether it's an index or a slice
+            """
+            self.val = variableNode.id  # String identified of the variable
+            self.sliceClass = sliceNode.__class__.__name__  # Name of the slice class
 
-                # TODO: fix for variables (e.g. l[a] where a is a variable)
-                # The above is necessary for loops.
-                if self.sliceClass == "Index":
-                        indexValue = sliceNode.value.n
-                        self.sliceDict = {"Index" : indexValue}
+            # TODO: fix for variables (e.g. l[a] where a is a variable)
+            # The above is necessary for loops.
+            if self.sliceClass == "Index":
+                indexValue = sliceNode.value.n
+                self.sliceDict = {"Index" : indexValue}
 
-                if self.sliceClass == "Slice":
-                        lowerValue = sliceNode.lower.n
-                        upperValue = sliceNode.upper.n
-                        self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}
+            if self.sliceClass == "Slice":
+                lowerValue = sliceNode.lower.n
+                upperValue = sliceNode.upper.n
+                self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}
 
         def stringify(self):
-                """
-                In this case, the stringification results in things like l[0].
-                """
-                if self.sliceClass == "Index":
-                        return str(self.val) + "[" + str(self.sliceDict["Index"]) + "]"
+            """
+            In this case, the stringification results in things like l[0].
+            """
+            if self.sliceClass == "Index":
+                return str(self.val) + "[" + str(self.sliceDict["Index"]) + "]"
 
-                if self.sliceClass == "Slice":
-                        #TODO: slicing is not valid C.
-                        return str(self.val) + "[" + str(self.sliceDict["Lower"]) + ", " + str(self.sliceDict["Upper"]) + "]"
+            if self.sliceClass == "Slice":
+                #TODO: slicing is not valid C.
+                return str(self.val) + "[" + str(self.sliceDict["Lower"]) + ", " + str(self.sliceDict["Upper"]) + "]"
 
 
 class CChar(CObject):
