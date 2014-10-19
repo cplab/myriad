@@ -1,3 +1,7 @@
+"""
+Module providing classes for holding parsed Python information.
+Author: Alex Davies
+"""
 
 
 class CObject(object):
@@ -7,11 +11,11 @@ class CObject(object):
         def __init__(self):
                 pass
 
-        def stringify(self):
-                """
+        """def stringify(self):
+                
                 Return the C interpretation of this object as a string.
-                """
-                raise NotImplementedError("Stringify is an abstract method.")
+                
+                raise NotImplementedError("Stringify is an abstract method.")"""
 
 
 class CList(CObject):
@@ -38,26 +42,18 @@ class CList(CObject):
         # TODO: Consider whether we need to keep track of this.
         self.numStringifyCalls = 0
 
+    def stringify(self):
         """
-        We should consider whether we would ever need to represent the list
-        as its literal contents in any place outside of assignment. If not,
-        then we should merge stringify_assignment into stringify.
+        Returns the literal C representation of this list.
+
+        Example:
+        [1, 2, 3] >>> {1, 2, 3}
         """
-        def stringify(self):
-            return self.stringify_assignment()
-
-        def stringify_assignment(self):
-            """
-            Returns the literal C representation of this list.
-
-            Example:
-            [1, 2, 3] >>> {1, 2, 3}
-            """
-            retString = "{" + stringify(self.cargo[0])
-            for elt in self.cargo[1:]:
-                retString = retString + ", " + stringify(elt) 
-            retString = retString + "}"
-            return retString
+        retString = "{" + stringify(self.cargo[0])
+        for elt in self.cargo[1:]:
+            retString = retString + ", " + stringify(elt) 
+        retString = retString + "}"
+        return retString
 
 
 class CSubscript(CObject):
@@ -175,7 +171,7 @@ class CUnaryOp(CObject):
 
         def __init__(self, unaryOpNode, operand):
                 self.operand = operand
-                nodeOp = unaryOpNode.__class__.__name__
+                nodeOp = unaryOpNode.op.__class__.__name__
 
                 if nodeOp == "UAdd":
                         self.op = "+"
@@ -289,7 +285,6 @@ class CAssign(CObject):
                 return str(stringify(self.target) + " = " + stringify(self.val)) + ";"
                 # Assignment is always single line.
 
-                # TODO: work out tracking for this (?)
 
 
 class CForLoop(CObject):
@@ -419,6 +414,8 @@ def get_node_from_var(l, var):
         :param l: master list of variables
         :param var: identifier we are looking for
         """
+
+
         for node in l:
                 if isinstance(node, CVar) and (node.var == var):
                         return node

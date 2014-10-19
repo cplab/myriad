@@ -1,8 +1,14 @@
+"""
+High level function assembler. Ties together ast_parse to parse
+a full function.
+Author: Alex Davies
+"""
+
 import inspect
 from types import FunctionType
 from ast import parse
 
-import ast_stringify
+import ast_parse
 import CTypes
 import myriad_types
 
@@ -21,7 +27,7 @@ class CFunc(object):
     def parse_python(self):
         parsed = parse(self.pyCode).body
         for node in parsed:
-            convertedCType = ast_stringify.stringify_node(node)
+            convertedCType = ast_parse.parse_node(node)
             self.nodeList.append(convertedCType)
 
     def get_while_loop_variables(self, l):
@@ -37,12 +43,19 @@ class CFunc(object):
     def stringify(self):
         retString = ""
         for node in self.nodeList:
-            print(node.stringify())
-            retString = retString + node.stringify() + "\n"
+            if isinstance(node, CTypes.CForLoop):
+                print(node.stringify(self.lists))
+                retString = retString + node.stringify(self.lists) + "\n"
+            else:
+                print(node.stringify())
+                retString = retString + node.stringify() + "\n"
         print("---")
         print(retString)
         return retString
 
+
+    # TODO: do variables need to be explicitly used without attributes?
+    # Possibly, add CVarAttr tracker.
     def track_variables(self, l):
         for node in l:
             if isinstance(node, CTypes.CVar):
@@ -59,6 +72,14 @@ class CFunc(object):
     #TODO: write tie_variables(self, l) which will tie variables to their initial values.
     # Easily done because all variables are the first instance of themselves.
     # Just look at their CAssign statment container.
+
+    def prepare_stringify(self):
+        """
+        Prepare CFunc for stringification.
+        """
+        self.track_attributes(self.nodeList)
+        self.track_lists(self.nodeList)
+        self.tie_lists(self.variables, self.lists)
 
     def track_attributes(self, l):
         for node in l:
@@ -111,22 +132,22 @@ def pyfun_to_cfun(fun: FunctionType) -> myriad_types.MyriadFunction:
     fun_return_type = inspect.signature(fun).return_annotation
     if fun_return_type is inspect.Signature.empty:
         fun_return_type = myriad_types.MyriadScalar("_", myriad_types.MVoid)
-
     # Remove function header and four leading spaces on each line
     fun_source = inspect.getsource(fun)
     fun_body = []
+    #print(fun_source)
     for line in fun_source[fun_source.index(":\n")+2:].split("\n"):
         fun_body.append(line[4:])
     fun_body = "\n".join(fun_body)
+    #print(fun_body)
 
     # Parse function body into C string
     fun_parsed = CFunc(fun_body)
+    #print(fun_parsed.pyCode)
     fun_parsed.parse_python()
     # TODO: run variable/list trackers
-    fun_parsed.track_variables(fun_parsed.nodeList)
-    fun_parsed.track_lists(fun_parsed.nodeList)
-    fun_parsed.tie_lists(fun_parsed.variables, fun_parsed.lists)
-
+    fun_parsed.prepare_stringify()
+   
     fun_body = fun_parsed.stringify()
 
     # Create MyriadFunction wrapper
@@ -135,6 +156,9 @@ def pyfun_to_cfun(fun: FunctionType) -> myriad_types.MyriadFunction:
                                              fun_return_type,
                                              fun_def=fun_body)
     return myriad_fun
+
+    # TODO: Problem: Stripping spaces doesn't work for sub functions.
+
 
 
 def fun(a: myriad_types.MyriadScalar("a", myriad_types.MInt),

@@ -1,3 +1,8 @@
+"""
+Functions for parsing Python string to CTypes using the CFunc framework.
+Author: Alex Davies
+"""
+
 import ast
 import CTypes
 
@@ -5,7 +10,6 @@ import CTypes
 # TODO: implement function calls for simple mathematical functions
 # TODO: add certain mathematical functions ready made. They put in a dummy call
 #   and the call to the C function is stringified.
-# TODO: sort line endings
 
 """
 Pointers are built-in with the Starred node. Yay.
@@ -28,36 +32,40 @@ Limitations:
 * No augmented assignments
 * No breaks
 * No use of in
+* No consecutive unary ops eg: -+a
 * While loops require tracker assignment immediately before loop initaliser
-* Single line requirements on many nodes,
+* Single line requirements on many nodes
+* Lists must be assigned locally and before use
 """
 
 
-def stringify_node(node):
+def parse_node(node):
     literals = ["Num", "Str", "List", "NameConstant"]
 
     nodeClassName = node.__class__.__name__
 
-    nodeClassDispatch = {"Subscript": stringify_subscript,
-                         "Expr": stringify_node,
-                         "Name": stringify_var,
-                         "UnaryOp": stringify_unaryop,
-                         "BinOp": stringify_binaryop,
-                         "Compare": stringify_compare,
-                         "Attribute": stringify_attribute,
-                         "Assign": stringify_assign,
-                         "For": stringify_for_loop,
-                         "While": stringify_while_loop,
-                         "If": stringify_if_statement,
-                         "Return": stringify_return}
+    nodeClassDispatch = {"Subscript": parse_subscript,
+                         "Expr": parse_node,
+                         "Name": parse_var,
+                         "UnaryOp": parse_unaryop,
+                         "BinOp": parse_binaryop,
+                         "Compare": parse_compare,
+                         "Attribute": parse_attribute,
+                         "Assign": parse_assign,
+                         "For": parse_for_loop,
+                         "While": parse_while_loop,
+                         "If": parse_if_statement,
+                         "Return": parse_return}
 
     if nodeClassName in literals:
-        return stringify_literal(node)
+        return parse_literal(node)
+    if nodeClassName == "Num":
+        return node	
     else:
         return nodeClassDispatch[nodeClassName](node)
 
 
-def stringify_literal(node):
+def parse_literal(node):
 
     # No sets
     # No dictionaries
@@ -76,92 +84,94 @@ def stringify_literal(node):
     elif nodeClassName == "List":
         retList = []
         for n in node.elts:
-            retList.append(stringify_literal(n))
+            retList.append(parse_literal(n))
         return CTypes.CList(retList)   
     elif nodeClassName == "NameConstant":
         return node.value
 
 
-def stringify_subscript(node):
+def parse_subscript(node):
     return CTypes.CSubscript(node.value, node.slice)
 
 
-def stringify_var(node):
+def parse_var(node):
     nodeClassName = node.__class__.__name__
 
     if nodeClassName == "Name":
         return CTypes.CVar(node)
 
 
-def stringify_unaryop(node):
+def parse_unaryop(node):
     
-    return CTypes.CUnaryOp(node, stringify_node(node.operand))
+    return CTypes.CUnaryOp(node, parse_node(node.operand))
 
 
-def stringify_binaryop(node):
-    l = stringify_node(node.left)
-    r = stringify_node(node.right)
+def parse_binaryop(node):
+    l = parse_node(node.left)
+    r = parse_node(node.right)
     return CTypes.CBinaryOp(node, l, r)
 
 
-def stringify_boolop(node):
+def parse_boolop(node):
     vals = []
     for v in node.values:
-        vals.append(stringify_node(v))
+        vals.append(parse_node(v))
     return CTypes.CBoolOp(node, vals)
 
 
-def stringify_compare(node):
+def parse_compare(node):
     nodeOp = node.ops[0].__class__.__name__
-    left = stringify_node(node.left)
-    comparator = stringify_node(node.comparators[0])
+    left = parse_node(node.left)
+    comparator = parse_node(node.comparators[0])
     return CTypes.CCompare(node, left, comparator)
 
 
-def stringify_attribute(node):
+def parse_attribute(node):
     return CTypes.CVarAttr(node)
 
 
-def stringify_assign(node):
-    target = stringify_node(node.targets[0])
-    val = stringify_node(node.value)
+def parse_assign(node):
+    target = parse_node(node.targets[0])
+    val = parse_node(node.value)
     return CTypes.CAssign(target, val)
 
 
-def stringify_for_loop(node):
-    target = stringify_node(node.target)
-    iterateOver = stringify_node(node.iter)
+# Ensure that list has been defined locally
+def parse_for_loop(node):
+    target = parse_node(node.target)
+    iterateOver = parse_node(node.iter)
     body = []
     for child in node.body:
-        newNode = stringify_node(child)
+        newNode = parse_node(child)
         body.append(newNode)
     return CTypes.CForLoop(target, iterateOver, body)
 
 
-def stringify_while_loop(node):
-    cond = stringify_node(node.test)
+# Ensure that temporary variable is assigned
+def parse_while_loop(node):
+    cond = parse_node(node.test)
     body = []
     for child in node.body:
-        newNode = stringify_node(child)
+        newNode = parse_node(child)
         body.append(newNode)
     return CTypes.CWhileLoop(cond, body)
 
 
-def stringify_if_statement(node):
-    cond = stringify_node(node.test)
+def parse_if_statement(node):
+    cond = parse_node(node.test)
     true = []
     for child in node.body:
-        newNode = stringify_node(child)
+        newNode = parse_node(child)
         true.append(newNode)
     false = []
     for child in node.orelse:
-        newNode = stringify_node(child)
+        newNode = parse_node(child)
         false.append(newNode)
     return CTypes.CIf(cond, true, false)
 
 
-def stringify_return(node):
-    return CTypes.CReturn(stringify_node(node.value))
+def parse_return(node):
+    return CTypes.CReturn(parse_node(node.value))
 
 
 def determine_type(t):
