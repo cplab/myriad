@@ -69,7 +69,7 @@ class CFunc(object):
             elif isinstance(node, list):
                 self.track_variables(node)
 
-    #TODO: write tie_variables(self, l) which will tie variables to their initial values.
+    # TODO: write tie_variables(self, l) which will tie variables to their initial values.
     # Easily done because all variables are the first instance of themselves.
     # Just look at their CAssign statment container.
 
@@ -113,8 +113,11 @@ def pyfun_to_cfun(fun: FunctionType) -> myriad_types.MyriadFunction:
     """
     Converts a native python function into an equivalent C function, 1-to-1.
 
-    :param fun: function to be converted
-    :returns: MyriadFunction -- converted C function definition
+    Args:
+       fun (FunctionType):  function to be converted
+
+    Returns:
+       MyriadFunction.  converted C function definition
     """
     # Process the function header
     fun_name = fun.__name__

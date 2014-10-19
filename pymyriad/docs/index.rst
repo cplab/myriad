@@ -26,3 +26,6 @@ This is not in the docstring so I put it here instead.
 
 .. automodule::  myriad_types
     :members:
+
+.. automodule::  ast_function_assembler
+    :members:
