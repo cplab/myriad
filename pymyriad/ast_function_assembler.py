@@ -109,6 +109,26 @@ class CFunc(object):
                     lPair[0] = node
 
 
+def pyfunbody_to_cbody(fun: FunctionType, indent_lvl=2) -> str:
+    # Remove function header and leading spaces on each line
+    # How many spaces are removed depends on indent level
+    fun_source = inspect.getsource(fun)
+    fun_body = []
+
+    for line in fun_source[fun_source.index(":\n")+2:].split("\n"):
+        fun_body.append(line[(indent_lvl*4):])
+    fun_body = "\n".join(fun_body)
+
+    # Parse function body into C string
+    fun_parsed = CFunc(fun_body)
+
+    fun_parsed.parse_python()
+
+    fun_parsed.prepare_stringify()
+
+    return fun_parsed.stringify()
+
+
 def pyfun_to_cfun(fun: FunctionType) -> myriad_types.MyriadFunction:
     """
     Converts a native python function into an equivalent C function, 1-to-1.
@@ -129,29 +149,15 @@ def pyfun_to_cfun(fun: FunctionType) -> myriad_types.MyriadFunction:
     for key in fun_parameters.copy().keys():
         # We can do this because the original key insert position is unchanged
         fun_parameters[key] = fun_parameters[key].annotation
-    print(fun_parameters)
+    # print(fun_parameters)
 
     # Process return type: if empty, use MVoid
     fun_return_type = inspect.signature(fun).return_annotation
     if fun_return_type is inspect.Signature.empty:
         fun_return_type = myriad_types.MyriadScalar("_", myriad_types.MVoid)
-    # Remove function header and four leading spaces on each line
-    fun_source = inspect.getsource(fun)
-    fun_body = []
-    #print(fun_source)
-    for line in fun_source[fun_source.index(":\n")+2:].split("\n"):
-        fun_body.append(line[4:])
-    fun_body = "\n".join(fun_body)
-    #print(fun_body)
 
-    # Parse function body into C string
-    fun_parsed = CFunc(fun_body)
-    #print(fun_parsed.pyCode)
-    fun_parsed.parse_python()
-    # TODO: run variable/list trackers
-    fun_parsed.prepare_stringify()
-   
-    fun_body = fun_parsed.stringify()
+    # Get function body
+    fun_body = pyfunbody_to_cbody(fun, indent_lvl=1)
 
     # Create MyriadFunction wrapper
     myriad_fun = myriad_types.MyriadFunction(fun_name,

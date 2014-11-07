@@ -3,9 +3,12 @@ TODO: Docstring
 """
 
 from collections import OrderedDict
+from functools import wraps
 import inspect
 
 import myriad_types
+from myriad_module import MyriadModule
+from MyriadObject import MyriadObject
 
 
 class MyriadMeta(type):
@@ -14,35 +17,93 @@ class MyriadMeta(type):
     def __prepare__(mcl, name, bases):
         return OrderedDict()
 
+    @staticmethod
+    def myriad_init(self, **kwargs):
+        # TODO: Check if all kwargs (including parents) are set
+        for argname, argval in kwargs.items():
+            self.__setattr__(argname, argval)
+
+    @staticmethod
+    def myriad_set_attr(self, **kwargs):
+        # raise NotImplementedError("Cannot set object attributes.")
+        pass
+
     def __new__(metacls, name, bases, namespace, **kwds):
-        result = type.__new__(metacls, name, bases, dict(namespace))
-        for k,v in namespace.items():
-            print(k)
-            if inspect.ismethod(v):
-                print("True")
-            else:
-                print("False")
-        # result.__init__ = None
+
+        if len(bases) > 1:
+            raise NotImplementedError("Multiple inheritance is not supported.")
+
+        # This is horribly hardcoded but there's no real way around it
+        if not hasattr(bases[0], "_my_module"):
+            raise TypeError("Myriad modules must inherit from MyriadObject")
+
+        myriad_methods = OrderedDict()
+        myriad_vars = OrderedDict()
+
+        # Extracts variables and myriad methods from class definition
+        for k, v in namespace.items():
+            if hasattr(v, "is_myriad_method"):
+                print(k + " is a myriad method")
+                myriad_methods[k] = v.original_fun
+            elif inspect.isfunction(v) or inspect.ismethod(v):
+                print(k + " is a function or method")
+            elif issubclass(v.__class__, myriad_types._MyriadBase):
+                myriad_vars[k] = v
+                print(k + " is a Myriad-type non-function attribute")
+
+        # Finally, delete function from namespace
+        for method_id in myriad_methods.keys():
+            del namespace[method_id]
+
+        namespace["_my_module"] = MyriadModule(bases[0]._my_module,
+                                               name,
+                                               obj_vars=myriad_vars,
+                                               methods=myriad_methods)
+        namespace["__init__"] = MyriadMeta.myriad_init
+        namespace["__setattr__"] = MyriadMeta.myriad_set_attr
+        result = type.__new__(metacls, name, (object,), dict(namespace))
+        # result.__init__ = MyriadMeta.my_initx
         return result
 
-def myriad_method(cuda=False):
-    def wrap(f):
-        def wrapped_f(*args):
-            print("lol no function for you")
-            print(inspect.signature(f))
-            print(inspect.ismethod(f))
-        return wrapped_f
-    return wrap
 
-class Soma(object, metaclass=MyriadMeta):
+def myriad_method(method):
+    """
+    NOTE: This MUST be the first decorator applied to the function! E.g.:
 
-    vm = myriad_types.MyriadScalar("vm", myriad_types.MDouble, ptr=True)
+        @another_decorator
+        @yet_another_decorator
+        @print_class_name
+        def my_fn(stuff):
+            pass
+
+    This is because decorators replace the wrapped function's signature.
+    """
+    @wraps(method)
+    def inner(*args, **kwargs):
+        raise Exception("Cannot directly call a myriad method")
+
+    # Do some pre-processing stuff here for ease-of-use
+    for param_ident, p_annotation in method.__annotations__.items():
+        # Self never in __annotations__ so we don't need to worry about it
+        if issubclass(p_annotation.__class__, myriad_types.MyriadCType):
+            tmp = myriad_types.MyriadScalar(param_ident, p_annotation)
+            method.__annotations__[param_ident] = tmp
+
+    inner.__dict__["is_myriad_method"] = True
+    inner.__dict__["original_fun"] = method
+    return inner
+
+
+class Soma(MyriadObject, metaclass=MyriadMeta):
+
     capacitance = myriad_types.MyriadScalar("capacitance", myriad_types.MDouble)
+    vm = myriad_types.MyriadScalar("vm", myriad_types.MDouble, ptr=True)
 
-    @myriad_method(cuda=False)
-    def my_fun(self,
-               a: myriad_types.MyriadScalar("a", myriad_types.MInt),
-               b: myriad_types.MyriadScalar("b", myriad_types.MInt)):
+    @myriad_method
+    def zardoz(self,
+               a: myriad_types.MInt,
+               b: myriad_types.MInt) -> myriad_types.MInt:
+        c = 0
         if a > b:
             a = b
             c = a + b

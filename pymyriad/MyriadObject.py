@@ -23,25 +23,25 @@ class _MyriadObject(MyriadModule):
 
     # TODO: Probably make these templates a little more generic...
     OBJ_CTOR_T = """
-    return _self;
+    return self;
     """
 
     CLS_CTOR_T = """
-    struct MyriadClass* self = (struct MyriadClass*) _self;
-    const size_t offset = offsetof(struct MyriadClass, my_ctor);
+    struct MyriadClass* _self = (struct MyriadClass*) self;
+    const size_t offset = offsetof(struct MyriadClass, my_myriad_ctor_t);
 
-    self->super = va_arg(*app, struct MyriadClass*);
-    self->size = va_arg(*app, size_t);
+    _self->super = va_arg(*app, struct MyriadClass*);
+    _self->size = va_arg(*app, size_t);
 
-    assert(self->super);
+    assert(_self->super);
 
-    memcpy((char*) self + offset,
-           (char*) self->super + offset,
-           myriad_size_of(self->super) - offset);
+    memcpy((char*) _self + offset,
+           (char*) _self->super + offset,
+           myriad_size_of(_self->super) - offset);
 
     va_list ap;
     va_copy(ap, *app);
-
+    typedef void (* voidf) ();
     voidf selector = NULL; selector = va_arg(ap, voidf);
 
     while (selector)
@@ -50,53 +50,53 @@ class _MyriadObject(MyriadModule):
 
         if (selector == (voidf) myriad_ctor)
         {
-            *(voidf *) &self->my_ctor = curr_method;
+            *(voidf *) &_self->my_myriad_ctor_t = curr_method;
         } else if (selector == (voidf) myriad_cudafy) {
-            *(voidf *) &self->my_cudafy = curr_method;
+            *(voidf *) &_self->my_myriad_cudafy_t = curr_method;
         } else if (selector == (voidf) myriad_dtor) {
-            *(voidf *) &self->my_dtor = curr_method;
+            *(voidf *) &_self->my_myriad_dtor_t = curr_method;
         } else if (selector == (voidf) myriad_decudafy) {
-            *(voidf *) &self->my_decudafy = curr_method;
+            *(voidf *) &_self->my_myriad_decudafy_t = curr_method;
         }
 
         selector = va_arg(ap, voidf);
     }
 
-    return self;
+    return _self;
     """
 
     OBJ_DTOR_T = """
-    free(_self);
+    free(self);
     return EXIT_SUCCESS;
     """
 
     CLS_DTOR_T = """
-    fprintf(stderr, "Destroying a Class is undefined behavior.\n");
+    fprintf(stderr, "Destroying a Class is undefined behavior.");
     return EXIT_FAILURE;
     """
 
     OBJ_CUDAFY_T = """
     #ifdef CUDA
     {
-        struct MyriadObject* self = (struct MyriadObject*) self_obj;
+        struct MyriadObject* _self = (struct MyriadObject*) self;
         void* n_dev_obj = NULL;
-        size_t my_size = myriad_size_of(self);
+        size_t my_size = myriad_size_of(_self);
 
-        const struct MyriadClass* tmp = self->m_class;
-        self->m_class = self->m_class->device_class;
+        const struct MyriadClass* tmp = _self->m_class;
+        _self->m_class = _self->m_class->device_class;
 
         CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
 
         CUDA_CHECK_RETURN(
                 cudaMemcpy(
                         n_dev_obj,
-                        self,
+                        _self,
                         my_size,
                         cudaMemcpyHostToDevice
                         )
                 );
 
-        self->m_class = tmp;
+        _self->m_class = tmp;
 
         return n_dev_obj;
     }
@@ -110,16 +110,16 @@ class _MyriadObject(MyriadModule):
     CLS_CUDAFY_T = """
     #ifdef CUDA
     {
-        struct MyriadClass* self = (struct MyriadClass*) _self;
+        struct MyriadClass* _self = (struct MyriadClass*) self;
 
         const struct MyriadClass* dev_class = NULL;
 
-        const size_t class_size = myriad_size_of(self);
+        const size_t class_size = myriad_size_of(_self);
 
         CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
 
         const struct MyriadClass* class_cpy = (const struct MyriadClass*) calloc(1, class_size);
-        memcpy((void*)class_cpy, _self, class_size);
+        memcpy((void*)class_cpy, self, class_size);
 
         memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*));
 
@@ -148,7 +148,7 @@ class _MyriadObject(MyriadModule):
     """
 
     CLS_DECUDAFY_T = """
-    fprintf(stderr, "De-CUDAfying a class is undefined behavior. Aborted.\n");
+    fprintf(stderr, "De-CUDAfying a class is undefined behavior. Aborted.");
     return;
     """
 
@@ -176,23 +176,23 @@ class _MyriadObject(MyriadModule):
     """
 
     MYRIAD_CLASS_OF_T = """
-    const struct MyriadObject* self = (const struct MyriadObject*) _self;
-    return self->m_class;
+    const struct MyriadObject* _self = (const struct MyriadObject*) self;
+    return _self->m_class;
     """
 
     MYRIAD_SIZE_OF_T = """
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
+    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(self);
     return m_class->size;
     """
 
     MYRIAD_IS_A_T = """
-    return _self && myriad_class_of(_self) == m_class;
+    return self && myriad_class_of(self) == m_class;
     """
 
     MYRIAD_IS_OF_T = """
-    if (_self)
+    if (self)
     {   
-        const struct MyriadClass * myClass = (const struct MyriadClass*) myriad_class_of(_self);
+        const struct MyriadClass * myClass = (const struct MyriadClass*) myriad_class_of(self);
 
         if (m_class != MyriadObject)
         {
@@ -297,10 +297,10 @@ class _MyriadObject(MyriadModule):
     """
 
     MYRIAD_SUPER_T = """
-    const struct MyriadClass* self = (const struct MyriadClass*) _self;
+    const struct MyriadClass* _self = (const struct MyriadClass*) self;
 
-    assert(self && self->super);
-    return self->super;
+    assert(_self && _self->super);
+    return _self->super;
     """
 
     @staticmethod
@@ -361,8 +361,7 @@ class _MyriadObject(MyriadModule):
                                   method.delegator.base_type)
             cls_vars[indx+4] = m_scal
 
-        self.cls_vars = cls_vars
-        self.cls_struct = MyriadStructType(self.cls_name, self.cls_vars)
+        self.cls_struct = MyriadStructType(self.cls_name, cls_vars)
 
         # --------------------------------------------------------------------
 
@@ -439,20 +438,20 @@ static struct MyriadClass object[] =
         object,
         NULL,
         sizeof(struct MyriadObject),
-        MyriadObject_ctor,
-        MyriadObject_dtor,
-        MyriadObject_cudafy,
-        MyriadObject_decudafy,
+        MyriadObject_myriad_ctor,
+        MyriadObject_myriad_dtor,
+        MyriadObject_myriad_cudafy,
+        MyriadObject_myriad_decudafy,
     },
     {
         { object + 1 },
         object,
         NULL,
         sizeof(struct MyriadClass),
-        MyriadClass_ctor,
-        MyriadClass_dtor,
-        MyriadClass_cudafy,
-        MyriadClass_decudafy,
+        MyriadClass_myriad_ctor,
+        MyriadClass_myriad_dtor,
+        MyriadClass_myriad_cudafy,
+        MyriadClass_myriad_decudafy,
     }
 };
         """
@@ -530,7 +529,7 @@ static struct MyriadClass object[] =
         # extern void* myriad_new(const void* _class, ...);
         # TODO: Make sure myriad_new works
         _ret_var = MyriadScalar('', MVoid, ptr=True)
-        _vclass = MyriadScalar('', MVoid, ptr=True, quals=["const"])
+        _vclass = MyriadScalar("_class", MVoid, ptr=True, quals=["const"])
         _new = MyriadFunction("myriad_new",
                               OrderedDict(),
                               _ret_var,
@@ -549,14 +548,20 @@ static struct MyriadClass object[] =
         self.functions["myriad_new"] = _new
 
 
-MyriadObject = _MyriadObject()
+class MyriadObject(object):
+    """
+    Dummy class used to obfuscate the ugly internals of the module system
+    from the end user, as well as providing an easy superclass target.
+    """
+
+    _my_module = _MyriadObject()
 
 
 def main():
     # TESTING
-    MyriadObject.header_template.render_to_file()
-    MyriadObject.c_file_template.render_to_file()
-    MyriadObject.cuda_header_template.render_to_file()
+    MyriadObject._my_module.header_template.render_to_file()
+    MyriadObject._my_module.c_file_template.render_to_file()
+    MyriadObject._my_module.cuda_header_template.render_to_file()
 
 if __name__ == "__main__":
     main()

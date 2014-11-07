@@ -27,5 +27,13 @@ This is not in the docstring so I put it here instead.
 .. automodule::  myriad_types
     :members:
 
+Myriad Module
+=============
+
+.. automodule::  myriad_module
+    :members:
+
+AST Function Assembler
+======================
 .. automodule::  ast_function_assembler
     :members:
