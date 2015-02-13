@@ -15,7 +15,7 @@ from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import MVoid, MInt, MVarArgs, MSizeT
 
 
-# pylint: disable=R0902
+# pylint: disable=R0902,R0903
 class _MyriadObject(MyriadModule):
     """
     Special initialization for core object.

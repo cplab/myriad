@@ -208,7 +208,7 @@ class MyriadStructType(_MyriadBase):
     new base C type.
 
     New base C types are 'registered' in the Myriad system by simply
-    programmatically creating an instance class that inherets MyriadCType,
+    programmatically creating an instance class that inherits MyriadCType,
     ensuring run-time type safety checks correctly identify struct declarations
     generated from the factory instance object.
     """

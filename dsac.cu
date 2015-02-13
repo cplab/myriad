@@ -95,10 +95,10 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 0.0);
 	}
 
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_leak_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_na_curr_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_k_curr_mech));
-	assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, dc_curr_mech));
+	assert(0 == add_mechanism(hh_comp_obj, hh_leak_mech));
+	assert(0 == add_mechanism(hh_comp_obj, hh_na_curr_mech));
+	assert(0 == add_mechanism(hh_comp_obj, hh_k_curr_mech));
+	assert(0 == add_mechanism(hh_comp_obj, dc_curr_mech));
 
 	if (num_connxs > 0)
 	{
@@ -116,8 +116,10 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
                     GABA_TAU_BETA,
                     GABA_REV
 				);
-			assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
-			printf("Made GABA synapse starting at cell %i ending at cell %i\n", connect_to[i], id);
+			assert(0 == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
+			printf("Made GABA synapse starting at cell %i ending at cell %i\n",
+                   connect_to[i],
+                   id);
 		}
 	}
 
@@ -139,23 +141,27 @@ static int dsac()
 
 	void** network = (void**) calloc(NUM_CELLS, sizeof(void*));
 
-	for (int i = 0; i < NUM_CELLS; i++)
+	for (unsigned int my_id = 0; my_id < NUM_CELLS; my_id++)
 	{
-		//TODO: Guarantee % connectivity b/w cells in network
-		const unsigned int num_connxs = 1;
-		unsigned int* to_connect = (unsigned int*) calloc(num_connxs, sizeof(unsigned int));
+		const unsigned int num_connxs = NUM_CELLS-1;
+		unsigned int* to_connect = (unsigned int*) calloc(num_connxs,
+                                                          sizeof(unsigned int));
 		
-		//TODO: Get rid of this hack
-		if (i == 0)
-		{
-			to_connect[0] = 1;
-		} else if (i == 1) {
-			to_connect[0] = 0;
-		}
+		// All-to-All
+        for (unsigned int j = 0; j < NUM_CELLS; j++)
+        {
+            if (j == my_id)
+            {
+                to_connect[j] = 0;  // Don't connect to ourselves
+            } else {
+                to_connect[j] = j;  // Connect to cell j
+            }
+        }
 
-	    network[i] = new_dsac_soma(i, to_connect, 1);
-	}	
+	    network[my_id] = new_dsac_soma(my_id, to_connect, 1);
+	}
 
+    // Run simulation
 	double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
 	{
@@ -166,17 +172,7 @@ static int dsac()
 		curr_time += DT;
 	}
 
-	for (int i = 0; i < NUM_CELLS; i++)
-	{
-		struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) network[i];
-		char* fname = (char*) malloc(sizeof("cell0.dat"));
-		sprintf(fname, "cell%i.dat", i);
-		FILE* p_file = fopen(fname,"wb");
-		fwrite(curr_comp->vm, sizeof(double), curr_comp->vm_len, p_file);
-		fclose(p_file);
-	}
-
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 ///////////////////
@@ -186,7 +182,7 @@ int main(int argc, char const *argv[])
 {
     puts("Hello World!\n");
 
-	assert(EXIT_SUCCESS == dsac());
+	assert(0 == dsac());
 
     puts("\nDone.");
 

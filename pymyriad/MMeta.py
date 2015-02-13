@@ -5,6 +5,7 @@ TODO: Docstring
 from collections import OrderedDict
 from functools import wraps
 import inspect
+from warnings import warn
 
 import myriad_types
 from myriad_module import MyriadModule
@@ -14,7 +15,7 @@ from MyriadObject import MyriadObject
 class MyriadMeta(type):
 
     @classmethod
-    def __prepare__(mcl, name, bases):
+    def __prepare__(mcs, name, bases):
         return OrderedDict()
 
     @staticmethod
@@ -29,12 +30,10 @@ class MyriadMeta(type):
         pass
 
     def __new__(metacls, name, bases, namespace, **kwds):
-
         if len(bases) > 1:
             raise NotImplementedError("Multiple inheritance is not supported.")
 
-        # This is horribly hardcoded but there's no real way around it
-        if not hasattr(bases[0], "_my_module"):
+        if not issubclass(bases[0], MyriadObject):
             raise TypeError("Myriad modules must inherit from MyriadObject")
 
         myriad_methods = OrderedDict()
@@ -42,19 +41,31 @@ class MyriadMeta(type):
 
         # Extracts variables and myriad methods from class definition
         for k, v in namespace.items():
+            # v is a registered myriad method
             if hasattr(v, "is_myriad_method"):
                 print(k + " is a myriad method")
                 myriad_methods[k] = v.original_fun
+            # v is some generic non-Myriad function or method
             elif inspect.isfunction(v) or inspect.ismethod(v):
                 print(k + " is a function or method")
+            # v is some generic instance of a _MyriadBase type
             elif issubclass(v.__class__, myriad_types._MyriadBase):
                 myriad_vars[k] = v
                 print(k + " is a Myriad-type non-function attribute")
+            # v is a type statement of base type MyriadCType (e.g. MDouble)
+            elif issubclass(v.__class__, myriad_types.MyriadCType):
+                # TODO: Better type detection here for corner cases (e.g. ptr)
+                myriad_vars[k] = myriad_types.MyriadScalar(k, v)
+                print(k + " has decl: " + myriad_vars[k].stringify_decl())
+            # TODO: Figure out other valid values for namespace variables
+            else:
+                warn("Unsupported variable type for " + k)
 
         # Finally, delete function from namespace
         for method_id in myriad_methods.keys():
             del namespace[method_id]
 
+        # Generate internal module representation
         namespace["_my_module"] = MyriadModule(bases[0]._my_module,
                                                name,
                                                obj_vars=myriad_vars,
@@ -96,7 +107,7 @@ def myriad_method(method):
 
 class Soma(MyriadObject, metaclass=MyriadMeta):
 
-    capacitance = myriad_types.MyriadScalar("capacitance", myriad_types.MDouble)
+    capacitance = myriad_types.MDouble
     vm = myriad_types.MyriadScalar("vm", myriad_types.MDouble, ptr=True)
 
     @myriad_method
