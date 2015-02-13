@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <assert.h>
 #include <string.h>
 #include <math.h>
@@ -40,7 +42,7 @@ extern "C"
 // Simulation parameters
 #define SIMUL_LEN 1000000 
 #define DT 0.001
-#define NUM_CELLS 2
+#define NUM_CELLS 20
 // Leak params
 #define G_LEAK 1.0
 #define E_REV -65.0
@@ -80,7 +82,10 @@ __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 }
 #endif
 
-static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsigned int num_connxs)
+static void* new_dsac_soma(unsigned int id,
+                           int64_t* connect_to,
+                           bool stimulate,
+                           const unsigned int num_connxs)
 {
 	void* hh_comp_obj = myriad_new(HHSomaCompartment, id, 0, NULL, SIMUL_LEN, NULL, INIT_VM, CM);
 	void* hh_leak_mech = myriad_new(HHLeakMechanism, id, G_LEAK, E_REV);
@@ -88,7 +93,7 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, id, G_K, E_K, HH_N);
 
 	void* dc_curr_mech = NULL;
-	if (id == 0)
+	if (stimulate)
 	{
 		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 9.0);
 	} else {
@@ -100,28 +105,27 @@ static void* new_dsac_soma(unsigned int id, unsigned int* connect_to, const unsi
 	assert(0 == add_mechanism(hh_comp_obj, hh_k_curr_mech));
 	assert(0 == add_mechanism(hh_comp_obj, dc_curr_mech));
 
-	if (num_connxs > 0)
-	{
-		for (unsigned int i = 0; i < num_connxs; i++)
-		{
-			void* hh_GABA_a_curr_mech = 
-				myriad_new
-				(
-					HHSpikeGABAAMechanism,
-					connect_to[i],
-                    GABA_VM_THRESH,
-                    -INFINITY,
-                    GABA_G_MAX,
-                    GABA_TAU_ALPHA,
-                    GABA_TAU_BETA,
-                    GABA_REV
-				);
-			assert(0 == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
-			printf("Made GABA synapse starting at cell %i ending at cell %i\n",
-                   connect_to[i],
-                   id);
-		}
-	}
+    for (uint64_t i = 0; i < num_connxs; i++)
+    {
+        // Don't connect if it's -1
+        if (connect_to[i] == -1)
+        {
+            continue;
+        }
+            
+        void* hh_GABA_a_curr_mech = myriad_new(HHSpikeGABAAMechanism,
+                                               connect_to[i],
+                                               GABA_VM_THRESH,
+                                               -INFINITY,
+                                               GABA_G_MAX,
+                                               GABA_TAU_ALPHA,
+                                               GABA_TAU_BETA,
+                                               GABA_REV);
+        assert(0 == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
+        printf("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
+               connect_to[i],
+               id);
+    }
 
 	return hh_comp_obj;
 }
@@ -139,26 +143,33 @@ static int dsac()
 	initCompartment(cuda_init);
 	initHHSomaCompartment(cuda_init);
 
-	void** network = (void**) calloc(NUM_CELLS, sizeof(void*));
+	void* network[NUM_CELLS];
+    // memset(network, 0, sizeof(void*) * NUM_CELLS);  // Necessary?
+    
+    const unsigned int num_connxs = NUM_CELLS;
+    int64_t to_connect[num_connxs];
 
 	for (unsigned int my_id = 0; my_id < NUM_CELLS; my_id++)
 	{
-		const unsigned int num_connxs = NUM_CELLS-1;
-		unsigned int* to_connect = (unsigned int*) calloc(num_connxs,
-                                                          sizeof(unsigned int));
-		
+        memset(to_connect, 0, sizeof(int64_t) * num_connxs);
+        
 		// All-to-All
-        for (unsigned int j = 0; j < NUM_CELLS; j++)
+        for (int64_t j = 0; j < NUM_CELLS; j++)
         {
             if (j == my_id)
             {
-                to_connect[j] = 0;  // Don't connect to ourselves
+                to_connect[j] = -1;  // Don't connect to ourselves
             } else {
-                to_connect[j] = j;  // Connect to cell j
+                to_connect[j] = j;   // Connect to cell j
             }
+            printf("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
         }
-
-	    network[my_id] = new_dsac_soma(my_id, to_connect, 1);
+        
+        const bool stimulate = rand() % 2 == 0;
+	    network[my_id] = new_dsac_soma(my_id,
+                                       to_connect,
+                                       stimulate,
+                                       num_connxs);
 	}
 
     // Run simulation
@@ -180,6 +191,7 @@ static int dsac()
 ///////////////////
 int main(int argc, char const *argv[])
 {
+    srand(42);
     puts("Hello World!\n");
 
 	assert(0 == dsac());
