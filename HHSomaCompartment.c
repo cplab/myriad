@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "myriad_debug.h"
-
 #include "MyriadObject.h"
 #include "HHSomaCompartment.h"
 #include "HHSomaCompartment.cuh"
@@ -17,17 +15,14 @@ static void* HHSomaCompartment_ctor(void* _self, va_list* app)
     struct HHSomaCompartment* self =
         (struct HHSomaCompartment*) super_ctor(HHSomaCompartment, _self, app);
 
-    self->vm_len = va_arg(*app, unsigned int);
-    self->vm = va_arg(*app, double*);
+    const double* restrict vm = va_arg(*app, double*);
     const double init_vm = va_arg(*app, double);
     self->cm = va_arg(*app, double);
 
-    // If the given length is non-zero but the pointer is NULL,
-    // we do the allocation ourselves.
-    if (self->vm == NULL && self->vm_len > 0)
+    // If the given vm is non-NULL, we assume it contains data and copy it.
+    if (vm != NULL)
     {
-        self->vm = (double*) calloc(self->vm_len, sizeof(double));
-        assert(self->vm && "Failed to allocate soma membrane voltage array");
+        memcpy(self->vm, vm, SIMUL_LEN * sizeof(double));
         self->vm[0] = init_vm;
     }
 
@@ -38,34 +33,6 @@ static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
 	#ifdef CUDA
 	{
-		const size_t my_size = myriad_size_of(_self);
-		struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-		struct HHSomaCompartment* self_copy = (struct HHSomaCompartment*) calloc(1, my_size);
-		
-		memcpy(self_copy, HHSomaCompartment, my_size);
-
-		double* tmp_alias = NULL;
-		
-		// Make mirror on-GPU array 
-		CUDA_CHECK_RETURN(
-			cudaMalloc(
-				(void**) &tmp_alias,
-				self_copy->vm_len * sizeof(double)
-				)
-			);
-
-		// Copy contents over to GPU
-		CUDA_CHECK_RETURN(
-			cudaMemcpy(
-				(void*) tmp_alias,
-				(void*) self->vm,
-				self_copy->vm_len * sizeof(double),
-				cudaMemcpyHostToDevice
-				)
-			);
-
-		self_copy->vm = tmp_alias;
-
 		return super_cudafy(HHSomaCompartment, self_copy, 0);
 	}
 	#else
@@ -79,27 +46,6 @@ static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 {
 	#ifdef CUDA
 	{
-		struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-
-		double* from_gpu_soma = NULL;
-		CUDA_CHECK_RETURN(
-			cudaMemcpy(
-				(void*) &from_gpu_soma,
-				(void*) cuda_self + offsetof(struct HHSomaCompartment, vm),
-				sizeof(double*),
-				cudaMemcpyDeviceToHost
-				)
-			);
-
-		CUDA_CHECK_RETURN(
-			cudaMemcpy(
-				(void*) self->vm,
-				(void*) from_gpu_soma,
-				self->vm_len * sizeof(double),
-				cudaMemcpyDeviceToHost
-				)
-			);
-
 		super_decudafy(Compartment, self, cuda_self);
 	}
 	#endif

@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "myriad_debug.h"
-
 #include "MyriadObject.h"
 #include "MyriadObject.cuh"
 

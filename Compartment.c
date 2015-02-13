@@ -3,8 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include "myriad_debug.h"
-
 #include "MyriadObject.h"
 #include "Compartment.h"
 #include "Compartment.cuh"

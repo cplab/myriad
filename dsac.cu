@@ -15,7 +15,7 @@
 // Myriad C API Headers
 extern "C"
 {
-	#include "myriad_debug.h"
+    #include "myriad.h"
     #include "MyriadObject.h"
 	#include "Mechanism.h"
 	#include "Compartment.h"
@@ -39,31 +39,6 @@ extern "C"
 // DSAC Model //
 ////////////////
 
-// Simulation parameters
-#define SIMUL_LEN 1000000 
-#define DT 0.001
-#define NUM_CELLS 20
-// Leak params
-#define G_LEAK 1.0
-#define E_REV -65.0
-// Sodium params
-#define G_NA 35.0
-#define E_NA 55.0
-#define HH_M 0.5
-#define HH_H 0.1
-// Potassium params
-#define G_K 9.0
-#define E_K -90.0
-#define HH_N 0.1
-// Compartment Params
-#define CM 1.0
-#define INIT_VM -65.0
-// GABA-a Params
-#define GABA_VM_THRESH 0.0
-#define GABA_G_MAX 0.1
-#define GABA_TAU_ALPHA 0.08333333333333333
-#define GABA_TAU_BETA 10.0
-#define GABA_REV -75.0
 
 #ifdef CUDA
 __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
@@ -87,7 +62,7 @@ static void* new_dsac_soma(unsigned int id,
                            bool stimulate,
                            const unsigned int num_connxs)
 {
-	void* hh_comp_obj = myriad_new(HHSomaCompartment, id, 0, NULL, SIMUL_LEN, NULL, INIT_VM, CM);
+	void* hh_comp_obj = myriad_new(HHSomaCompartment, id, 0, NULL, NULL, INIT_VM, CM);
 	void* hh_leak_mech = myriad_new(HHLeakMechanism, id, G_LEAK, E_REV);
 	void* hh_na_curr_mech = myriad_new(HHNaCurrMechanism, id, G_NA, E_NA, HH_M, HH_H);
 	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, id, G_K, E_K, HH_N);

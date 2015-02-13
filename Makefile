@@ -25,15 +25,25 @@ DOXYGEN ?= doxygen
 OS_SIZE = 64
 OS_ARCH = x86_64
 
-# CC & related flags
-CCOMMON_FLAGS	:= -g3 -O0 -Wall
-CCFLAGS		:= $(CCOMMON_FLAGS) -std=c99 -Wpedantic 
+# CC & related flags, with debug switch
+CCOMMON_FLAGS := -Wall -Wextra -Wno-unused-parameter
+
+ifdef DEBUG
+CCOMMON_FLAGS += -Og -g
+else
+CCOMMON_FLAGS += -O2 -march=native
+endif
+
+CCFLAGS		:= $(CCOMMON_FLAGS) -std=gnu99 -Wpedantic 
 CXXFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
 CUFLAGS		:= $(CCOMMON_FLAGS)
 
 # NVCC & related flags
 NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
-NVCCFLAGS := -m$(OS_SIZE) -g -G -pg
+NVCCFLAGS := -m$(OS_SIZE)
+ifdef DEBUG
+NVCCFLAGS += -g -G -pg
+endif
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 
@@ -59,7 +69,7 @@ DOXYGEN_CONF ?= Doxyfile.conf
 # CPU Myriad Library
 MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
-MYRIAD_LIB_OBJS 	:= myriad_debug.c.o MyriadObject.c.o Mechanism.c.o Compartment.c.o \
+MYRIAD_LIB_OBJS 	:= MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
 	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o
 

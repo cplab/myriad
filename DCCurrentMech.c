@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "myriad_debug.h"
-
 #include "MyriadObject.h"
 #include "Mechanism.h"
 #include "DCCurrentMech.h"
