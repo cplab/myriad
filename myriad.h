@@ -1,13 +1,45 @@
+/**
+ * @file   myriad.h
+ * @author Pedro Rittner <pr273@cornell.edu>
+ * @date   Feb 17 2015
+ * @brief  Master header for Myriad simulation parameters and options.
+ *
+ *
+ * Copyright (c) 2015 Pedro Ritter <pr273@cornell.edu>
+ * 
+ * This file is free software: you may copy, redistribute and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ * 
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+#ifndef MYRIAD_H
+#define MYRIAD_H
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <assert.h>
 #include <inttypes.h>
-#include <stdbool.h>
+
+#include <sys/resource.h>
 
 // Simulation parameters
-#define SIMUL_LEN 1000000 
+#define SIMUL_LEN 1000000
 #define DT 0.001
 #define NUM_CELLS 20
 // Leak params
@@ -37,6 +69,15 @@
 #include <cuda_runtime_api.h>
 #endif
 
+//! Global variable for tracking Myriad's memlock management.
+struct myriad_memlock_stat
+{
+    rlim64_t memlock_pro_lim;  //! Myriad's maximum memory locked data, in bytes
+    size_t curr_memlock_usg;   //! Myriad's current memory lockage, in bytes
+} myriad_memlock_stat;
+
+//! Math function caching
+#define EXP(x) exp(x)
 
 // Unit testing macros
 #ifdef UNIT_TEST
@@ -54,7 +95,6 @@
 		printf("TESTING: "#a" == "#b" ... ");				   \
 		fprintf(stdout, "%s\n", a == b ? "PASS" : "FAIL"); \
 	} while(0)
-		
 #else
     #define UNIT_TEST_FUN(...) do {} while(0)
     #define UNIT_TEST_VAL_EQ(...) do {} while(0)
@@ -65,7 +105,6 @@
     #define DEBUG_PRINTF(str, ...) do {  \
 	    fprintf(stdout, "DEBUG @ "__FILE__":"__LINE__": "#str, __VA_ARGS__) \
 	} while(0)
-
 #else
     #define DEBUG_PRINTF(...) do {} while (0)
 #endif
@@ -81,3 +120,5 @@
         exit(EXIT_FAILURE);                                                 \
     } }
 #endif
+
+#endif  // MYRIAD_H

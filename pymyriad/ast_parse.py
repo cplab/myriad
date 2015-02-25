@@ -43,24 +43,25 @@ def parse_node(node):
     literals = ["Num", "Str", "List", "NameConstant"]
 
     nodeClassName = node.__class__.__name__
-
+   
     nodeClassDispatch = {"Subscript": parse_subscript,
-                         "Expr": parse_node,
                          "Name": parse_var,
                          "UnaryOp": parse_unaryop,
                          "BinOp": parse_binaryop,
+                         "BoolOp": parse_boolop,
                          "Compare": parse_compare,
                          "Attribute": parse_attribute,
                          "Assign": parse_assign,
                          "For": parse_for_loop,
                          "While": parse_while_loop,
                          "If": parse_if_statement,
-                         "Return": parse_return}
+                         "Return": parse_return,
+                         "Call": parse_call}
 
     if nodeClassName in literals:
         return parse_literal(node)
-    if nodeClassName == "Num":
-        return node	
+    if nodeClassName == "Expr":
+        return parse_node(node.value)
     else:
         return nodeClassDispatch[nodeClassName](node)
 
@@ -91,7 +92,7 @@ def parse_literal(node):
 
 
 def parse_subscript(node):
-    return CTypes.CSubscript(node.value, node.slice)
+    return CTypes.CSubscript(node.value, parse_node(node.slice.value))
 
 
 def parse_var(node):
@@ -99,6 +100,15 @@ def parse_var(node):
 
     if nodeClassName == "Name":
         return CTypes.CVar(node)
+
+def parse_call(node):
+ 
+    args = []
+    for a in node.args:
+        args.append(parse_node(a))
+
+    func = parse_node(node.func)
+    return CTypes.CCall(func, args)
 
 
 def parse_unaryop(node):
@@ -132,6 +142,7 @@ def parse_attribute(node):
 
 def parse_assign(node):
     target = parse_node(node.targets[0])
+    print(target)
     val = parse_node(node.value)
     return CTypes.CAssign(target, val)
 

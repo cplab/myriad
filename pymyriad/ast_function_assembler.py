@@ -44,13 +44,9 @@ class CFunc(object):
         retString = ""
         for node in self.nodeList:
             if isinstance(node, CTypes.CForLoop):
-                print(node.stringify(self.lists))
                 retString = retString + node.stringify(self.lists) + "\n"
             else:
-                print(node.stringify())
                 retString = retString + node.stringify() + "\n"
-        print("---")
-        print(retString)
         return retString
 
 
@@ -172,9 +168,10 @@ def pyfun_to_cfun(fun: FunctionType) -> myriad_types.MyriadFunction:
 
 def fun(a: myriad_types.MyriadScalar("a", myriad_types.MInt),
         b: myriad_types.MyriadScalar("b", myriad_types.MInt)):
-    if a > b:
-        a = b
-    c = a + b
+    x = 0
+    while x < 3:
+        if a == b:
+            c[x] = 1
     return c
 
 

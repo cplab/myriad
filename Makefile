@@ -14,7 +14,6 @@ CC	:= gcc
 CXX	:= g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
-VALGRIND ?= valgrind
 DOXYGEN ?= doxygen
 
 ###############################
@@ -34,6 +33,12 @@ else
 CCOMMON_FLAGS += -O2 -march=native
 endif
 
+PROF_LFLAGS :=
+ifdef PROFILE
+CCOMMON_FLAGS += -g -pg
+PROF_LFLAGS += -pg
+endif
+
 CCFLAGS		:= $(CCOMMON_FLAGS) -std=gnu99 -Wpedantic 
 CXXFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
 CUFLAGS		:= $(CCOMMON_FLAGS)
@@ -42,6 +47,9 @@ CUFLAGS		:= $(CCOMMON_FLAGS)
 NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
 NVCCFLAGS := -m$(OS_SIZE)
 ifdef DEBUG
+NVCCFLAGS += -g -G
+endif
+ifdef PROFILE
 NVCCFLAGS += -g -G -pg
 endif
 GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
@@ -52,10 +60,6 @@ AR_FLAGS := rcs
 
 # Ctags flags
 CTAGS_FLAGS := -e -f TAGS --verbose -R --exclude=doc --langmap=c++:.cu.cuh,c:.c.h -h +.cuh --fields="+afikKlmnsSzt"
-
-# Valgrind flags
-VALGRIND_SUPP ?= minimal.supp
-VALGRIND_FLAGS := --leak-check=full --show-reachable=yes --error-limit=no --suppressions=$(VALGRIND_SUPP)
 
 # Doxygen flags
 DOXYGEN_CONF ?= Doxyfile.conf
@@ -189,9 +193,9 @@ endif
 
 $(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB) $(CUDA_MYRIAD_LIB)
 ifdef CUDA
-	$(CC) -I. -o $@ $+ $(CUDA_BIN_LDFLAGS)
+	$(CC) $(PROF_LFLAGS) -I. -o $@ $+ $(CUDA_BIN_LDFLAGS)
 else
-	$(CC) -I. -o $@ $+ $(LD_FLAGS)
+	$(CC) $(PROF_LFLAGS) -I. -o $@ $+ $(LD_FLAGS)
 endif
 
 
@@ -202,7 +206,3 @@ doxygen:
 # ------- Ctags Generation -------
 ctags:
 	$(CTAGS) $(CTAGS_FLAGS)
-
-# ------- Valgrind Memcheck -------
-valgrind: $(SIMUL_MAIN_BIN)
-	$(VALGRIND) $(VALGRIND_FLAGS) ./$+
