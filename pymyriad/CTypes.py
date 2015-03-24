@@ -26,7 +26,7 @@ class CList(CObject):
     - All elements must be of the same C type
     - Lists must be of fixed length
     """
-
+    
     def __init__(self, l: list):
         """
         Initializes the CList with the given list.
@@ -156,7 +156,11 @@ class CVarAttr(CVar):
                 self.var = CVarAttr(node.value)
                 self.attr = node.attr
 
-    #TODO: work out how to implement stringify
+    """
+    def stringify(self):
+        if node.attr in module.attributes or node.attr in module.methods:
+            return str(var) + "->" + str(attr)
+    """
 
 class CCall(CObject):
     """
@@ -182,9 +186,6 @@ class CCall(CObject):
     #No remainder.
     #No rint.
     #No scalb.
-
-    #TODO: implement user defined functions.
-
 
     def __init__(self, func, args):
         if func.var in self.funcDict:

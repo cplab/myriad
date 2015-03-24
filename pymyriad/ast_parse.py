@@ -3,7 +3,6 @@ Functions for parsing Python string to CTypes using the CFunc framework.
 Author: Alex Davies
 """
 
-import ast
 import CTypes
 
 # TODO: add comparison chaining

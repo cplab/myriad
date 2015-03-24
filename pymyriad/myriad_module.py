@@ -563,7 +563,12 @@ class MyriadModule(object):
             if type(method) is MyriadFunction:
                 # print(m_ident + " is already a MyriadFunction, skipping...")
                 continue
-            fbody = pyfunbody_to_cbody(method)
+            # We have to bootstrap the methods dictionary so that the C code
+            # can know whether method/function calls are legal or not.
+            # TODO: Fix fbody
+            fbody = pyfunbody_to_cbody(method,
+                                       methods,
+                                       self.obj_struct.members)
             sig = signature(method)  # Get current signature
             param_odict = sig.parameters.copy()
             param_odict["self"] = tmp_self

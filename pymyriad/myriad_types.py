@@ -411,7 +411,6 @@ class MyriadFunction(_MyriadBase):
         # Automaticall generate typedef depending on function type
         self.gen_typedef()
 
-        # TODO: Create internal c_ast function definition
         #: Function definition represented as a string.
         self.fun_def = fun_def
 

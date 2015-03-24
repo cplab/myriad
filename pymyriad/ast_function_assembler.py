@@ -12,6 +12,7 @@ import ast_parse
 import CTypes
 import myriad_types
 
+floatType = "double"
 
 # Attributes cannot be referenced before their parent object.
 # Lists must be assigned explicitly and reassigned explicitly.
@@ -19,7 +20,8 @@ import myriad_types
 class CFunc(object):
 
     def __init__(self, pyCode):
-        self.variables = []
+        self.variables = {}
+        self.variableValues = {}
         self.lists = []
         self.nodeList = []
         self.pyCode = pyCode
@@ -28,20 +30,19 @@ class CFunc(object):
         parsed = parse(self.pyCode).body
         for node in parsed:
             convertedCType = ast_parse.parse_node(node)
-            self.nodeList.append(convertedCType)
+            self.nodeList.append(convertedCType) 
 
-    def get_while_loop_variables(self, l):
-        i = 0
-        while i < len(self.nodeList):
-            if isinstance(self.nodeList[i], list):
-                self.get_while_loop_variables(self)  # TODO: Maybe delete?
-            if (isinstance(self.nodeList[i], CTypes.CForLoop) and
-                    isinstance(self.nodeList[i-1], CTypes.CAssign)):
-                self.nodeList[i].set_tracker(self.nodeList[i-1].target)
-            i = i + 1
-
-    def stringify(self):
+    def stringify_declarations(self):
         retString = ""
+        for var  in self.variables:
+            retString = self.variables[var] + " " + var + ";\n"
+        return retString
+
+        #TODO: support for uint, void, sizet, va_list, strings?            
+    
+    def stringify(self):
+        retString = self.stringify_declarations()        
+
         for node in self.nodeList:
             if isinstance(node, CTypes.CForLoop):
                 retString = retString + node.stringify(self.lists) + "\n"
@@ -52,7 +53,7 @@ class CFunc(object):
 
     # TODO: do variables need to be explicitly used without attributes?
     # Possibly, add CVarAttr tracker.
-    def track_variables(self, l):
+    """def track_variables(self, l):
         for node in l:
             if isinstance(node, CTypes.CVar):
                 tempList = []
@@ -63,16 +64,32 @@ class CFunc(object):
             elif isinstance(node, CTypes.CObject):
                 self.track_variables(list(node.__dict__.values()))
             elif isinstance(node, list):
+                self.track_variables(node)"""
+
+    def track_variables(self, l):
+        #TODO: populate flavours
+        flavours = {type(1) : "int64_t", type(3.0) : floatType}        
+        for node in l:
+            if isinstance(node, CTypes.CAssign) and node.target.var not in self.variables:
+                targetVar = node.target.var
+                #TODO: what about variable to variable assignments?
+                varType = flavours[type(node.val)]
+                self.variables.update({targetVar : varType})
+            elif isinstance(node, CTypes.CObject):
+                self.track_variables(list(node.__dict__.values()))
+            elif isinstance(node, list):
                 self.track_variables(node)
+                
 
     # TODO: write tie_variables(self, l) which will tie variables to their initial values.
     # Easily done because all variables are the first instance of themselves.
-    # Just look at their CAssign statment container.
+    # Just look at their CAssign state ment container.
 
     def prepare_stringify(self):
         """
         Prepare CFunc for stringification.
         """
+        self.track_variables(self.nodeList)
         self.track_attributes(self.nodeList)
         self.track_lists(self.nodeList)
         self.tie_lists(self.variables, self.lists)
@@ -105,7 +122,7 @@ class CFunc(object):
                     lPair[0] = node
 
 
-def pyfunbody_to_cbody(fun: FunctionType, indent_lvl=2) -> str:
+def pyfunbody_to_cbody(fun: FunctionType, methods=None, indent_lvl=2) -> str:
     # Remove function header and leading spaces on each line
     # How many spaces are removed depends on indent level
     fun_source = inspect.getsource(fun)
@@ -171,8 +188,11 @@ def fun(a: myriad_types.MyriadScalar("a", myriad_types.MInt),
     x = 0
     while x < 3:
         if a == b:
-            c[x] = 1
+            x = x + 1
+            #c[x] = 1
     return c
+
+#TODO: sort out assignments like the commented line in test
 
 
 def main():
