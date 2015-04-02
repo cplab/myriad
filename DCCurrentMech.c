@@ -16,21 +16,19 @@ static void* DCCurrentMech_ctor(void* _self, va_list* app)
 	struct DCCurrentMech* self = 
 		(struct DCCurrentMech*) super_ctor(DCCurrentMech, _self, app);
     
-	self->t_start = va_arg(*app, unsigned int);
-	self->t_stop = va_arg(*app, unsigned int);
+	self->t_start = va_arg(*app, uint64_t);
+	self->t_stop = va_arg(*app, uint64_t);
     self->amplitude = va_arg(*app, double);
 	
 	return self;
 }
 
-static double DCCurrentMech_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static double DCCurrentMech_mech_fun(void* _self,
+                                     void* pre_comp,
+                                     void* post_comp,
+                                     const double dt,
+                                     const double global_time,
+                                     const uint64_t curr_step)
 {
 	const struct DCCurrentMech* self = (const struct DCCurrentMech*) _self;
 
@@ -97,7 +95,7 @@ static void* DCCurrentMechClass_cudafy(void* _self, int clobber)
 const void* DCCurrentMech;
 const void* DCCurrentMechClass;
 
-void initDCCurrMech(const int init_cuda)
+void initDCCurrMech(const bool init_cuda)
 {
 	// initCompartment(init_cuda);
 	

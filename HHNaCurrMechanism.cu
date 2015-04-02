@@ -15,7 +15,6 @@
 
 extern "C"
 {
-    #include "myriad_debug.h"
 	#include "MyriadObject.h"
     #include "Compartment.h"
 	#include "HHSomaCompartment.h"
@@ -29,14 +28,12 @@ extern "C"
 __device__ __constant__ struct HHNaCurrMechanism* HHNaCurrMechanism_dev_t;
 __device__ __constant__ struct HHNaCurrMechanismClass* HHNaCurrMechanismClass_dev_t;
 
-__device__ double HHNaCurrMechanism_cuda_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+__device__ double HHNaCurrMechanism_cuda_mech_fun(void* _self,
+                                                  void* pre_comp,
+                                                  void* post_comp,
+                                                  const double dt,
+                                                  const double global_time,
+                                                  const uint64_t curr_step)
 {
 	struct HHNaCurrMechanism* self = (struct HHNaCurrMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;

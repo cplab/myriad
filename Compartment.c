@@ -15,53 +15,20 @@ static void* Compartment_ctor(void* _self, va_list* app)
 {
 	struct Compartment* self = (struct Compartment*) super_ctor(Compartment, _self, app);
 
-	self->id = va_arg(*app, unsigned int);
-	self->num_mechs = va_arg(*app, unsigned int);
-	self->my_mechs = va_arg(*app, struct Mechanism**);
+	self->id = va_arg(*app, uint64_t);
+	self->num_mechs = va_arg(*app, uint64_t);
+
+    // XXX: DEPRECATED
+    // This allows us to "inherit" Mechanisms from other compartments easily.
+    struct Mechanism** mechs = va_arg(*app, struct Mechanism**);
+    if (mechs != NULL)
+    {
+        memcpy(self->my_mechs,
+               mechs,
+               sizeof(struct Mechanism*) * MAX_NUM_MECHS);
+    }
 
 	return self;
-}
-
-static void* Compartment_cudafy(void* _self, int clobber)
-{
-	#ifdef CUDA
-	{
-		struct Compartment* self = (struct Compartment*) _self;
-
-		// Copies entire struct onto independent, static, on-stack copy
-		const size_t my_size = myriad_size_of(_self);
-		struct Compartment* copy_comp = (struct Compartment*) calloc(1, my_size);
-		memcpy(copy_comp, self, my_size);
-
-		if (copy_comp->my_mechs != NULL)
-		{
-			// We'll assume that mechanism pointers already point to stuff on GPU,
-			// we're just copying the values over (i.e. "shallow copy")
-
-			CUDA_CHECK_RETURN(
-				cudaMalloc( 
-					(void**) &copy_comp->my_mechs, 
-					copy_comp->num_mechs * sizeof(struct Compartment*)
-					)
-				);
-
-			CUDA_CHECK_RETURN(
-				cudaMemcpy(
-					copy_comp->my_mechs,
-					self->my_mechs,
-					copy_comp->num_mechs * sizeof(struct Compartment*),
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		// @TODO: Should we really be passing a pointer to something on our stack?
-		return super_cudafy(MyriadObject, copy_comp, clobber);
-	}
-	#else
-	{
-		return NULL;
-	}
-	#endif
 }
 
 //////////////////////////////////////
@@ -69,43 +36,36 @@ static void* Compartment_cudafy(void* _self, int clobber)
 //////////////////////////////////////
 
 // Simulate function
-
-static void Compartment_simul_fxn(
-	void* _self,
-	void** network,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+static void Compartment_simul_fxn(void* _self,
+                                  void** network,
+                                  const double dt,
+                                  const double global_time,
+                                  const uint64_t curr_step)
 {
-	const struct Compartment* self = (const struct Compartment*) _self;
-	printf("My id is %u\n", self->id);
-	printf("My num_mechs is %u\n", self->num_mechs);
+	// const struct Compartment* self = (const struct Compartment*) _self;
+	// printf("My id is %u\n", self->id);
+	// printf("My num_mechs is %u\n", self->num_mechs);
 	return;
 }
 
-void simul_fxn(
-	void* _self,
-	void** network,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+void simul_fxn(void* _self,
+               void** network,
+               const double dt,
+               const double global_time,
+               const uint64_t curr_step)
 {
 	const struct CompartmentClass* m_class = 
 		(const struct CompartmentClass*) myriad_class_of((void*) _self);
 	assert(m_class->m_compartment_simul_fxn);
-	m_class-> m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
+	m_class->m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
 }
 
-void super_simul_fxn(
-	void* _class,
-	void* _self,
-	void** network,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+void super_simul_fxn(void* _class,
+                     void* _self,
+                     void** network,
+                     const double dt,
+                     const double global_time,
+                     const uint64_t curr_step)
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
 	assert(_self && s_class->m_compartment_simul_fxn);
@@ -113,30 +73,27 @@ void super_simul_fxn(
 }
 
 // Add mechanism function
-
 static int Compartment_add_mech(void* _self, void* mechanism)
 {
 	if (_self == NULL || mechanism == NULL)
 	{
-		DEBUG_PRINTF("Cannot add NULL mechanism/add to NULL compartment.\n");
-		return EXIT_FAILURE;
-	}
+		fprintf(stderr, "Cannot add NULL mechanism/add to NULL compartment.\n");
+		return -1;
+	} 
 
 	struct Compartment* self = (struct Compartment*) _self;
 	struct Mechanism* mech = (struct Mechanism*) mechanism;
+
+    if (self->num_mechs + 1 >= MAX_NUM_MECHS)
+    {
+        fprintf(stderr, "Cannot add mechanism to Compartment: out of room.\n");
+        return -1;
+    }
 	
 	self->num_mechs++;
-	self->my_mechs = (struct Mechanism**) realloc(self->my_mechs, sizeof(struct Mechanism*) * self->num_mechs);
-
-	if (self->my_mechs == NULL)
-	{
-		DEBUG_PRINTF("Could not reallocate mechanisms array.\n");
-		return EXIT_FAILURE;
-	}
-
 	self->my_mechs[self->num_mechs-1] = mech;
 
-	return EXIT_SUCCESS;
+	return 0;
 }
 
 int add_mechanism(void* _self, void* mechanism)
@@ -236,7 +193,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 
 const void *CompartmentClass, *Compartment;
 
-void initCompartment(const int init_cuda)
+void initCompartment(const bool init_cuda)
 {
 	if (!CompartmentClass)
 	{
@@ -278,7 +235,6 @@ void initCompartment(const int init_cuda)
 				   MyriadObject,
 				   sizeof(struct Compartment),
 				   myriad_ctor, Compartment_ctor,
-				   myriad_cudafy, Compartment_cudafy,
 				   simul_fxn, Compartment_simul_fxn,
 				   add_mechanism, Compartment_add_mech,
 				   0

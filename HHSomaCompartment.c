@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include "MyriadObject.h"
 #include "HHSomaCompartment.h"
 #include "HHSomaCompartment.cuh"
-
 
 ///////////////////////////////////////
 // HHSomaCompartment Super Overrides //
@@ -56,26 +57,21 @@ static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 static int HHSomaCompartment_dtor(void* _self)
 {
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
-
-	free(self->vm);
-
 	return super_dtor(Compartment, self);
 }
 
-static void HHSomaCompartment_simul_fxn(
-	void* _self,
-	void** network,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static void HHSomaCompartment_simul_fxn(void* _self,
+                                        void** network,
+                                        const double dt,
+                                        const double global_time,
+                                        const uint64_t curr_step)
 {
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
 
 	double I_sum = 0.0;
 
 	//	Calculate mechanism contribution to current term
-	for (unsigned int i = 0; i < self->_.num_mechs; i++)
+	for (uint64_t i = 0; i < self->_.num_mechs; i++)
 	{
 		struct Mechanism* curr_mech = self->_.my_mechs[i]; // TODO: GENERICSE DIS
 		struct Compartment* pre_comp = network[curr_mech->source_id];
@@ -152,10 +148,8 @@ static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 const void* HHSomaCompartment;
 const void* HHSomaCompartmentClass;
 
-void initHHSomaCompartment(int init_cuda)
+void initHHSomaCompartment(const bool init_cuda)
 {
-	// initCompartment(init_cuda);
-
 	if (!HHSomaCompartmentClass)
 	{
 		HHSomaCompartmentClass =

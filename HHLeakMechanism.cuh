@@ -1,13 +1,13 @@
 /**
-   @file    HHLeakMechanism.cuh
- 
-   @brief   Hodgkin-Huxley Leak Mechanism CUDA definition file.
- 
-   @details Defines the Hodgkin-Huxley Leak Mechanism CUDA specification for Myriad
- 
-   @author  Pedro Rittner
- 
-   @date    April 9, 2014
+ * @file    HHLeakMechanism.cuh
+ *
+ * @brief   Hodgkin-Huxley Leak Mechanism CUDA definition file.
+ *
+ * @details Defines the Hodgkin-Huxley Leak Mechanism CUDA specification for Myriad
+ *
+ * @author  Pedro Rittner
+ *
+ * @date    April 9, 2014
  */
 #ifndef HHLEAKMECHANISM_CUH
 #define HHLEAKMECHANISM_CUH
@@ -35,14 +35,12 @@ extern __device__ __constant__ struct HHLeakMechanismClass* HHLeakMechanismClass
 //! On-GPU reference pointer to Mechanism function implementation
 extern __device__ mech_fun_t HHLeakMechanism_mech_fxn_t;
 
-extern __device__ double HHLeakMechanism_cuda_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	);
+extern __device__ double HHLeakMechanism_cuda_mech_fun(void* _self,
+                                                       void* pre_comp,
+                                                       void* post_comp,
+                                                       const double dt,
+                                                       const double global_time,
+                                                       const uint64_t curr_step);
 
-#endif
-#endif
+#endif /* CUDA */
+#endif /* HHLEAKMECHANISM_CUH */

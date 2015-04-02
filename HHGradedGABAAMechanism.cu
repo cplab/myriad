@@ -1,21 +1,20 @@
 /**
-   @file    HHNaCurrMechanism.cu
- 
-   @brief   Hodgkin-Huxley Sodium Mechanism CUDA implementation file.
- 
-   @details Defines the Hodgkin-Huxley Sodium Mechanism CUDA implementation for Myriad
- 
-   @author  Pedro Rittner
- 
-   @date    April 23, 2014
+ *   @file    HHNaCurrMechanism.cu
+ *
+ * @brief   Hodgkin-Huxley Sodium Mechanism CUDA implementation file.
+ *
+ * @details Defines the Hodgkin-Huxley Sodium Mechanism CUDA implementation for Myriad
+ *
+ * @author  Pedro Rittner
+ *
+ * @date    April 23, 2014
  */
-#include <stdio.h>
+#include <stdint.h>
 
 #include <cuda_runtime.h>
 
 extern "C"
 {
-    #include "myriad_debug.h"
 	#include "MyriadObject.h"
     #include "Compartment.h"
 	#include "HHSomaCompartment.h"
@@ -29,14 +28,12 @@ extern "C"
 __device__ __constant__ struct HHGradedGABAAMechanism* HHGradedGABAAMechanism_dev_t;
 __device__ __constant__ struct HHGradedGABAAMechanismClass* HHGradedGABAAMechanismClass_dev_t;
 
-__device__ double HHGradedGABAAMechanism_cuda_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+__device__ double HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
+                                                       void* pre_comp,
+                                                       void* post_comp,
+                                                       const double dt,
+                                                       const double global_time,
+                                                       const uint64_t curr_step)
 {
 	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;

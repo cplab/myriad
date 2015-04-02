@@ -1,13 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-
+#include <stdint.h>
 #include <cuda_runtime.h>
 
 extern "C"
 {
-    #include "myriad_debug.h"
 	#include "MyriadObject.h"
     #include "Compartment.h"
 }
@@ -20,12 +15,12 @@ __device__ void Compartment_cuda_simul_fxn(
 	void** network,
     const double dt,
     const double global_time,
-	const unsigned int curr_step
+	const uint64_t curr_step
 	)
 {
-	const struct Compartment* self = (const struct Compartment*) _self;
-	printf("My id is %u\n", self->id);
-	printf("My num_mechs is %u\n", self->num_mechs);
+	// const struct Compartment* self = (const struct Compartment*) _self;
+	// printf("My id is %u\n", self->id);
+	// printf("My num_mechs is %u\n", self->num_mechs);
 	return;
 }
 
@@ -36,7 +31,7 @@ __device__ void cuda_simul_fxn(
 	void** network,
     const double dt,
     const double global_time,
-	const unsigned int curr_step
+	const uint64_t curr_step
 	)
 {
 	const struct CompartmentClass* m_class =

@@ -7,7 +7,6 @@
 #include "Mechanism.h"
 #include "HHSomaCompartment.h"
 #include "HHSpikeGABAAMechanism.h"
-//#include "HHSpikeGABAAMechanism.cuh"
 
 ///////////////////////////////////////
 // HHSpikeGABAAMechanism Super Overrides //
@@ -37,14 +36,12 @@ static void* HHSpikeGABAAMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHSpikeGABAAMechanism_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static double HHSpikeGABAAMechanism_mech_fun(void* _self,
+                                             void* pre_comp,
+                                             void* post_comp,
+                                             const double dt,
+                                             const double global_time,
+                                             const uint64_t curr_step)
 {
 	struct HHSpikeGABAAMechanism* self = (struct HHSpikeGABAAMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
@@ -132,7 +129,7 @@ static void* HHSpikeGABAAMechanismClass_cudafy(void* _self, int clobber)
 const void* HHSpikeGABAAMechanism;
 const void* HHSpikeGABAAMechanismClass;
 
-void initHHSpikeGABAAMechanism(int init_cuda)
+void initHHSpikeGABAAMechanism(const bool init_cuda)
 {
 	if (!HHSpikeGABAAMechanismClass)
 	{

@@ -1,13 +1,13 @@
 /**
-   @file    HHGradedGABAAMechanism.h
- 
-   @brief   Hodgkin-Huxley GABA-a Mechanism class definition file.
- 
-   @details Defines the Hodgkin-Huxley GABA-a Mechanism class specification for Myriad
- 
-   @author  Pedro Rittner
- 
-   @date    April 9, 2014
+ * @file    HHGradedGABAAMechanism.h
+ * 
+ * @brief   Hodgkin-Huxley GABA-a Mechanism class definition file.
+ *
+ * @details Defines the Hodgkin-Huxley GABA-a Mechanism class specification for Myriad
+ *
+ * @author  Pedro Rittner
+ *
+ * @date    April 9, 2014
  */
 #ifndef HHGABAACURRMECHANISM_H
 #define HHGABAACURRMECHANISM_H
@@ -21,21 +21,28 @@ extern const void* HHGradedGABAAMechanism;
 extern const void* HHGradedGABAAMechanismClass;
 
 /**
-   HHGradedGABAAMechanism mechanism for Hodgkin-Huxley GABA-a synapse.
-
-   @see Mechanism
+ *   HHGradedGABAAMechanism mechanism for Hodgkin-Huxley GABA-a synapse.
+ *
+ * @see Mechanism
  */
 struct HHGradedGABAAMechanism
 {
-	struct Mechanism _;     //! HHGradedGABAAMechanism : Mechanism
-	double* g_s;			//! Synaptic gating variable (unitless, >=0, <=1)
-	unsigned int g_s_len;	//! Length of the synaptic gating variable array (0 -> MAXINT)
-	double g_max;			//! Maximum synaptic conductance - nS
-	double theta;			//! Half-activation potential - mV
-	double sigma;			//! Maximal slope of the sigmoidal synaptic function
-	double tau_alpha; 		//! Channel opening time constant - ms
-	double tau_beta;		//! Channel closing time constant - ms
-	double gaba_rev;		//! Synaptic reversal potential - mV
+    //! HHGradedGABAAMechanism : Mechanism
+	struct Mechanism _;
+    //! Synaptic gating variable (unitless, >=0, <=1)
+	double g_s[SIMUL_LEN];
+    //! Maximum synaptic conductance - nS
+	double g_max;
+    //! Half-activation potential - mV
+	double theta;
+    //! Maximal slope of the sigmoidal synaptic function
+	double sigma;
+    //! Channel opening time constant - ms
+	double tau_alpha;
+    //! Channel closing time constant - ms
+	double tau_beta;
+    //! Synaptic reversal potential - mV
+	double gaba_rev;
 };
 
 struct HHGradedGABAAMechanismClass
@@ -43,6 +50,6 @@ struct HHGradedGABAAMechanismClass
 	struct MechanismClass _; //! HHGradedGABAAMechanismClass : MechanismClass
 };
 
-void initHHGradedGABAAMechanism(int cuda_init);
+void initHHGradedGABAAMechanism(const bool init_cuda);
 
 #endif

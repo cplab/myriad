@@ -1,13 +1,13 @@
 /**
-   @file    HHNaCurrMechanism.h
- 
-   @brief   Hodgkin-Huxley Sodium Mechanism class definition file.
- 
-   @details Defines the Hodgkin-Huxley Sodium Mechanism class specification for Myriad
- 
-   @author  Pedro Rittner
- 
-   @date    April 9, 2014
+ * @file    HHNaCurrMechanism.h
+ *
+ * @brief   Hodgkin-Huxley Sodium Mechanism class definition file.
+ *
+ * @details Defines the Hodgkin-Huxley Sodium Mechanism class specification for Myriad
+ *
+ * @author  Pedro Rittner
+ *
+ * @date    April 9, 2014
  */
 #ifndef HHKCURRMECHANISM_H
 #define HHKCURRMECHANISM_H
@@ -21,23 +21,28 @@ extern const void* HHKCurrMechanism;
 extern const void* HHKCurrMechanismClass;
 
 /**
-   HHKCurrMechanism mechanism for Hodgkin-Huxley potassium channel.
-
-   @see Mechanism
+ * HHKCurrMechanism mechanism for Hodgkin-Huxley potassium channel.
+ *
+ * @see Mechanism
  */
 struct HHKCurrMechanism
 {
-	struct Mechanism _; //! HHKCurrMechanism : Mechanism
-	double g_k;		    //! Sodium channel conductance - nS
-	double e_k;		    //! Sodium reversal potential - mV
-	double hh_n;	    //! @TODO Figure out what hh_n is actually called
+    //! HHKCurrMechanism : Mechanism
+	struct Mechanism _;
+    //! Sodium channel conductance - nS
+	double g_k;
+    //! Sodium reversal potential - mV
+	double e_k;
+    //! @TODO Figure out what hh_n is actually called
+	double hh_n;
 };
 
 struct HHKCurrMechanismClass
 {
-	struct MechanismClass _; //! HHKCurrMechanismClass : MechanismClass
+    //! HHKCurrMechanismClass : MechanismClass
+	struct MechanismClass _;
 };
 
-void initHHKCurrMechanism(int cuda_init);
+void initHHKCurrMechanism(const bool init_cuda);
 
 #endif

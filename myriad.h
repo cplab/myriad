@@ -36,12 +36,25 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#include <sys/resource.h>
+#define MYRIAD_ALLOCATOR 1
+
+//! Use myriad's own private allocator scheme
+#ifdef MYRIAD_ALLOCATOR
+#include "myriad_alloc.h"
+#define _my_malloc(size) myriad_malloc(size, true)
+#define _my_calloc(num, size) myriad_calloc(num, size, true)
+#define _my_free(loc) myriad_free(loc)
+#else
+#define _my_malloc(size) malloc(size)
+#define _my_calloc(num, size) calloc(num, size)
+#define _my_free(loc) free(loc)
+#endif
 
 // Simulation parameters
 #define SIMUL_LEN 1000000
 #define DT 0.001
 #define NUM_CELLS 20
+#define MAX_NUM_MECHS 32
 // Leak params
 #define G_LEAK 1.0
 #define E_REV -65.0
@@ -68,13 +81,6 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #endif
-
-//! Global variable for tracking Myriad's memlock management.
-struct myriad_memlock_stat
-{
-    rlim64_t memlock_pro_lim;  //! Myriad's maximum memory locked data, in bytes
-    size_t curr_memlock_usg;   //! Myriad's current memory lockage, in bytes
-} myriad_memlock_stat;
 
 //! Math function caching
 #define EXP(x) exp(x)

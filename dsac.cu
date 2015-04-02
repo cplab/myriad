@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <string.h>
 #include <math.h>
+#include <dirent.h>
+#include <unistd.h>
 
 #ifdef CUDA
 #include <vector_types.h>
@@ -105,18 +107,74 @@ static void* new_dsac_soma(unsigned int id,
 	return hh_comp_obj;
 }
 
+static ssize_t calc_total_size(int* num_allocs)
+{
+    ssize_t total_size = 0;
+    
+    // Scan module (read: current) directory for all C files
+    /*
+    int num_modules = 0;
+    DIR* dp = opendir("./");  //TODO: Change this to look in module directory
+    if (dp != NULL)
+    {
+        struct dirent *ep;
+        while ((ep = readdir(dp)))
+        {
+            // Check if file is a C file
+            if (strstr(ep->d_name, ".c") != NULL)
+            {
+                num_modules++;
+            }
+        }
+        assert(closedir(dp) == 0);
+    } else {
+        perror("calc_total_size: Couldn't open the current directory");
+        return -1;
+    }
+    */
+
+    // Class Overhead
+    total_size += sizeof(struct MyriadObject) + sizeof(struct MyriadClass);
+    total_size += sizeof(struct Mechanism) + sizeof(struct MechanismClass);
+    total_size += sizeof(struct DCCurrentMech) + sizeof(struct DCCurrentMechClass);
+    total_size += sizeof(struct HHLeakMechanism) + sizeof(struct HHLeakMechanismClass);
+    total_size += sizeof(struct HHNaCurrMechanism) + sizeof(struct HHNaCurrMechanismClass);
+    total_size += sizeof(struct HHKCurrMechanism) + sizeof(struct HHKCurrMechanismClass);
+    total_size += sizeof(struct HHSpikeGABAAMechanism) + sizeof(struct HHSpikeGABAAMechanismClass);
+    total_size += sizeof(struct Compartment) + sizeof(struct CompartmentClass);
+    total_size += sizeof(struct HHSomaCompartment) + sizeof(struct HHSomaCompartmentClass);
+    *num_allocs = *num_allocs + (9 * 2);
+
+    // Actual usage
+    total_size += sizeof(struct HHSomaCompartment) * NUM_CELLS;
+    total_size += sizeof(struct DCCurrentMech) * NUM_CELLS;
+    total_size += sizeof(struct HHLeakMechanism) * NUM_CELLS;
+    total_size += sizeof(struct HHNaCurrMechanism) * NUM_CELLS;
+    total_size += sizeof(struct HHKCurrMechanism) * NUM_CELLS;
+    total_size += sizeof(struct HHSpikeGABAAMechanism) * NUM_CELLS * NUM_CELLS;
+    *num_allocs = *num_allocs + (6 * NUM_CELLS) + (NUM_CELLS * NUM_CELLS);
+    
+    return total_size;
+}
+
+
 static int dsac()
 {
-	const int cuda_init = 0;
+    #ifdef MYRIAD_ALLOCATOR
+    int num_allocs = 0;
+    const size_t total_mem_usage = calc_total_size(&num_allocs);
+    assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
+    printf("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
+    #endif
 
-	initMechanism(cuda_init);
-	initDCCurrMech(cuda_init);
-	initHHLeakMechanism(cuda_init);
-	initHHNaCurrMechanism(cuda_init);
-	initHHKCurrMechanism(cuda_init);
-	initHHSpikeGABAAMechanism(cuda_init);
-	initCompartment(cuda_init);
-	initHHSomaCompartment(cuda_init);
+	initMechanism(false);
+	initDCCurrMech(false);
+	initHHLeakMechanism(false);
+	initHHNaCurrMechanism(false);
+	initHHKCurrMechanism(false);
+	initHHSpikeGABAAMechanism(false);
+	initCompartment(false);
+	initHHSomaCompartment(false);
 
 	void* network[NUM_CELLS];
     // memset(network, 0, sizeof(void*) * NUM_CELLS);  // Necessary?
@@ -151,12 +209,21 @@ static int dsac()
 	double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
 	{
+#pragma GCC ivdep
 		for (int i = 0; i < NUM_CELLS; i++)
 		{
 			simul_fxn(network[i], network, DT, curr_time, curr_step);
 		}
 		curr_time += DT;
 	}
+
+    // Cleanup
+    /* 
+- Refactored all instances of "unsigned int" to uint64_t
+- Changed cuda_init for initializers to use bool instead of int
+- Added initial support for native myriad allocator
+     */
+    assert(myriad_finalize() == 0);
 
     return 0;
 }

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
 #include <string.h>
 
@@ -16,7 +17,7 @@ static void* Mechanism_ctor(void* _self, va_list* app)
 {
 	struct Mechanism* self = (struct Mechanism*) super_ctor(Mechanism, _self, app);
 	
-	self->source_id = va_arg(*app, unsigned int);
+	self->source_id = va_arg(*app, uint64_t);
 
 	return _self;
 }
@@ -25,43 +26,37 @@ static void* Mechanism_ctor(void* _self, va_list* app)
 // Native Mechanism Fxn //
 //////////////////////////
 
-static double Mechanism_mechanism_fxn(
-	void* _self,
-    void* pre_comp,
-    void* post_comp,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+static double Mechanism_mechanism_fxn(void* _self,
+                                      void* pre_comp,
+                                      void* post_comp,
+                                      const double dt,
+                                      const double global_time,
+                                      const uint64_t curr_step)
 {
-	const struct Mechanism* self = (const struct Mechanism*) _self;
-	printf("My source id is %u\n", self->source_id);
+	// const struct Mechanism* self = (const struct Mechanism*) _self;
+	// printf("My source id is %u\n", self->source_id);
 	return 0.0;
 }
 
-double mechanism_fxn(
-	void* _self,
-    void* pre_comp,
-    void* post_comp,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+double mechanism_fxn(void* _self,
+                     void* pre_comp,
+                     void* post_comp,
+                     const double dt,
+                     const double global_time,
+                     const uint64_t curr_step)
 {
 	const struct MechanismClass* m_class = (const struct MechanismClass*) myriad_class_of(_self);
 	assert(m_class->m_mech_fxn);
 	return m_class->m_mech_fxn(_self, pre_comp, post_comp, dt, global_time, curr_step);
 }
 
-double super_mechanism_fxn(
-	void* _class,
-	void* _self,
-    void* pre_comp,
-    void* post_comp,
-    const double dt,
-    const double global_time,
-	const unsigned int curr_step
-	)
+double super_mechanism_fxn(void* _class,
+                           void* _self,
+                           void* pre_comp,
+                           void* post_comp,
+                           const double dt,
+                           const double global_time,
+                           const uint64_t curr_step)
 {
 	const struct MechanismClass* s_class=(const struct MechanismClass*) myriad_super(_class);
 	assert(_self && s_class->m_mech_fxn);
@@ -147,7 +142,7 @@ static void* MechanismClass_cudafy(void* _self, int clobber)
 
 const void *MechanismClass, *Mechanism;
 
-void initMechanism(int init_cuda)
+void initMechanism(bool init_cuda)
 {
 	if (!MechanismClass)
 	{

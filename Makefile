@@ -10,7 +10,7 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 #      Compilers & Tools      #
 ###############################
 NVCC	?= $(CUDA_BIN_PATH)/nvcc
-CC	:= gcc
+CC	:= gcc-4.9
 CXX	:= g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
@@ -25,23 +25,23 @@ OS_SIZE = 64
 OS_ARCH = x86_64
 
 # CC & related flags, with debug switch
-CCOMMON_FLAGS := -Wall -Wextra -Wno-unused-parameter
+COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter
 
 ifdef DEBUG
-CCOMMON_FLAGS += -Og -g
+COMMON_CFLAGS += -Og -g
 else
-CCOMMON_FLAGS += -O2 -march=native
+COMMON_CFLAGS += -O2 -march=native
 endif
 
 PROF_LFLAGS :=
 ifdef PROFILE
-CCOMMON_FLAGS += -g -pg
+COMMON_CFLAGS += -g -pg
 PROF_LFLAGS += -pg
 endif
 
-CCFLAGS		:= $(CCOMMON_FLAGS) -std=gnu99 -Wpedantic 
-CXXFLAGS	:= $(CCOMMON_FLAGS) -std=c++11
-CUFLAGS		:= $(CCOMMON_FLAGS)
+CCFLAGS		:= $(COMMON_CFLAGS) -std=gnu99 -Wpedantic 
+CXXFLAGS	:= $(COMMON_CFLAGS) -std=c++11
+CUFLAGS		:= $(COMMON_CFLAGS)
 
 # NVCC & related flags
 NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
@@ -75,7 +75,7 @@ MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
 MYRIAD_LIB_OBJS 	:= MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
-	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o
+	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o myriad_alloc.c.o
 
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME := cudamyriad
@@ -95,7 +95,7 @@ endif
 #      Linker (LD) Flags      #
 ###############################
 
-LD_FLAGS            := -L. -l$(MYRIAD_LIB_LDNAME) -lm
+LD_FLAGS            := -L. -l$(MYRIAD_LIB_LDNAME) -lm -lpthread -lrt
 CUDART_LD_FLAGS     := -L$(CUDA_LIB_PATH) -lcudart
 CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS)
 
@@ -151,7 +151,7 @@ run: $(SIMUL_MAIN_BIN)
 	./$<
 
 clean:
-	-rm -f $(OBJECTS) $(LIBRARIES) $(BINARIES)
+	@rm -f $(OBJECTS) $(LIBRARIES) $(BINARIES)
 
 remake: clean build
 

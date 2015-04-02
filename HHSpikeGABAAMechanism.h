@@ -12,6 +12,8 @@
 #ifndef HHSPIKEGABAACURRMECHANISM_H
 #define HHSPIKEGABAACURRMECHANISM_H
 
+#include <stdbool.h>
+
 #include "MyriadObject.h"
 #include "Mechanism.h"
 
@@ -43,6 +45,6 @@ struct HHSpikeGABAAMechanismClass
 	struct MechanismClass _; //! HHSpikeGABAAMechanismClass : MechanismClass
 };
 
-void initHHSpikeGABAAMechanism(int cuda_init);
+void initHHSpikeGABAAMechanism(const bool cuda_init);
 
-#endif
+#endif /* HHSPIKEGABAACURRMECHANISM_H */

@@ -34,24 +34,22 @@ extern __device__ __constant__ struct MechanismClass* MechanismClass_dev_t;
 extern __device__ mech_fun_t Mechanism_cuda_mechanism_fxn_t;
 
 /**
-   On-GPU Delegator function for MechanismClass mechansim function method.
-
-   @param[in]    _self        pointer to extant object instance
-   @param[in]    pre_comp     pointer to the compartment where this mechanism is
-   @param[in]    dt           timestep of the simulation
-   @param[in]    global_time  current global time of the simulation
-   @param[in]    curr_step    current global time step of the simulation
-
-   @returns calculated output value of this mechanism for the given timestep
+ * On-GPU Delegator function for MechanismClass mechansim function method.
+ *
+ * @param[in]  _self        pointer to extant object instance
+ * @param[in]  pre_comp     pointer to the compartment where this mechanism is
+ * @param[in]  dt           timestep of the simulation
+ * @param[in]  global_time  current global time of the simulation
+ * @param[in]  curr_step    current global time step of the simulation
+ *
+ * @returns calculated output value of this mechanism for the given timestep
  */
-extern __device__ double cuda_mechanism_fxn(
-	void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-);
+extern __device__ double cuda_mechanism_fxn(void* _self,
+                                            void* pre_comp,
+                                            void* post_comp,
+                                            const double dt,
+                                            const double global_time,
+                                            const uint64_t curr_step);
 
-#endif
-#endif
+#endif /* CUDA */
+#endif /* MECHANISM_CUH */

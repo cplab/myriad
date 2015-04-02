@@ -1,10 +1,9 @@
-#include <stdio.h>
+#include <stdint.h>
 
 #include <cuda_runtime.h>
 
 extern "C"
 {
-    #include "myriad_debug.h"
 	#include "MyriadObject.h"
     #include "Compartment.h"
 	#include "HHSomaCompartment.h"
@@ -13,20 +12,18 @@ extern "C"
 #include "Mechanism.cuh"
 #include "HHSomaCompartment.cuh"
 
-__device__ void HHSomaCompartment_cuda_simul_fxn(
-	void* _self,
-	void** network,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+__device__ void HHSomaCompartment_cuda_simul_fxn(void* _self,
+                                                 void** network,
+                                                 const double dt,
+                                                 const double global_time,
+                                                 const uint64_t curr_step)
 {
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
 
 	double I_sum = 0.0;
 
-	//	Calculate mechanism contribution to current term
-	for (unsigned int i = 0; i < self->_.num_mechs; i++)
+	// Calculate mechanism contribution to current term
+	for (uint64_t i = 0; i < self->_.num_mechs; i++)
 	{
 		struct Mechanism* curr_mech = self->_.my_mechs[i];
 		struct Compartment* pre_comp = (struct Compartment*) network[curr_mech->source_id];

@@ -18,19 +18,13 @@ static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 	struct HHGradedGABAAMechanism* self = 
 		(struct HHGradedGABAAMechanism*) super_ctor(HHGradedGABAAMechanism, _self, app);
 
+    double* pot_g_s = va_arg(*app, double*);
 	const double g_s_init = va_arg(*app, double);
-	self->g_s = va_arg(*app, double*);
-	self->g_s_len = va_arg(*app, unsigned int);
-
-	if (self->g_s == NULL && self->g_s_len > 0)
-	{
-		self->g_s = (double*) calloc(self->g_s_len, sizeof(double));
-	}
-	
-	if (self->g_s != NULL)
-	{
-		self->g_s[0] = g_s_init;
-	}
+	if (pot_g_s != NULL)
+    {
+        memcpy(self->g_s, pot_g_s, SIMUL_LEN * sizeof(double));
+        self->g_s[0] = g_s_init;
+    }
 
 	self->g_max = va_arg(*app, double);
 	self->theta = va_arg(*app, double);
@@ -42,14 +36,12 @@ static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHGradedGABAAMechanism_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static double HHGradedGABAAMechanism_mech_fun(void* _self,
+                                              void* pre_comp,
+                                              void* post_comp,
+                                              const double dt,
+                                              const double global_time,
+                                              const uint64_t curr_step)
 {
 	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
@@ -65,47 +57,6 @@ static double HHGradedGABAAMechanism_mech_fun(
 
 	const double I_GABA = -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
 	return I_GABA;
-}
-
-static void* HHGradedGABAAMechanism_cudafy(void* _self, int clobber)
-{
-	#ifdef CUDA
-	{
-		const size_t my_size = myriad_size_of(_self);
-		struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
-		struct HHGradedGABAAMechanism* self_copy = (struct HHGradedGABAAMechanism*) calloc(1, my_size);
-		
-		memcpy(self_copy, self, my_size);
-
-		double* tmp_alias = NULL;
-		
-		// Make mirror on-GPU array 
-		CUDA_CHECK_RETURN(
-			cudaMalloc(
-				(void**) &tmp_alias,
-				self_copy->g_s_len * sizeof(double)
-				)
-			);
-
-		// Copy contents over to GPU
-		CUDA_CHECK_RETURN(
-			cudaMemcpy(
-				(void*) tmp_alias,
-				(void*) self->g_s,
-				self_copy->g_s_len * sizeof(double),
-				cudaMemcpyHostToDevice
-				)
-			);
-
-		self_copy->g_s = tmp_alias;
-
-		return super_cudafy(HHSomaCompartment, self_copy, 0);
-	}
-	#else
-	{
-	    return NULL;
-    }
-	#endif
 }
 
 ////////////////////////////////////////////
@@ -168,7 +119,7 @@ static void* HHGradedGABAAMechanismClass_cudafy(void* _self, int clobber)
 const void* HHGradedGABAAMechanism;
 const void* HHGradedGABAAMechanismClass;
 
-void initHHGradedGABAAMechanism(int init_cuda)
+void initHHGradedGABAAMechanism(const bool init_cuda)
 {
 	if (!HHGradedGABAAMechanismClass)
 	{
@@ -210,7 +161,6 @@ void initHHGradedGABAAMechanism(int init_cuda)
 				Mechanism,
 				sizeof(struct HHGradedGABAAMechanism),
 				myriad_ctor, HHGradedGABAAMechanism_ctor,
-				myriad_cudafy, HHGradedGABAAMechanism_cudafy,
 				mechanism_fxn, HHGradedGABAAMechanism_mech_fun,
 				0
 			);

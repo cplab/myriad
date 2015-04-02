@@ -64,7 +64,7 @@ static void* MyriadObject_ctor(void* _self, va_list* app)
 
 static int MyriadObject_dtor(void* _self)
 {
-    free(_self);
+    _my_free(_self);
     return EXIT_SUCCESS;
 }
 
@@ -258,7 +258,7 @@ void* myriad_new(const void* _class, ...)
 
     assert(prototype_class && prototype_class->size);
     
-    curr_obj = (struct MyriadObject*) calloc(1, prototype_class->size);
+    curr_obj = (struct MyriadObject*) _my_calloc(1, prototype_class->size);
     assert(curr_obj);
 
     curr_obj->m_class = prototype_class;

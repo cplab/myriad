@@ -23,14 +23,12 @@ static void* HHLeakMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHLeakMechanism_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static double HHLeakMechanism_mech_fun(void* _self,
+                                       void* pre_comp,
+                                       void* post_comp,
+                                       const double dt,
+                                       const double global_time,
+                                       const uint64_t curr_step)
 {
 	const struct HHLeakMechanism* self = (const struct HHLeakMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
@@ -106,10 +104,8 @@ static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
 const void* HHLeakMechanism;
 const void* HHLeakMechanismClass;
 
-void initHHLeakMechanism(int init_cuda)
+void initHHLeakMechanism(const bool init_cuda)
 {
-	// initCompartment(init_cuda);
-	
 	if (!HHLeakMechanismClass)
 	{
 		HHLeakMechanismClass =

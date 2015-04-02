@@ -1,13 +1,13 @@
 /**
-   @file    DCCurrentMech.cuh
- 
-   @brief   DC Current Mechanism CUDA definition file.
- 
-   @details Defines the DC Current Mechanism CUDA specification for Myriad
- 
-   @author  Pedro Rittner
- 
-   @date    May 5, 2014
+ * @file    DCCurrentMech.cuh
+ *
+ * @brief   DC Current Mechanism CUDA definition file.
+ *
+ * @details Defines the DC Current Mechanism CUDA specification for Myriad
+ *
+ * @author  Pedro Rittner
+ *
+ * @date    May 5, 2014
  */
 #ifndef DCCURRENTMECH_CUH
 #define DCCURRENTMECH_CUH
@@ -35,14 +35,12 @@ extern __device__ __constant__ struct DCCurrentMechClass* DCCurrentMechClass_dev
 //! On-GPU reference pointer to Mechanism function implementation
 extern __device__ mech_fun_t DCCurrentMech_mech_fxn_t;
 
-extern __device__ double DCCurrentMech_cuda_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	);
+extern __device__ double DCCurrentMech_cuda_mech_fun(void* _self,
+                                                     void* pre_comp,
+                                                     void* post_comp,
+                                                     const double dt,
+                                                     const double global_time,
+                                                     const uint64_t curr_step);
 
-#endif
-#endif
+#endif /* CUDA */
+#endif /* DCCURRENTMECH_CUH */

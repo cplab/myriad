@@ -25,14 +25,12 @@ static void* HHKCurrMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHKCurrMechanism_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	)
+static double HHKCurrMechanism_mech_fun(void* _self,
+                                        void* pre_comp,
+                                        void* post_comp,
+                                        const double dt,
+                                        const double global_time,
+                                        const uint64_t curr_step)
 {
 	struct HHKCurrMechanism* self = (struct HHKCurrMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
@@ -119,7 +117,7 @@ static void* HHKCurrMechanismClass_cudafy(void* _self, int clobber)
 const void* HHKCurrMechanism;
 const void* HHKCurrMechanismClass;
 
-void initHHKCurrMechanism(int init_cuda)
+void initHHKCurrMechanism(const bool init_cuda)
 {
 	// initCompartment(init_cuda);
 	

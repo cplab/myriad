@@ -1,6 +1,9 @@
 #ifndef HHSOMACOMPARTMENT_H
 #define HHSOMACOMPARTMENT_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "Compartment.h"
 
 extern const void* HHSomaCompartment;
@@ -8,17 +11,22 @@ extern const void* HHSomaCompartmentClass;
 
 struct HHSomaCompartment
 {
-    struct Compartment _;  //! HHSomaCompartment : Compartment
-    double vm[SIMUL_LEN];  //! Membrane voltage - mV
-    unsigned int vm_len;   //! Length of soma_vm array
-    double cm;             //! Capacitance - nF
+    //! HHSomaCompartment : Compartment
+    struct Compartment _;
+    //! Membrane voltage - mV
+    double vm[SIMUL_LEN];
+    //! Length of soma_vm array
+    uint64_t vm_len;
+    //! Capacitance - nF
+    double cm;   
 };
 
 struct HHSomaCompartmentClass
 {
-    struct CompartmentClass _; //! HHSomaCompartmentClass : CompartmentClass
+    //! HHSomaCompartmentClass : CompartmentClass
+    struct CompartmentClass _;
 };
 
-extern void initHHSomaCompartment(int init_cuda);
+extern void initHHSomaCompartment(const bool init_cuda);
 
 #endif

@@ -35,14 +35,12 @@ extern __device__ __constant__ struct HHNaCurrMechanismClass* HHNaCurrMechanismC
 //! On-GPU reference pointer to Mechanism function implementation
 extern __device__ mech_fun_t HHNaCurrMechanism_mech_fxn_t;
 
-extern __device__ double HHNaCurrMechanism_cuda_mech_fun(
-    void* _self,
-	void* pre_comp,
-	void* post_comp,
-	const double dt,
-	const double global_time,
-	const unsigned int curr_step
-	);
+extern __device__ double HHNaCurrMechanism_cuda_mech_fun(void* _self,
+                                                         void* pre_comp,
+                                                         void* post_comp,
+                                                         const double dt,
+                                                         const double global_time,
+                                                         const uint64_t curr_step);
 
 #endif
 #endif
