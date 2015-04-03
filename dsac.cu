@@ -43,7 +43,7 @@ extern "C"
 
 // Fast exponential function structure/function
 #ifdef FAST_EXP
-union _eco _eco;
+__thread union _eco _eco;
 #ifdef USE_DDTABLE
 double _exp(double y)
 {

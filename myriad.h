@@ -31,10 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <inttypes.h>
 
 //! Use myriad's own private allocator scheme
 #ifdef MYRIAD_ALLOCATOR
@@ -58,7 +54,7 @@ union _eco
         int j, i;
     } n;
 };
-extern union _eco _eco;
+extern __thread union _eco _eco;  //! Must be thread-local due to side-effects.
 #define EXP_A 1512775
 #define EXP_C 60801
 
