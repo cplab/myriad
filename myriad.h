@@ -36,8 +36,6 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#define MYRIAD_ALLOCATOR 1
-
 //! Use myriad's own private allocator scheme
 #ifdef MYRIAD_ALLOCATOR
 #include "myriad_alloc.h"
@@ -48,6 +46,18 @@
 #define _my_malloc(size) malloc(size)
 #define _my_calloc(num, size) calloc(num, size)
 #define _my_free(loc) free(loc)
+#endif
+
+//! Use hash table for exponential function lookups
+#ifdef USE_DDTABLE
+#ifndef DDTABLE_NUM_KEYS
+#define DDTABLE_NUM_KEYS 67108864
+#endif
+#include "ddtable.h"
+extern ddtable_t exp_table;
+#define EXP(x) ddtable_check_get_set(exp_table, x, &exp)
+#else
+#define EXP(x) exp(x)
 #endif
 
 // Simulation parameters
@@ -82,9 +92,6 @@
 #include <cuda_runtime_api.h>
 #endif
 
-//! Math function caching
-#define EXP(x) exp(x)
-
 // Unit testing macros
 #ifdef UNIT_TEST
     /*! 
@@ -109,7 +116,7 @@
 #ifdef DEBUG
 	//! Prints debug information string to stdout with file and line info.
     #define DEBUG_PRINTF(str, ...) do {  \
-	    fprintf(stdout, "DEBUG @ "__FILE__":"__LINE__": "#str, __VA_ARGS__) \
+        fprintf(stdout, "DEBUG @ " __FILE__ ":" __LINE__ ": "#str, __VA_ARGS__); \
 	} while(0)
 #else
     #define DEBUG_PRINTF(...) do {} while (0)

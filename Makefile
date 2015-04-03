@@ -10,7 +10,7 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 #      Compilers & Tools      #
 ###############################
 NVCC	?= $(CUDA_BIN_PATH)/nvcc
-CC	:= gcc-4.9
+CC	:= gcc
 CXX	:= g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
@@ -28,7 +28,7 @@ OS_ARCH = x86_64
 COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter
 
 ifdef DEBUG
-COMMON_CFLAGS += -Og -g
+COMMON_CFLAGS += -Og -g -DDEBUG=$(DEBUG) -DUNIT_TEST
 else
 COMMON_CFLAGS += -O2 -march=native
 endif
@@ -75,7 +75,8 @@ MYRIAD_LIB_LDNAME 	:= myriad
 MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
 MYRIAD_LIB_OBJS 	:= MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
-	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o myriad_alloc.c.o
+	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o myriad_alloc.c.o \
+	ddtable.c.o
 
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME := cudamyriad
@@ -103,7 +104,7 @@ CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS
 #       Definition Flags      #
 ###############################
 
-DEFINES := -DUNIT_TEST
+DEFINES :=
 ifdef CUDA
 DEFINES += -DCUDA
 endif

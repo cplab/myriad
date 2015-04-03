@@ -39,8 +39,8 @@ static double HHKCurrMechanism_mech_fun(void* _self,
 	//	Channel dynamics calculation
 	const double pre_vm = c1->vm[curr_step-1];
 
-    const double alpha_n = (-0.01 * (pre_vm + 34.)) / (exp((pre_vm+34.0)/-1.) - 1.);
-    const double beta_n  = 0.125 * exp((pre_vm + 44.)/-80.);
+    const double alpha_n = (-0.01 * (pre_vm + 34.)) / (EXP((pre_vm+34.0)/-1.) - 1.);
+    const double beta_n  = 0.125 * EXP((pre_vm + 44.)/-80.);
 
     self->hh_n += dt*5.*(alpha_n*(1.-self->hh_n) - beta_n*self->hh_n);
 

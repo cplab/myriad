@@ -36,7 +36,6 @@ extern "C"
 #include "Compartment.cuh"
 #endif
 
-
 ////////////////
 // DSAC Model //
 ////////////////
@@ -99,14 +98,17 @@ static void* new_dsac_soma(unsigned int id,
                                                GABA_TAU_BETA,
                                                GABA_REV);
         assert(0 == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
-        printf("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
-               connect_to[i],
-               id);
+        DEBUG_PRINTF("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
+                     connect_to[i],
+                     id);
     }
 
 	return hh_comp_obj;
 }
 
+#ifndef MYRIAD_ALLOCATOR
+static ssize_t calc_total_size(int* num_allocs) __attribute__((unused));
+#endif
 static ssize_t calc_total_size(int* num_allocs)
 {
     ssize_t total_size = 0;
@@ -145,7 +147,7 @@ static ssize_t calc_total_size(int* num_allocs)
     total_size += sizeof(struct HHSomaCompartment) + sizeof(struct HHSomaCompartmentClass);
     *num_allocs = *num_allocs + (9 * 2);
 
-    // Actual usage
+    // Objects
     total_size += sizeof(struct HHSomaCompartment) * NUM_CELLS;
     total_size += sizeof(struct DCCurrentMech) * NUM_CELLS;
     total_size += sizeof(struct HHLeakMechanism) * NUM_CELLS;
@@ -153,10 +155,21 @@ static ssize_t calc_total_size(int* num_allocs)
     total_size += sizeof(struct HHKCurrMechanism) * NUM_CELLS;
     total_size += sizeof(struct HHSpikeGABAAMechanism) * NUM_CELLS * NUM_CELLS;
     *num_allocs = *num_allocs + (6 * NUM_CELLS) + (NUM_CELLS * NUM_CELLS);
+
+    // DDTABLE
+    #ifdef USE_DDTABLE
+    *num_allocs = *num_allocs + 1;
+    total_size += sizeof(struct ddtable);
+    total_size += sizeof(int_fast8_t) * DDTABLE_NUM_KEYS;
+    total_size += 2 * sizeof(double) * DDTABLE_NUM_KEYS;
+    #endif
     
     return total_size;
 }
 
+#ifdef USE_DDTABLE
+ddtable_t exp_table = NULL;
+#endif
 
 static int dsac()
 {
@@ -164,7 +177,11 @@ static int dsac()
     int num_allocs = 0;
     const size_t total_mem_usage = calc_total_size(&num_allocs);
     assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
-    printf("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
+    DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
+    #endif
+
+    #ifdef USE_DDTABLE
+    exp_table = ddtable_new(DDTABLE_NUM_KEYS);
     #endif
 
 	initMechanism(false);
@@ -195,7 +212,7 @@ static int dsac()
             } else {
                 to_connect[j] = j;   // Connect to cell j
             }
-            printf("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
+            DEBUG_PRINTF("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
         }
         
         const bool stimulate = rand() % 2 == 0;
@@ -218,13 +235,14 @@ static int dsac()
 	}
 
     // Cleanup
-    /* 
-- Refactored all instances of "unsigned int" to uint64_t
-- Changed cuda_init for initializers to use bool instead of int
-- Added initial support for native myriad allocator
-     */
+    #ifdef USE_DDTABLE
+    ddtable_free(exp_table);
+    #endif
+    
+    #ifdef MYRIAD_ALLOCATOR
     assert(myriad_finalize() == 0);
-
+    #endif
+    
     return 0;
 }
 
@@ -234,11 +252,11 @@ static int dsac()
 int main(int argc, char const *argv[])
 {
     srand(42);
-    puts("Hello World!\n");
+    // puts("Hello World!\n");
 
 	assert(0 == dsac());
 
-    puts("\nDone.");
+    // puts("\nDone.");
 
     return EXIT_SUCCESS;
 }

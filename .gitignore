@@ -18,6 +18,12 @@ doc/
 
 # Fuse crap
 .fuse*
+*.bak
+*.old
+
+# Callgrind/perf crap
+callgrind.out.*
+*.perf
 
 # Emacs crap
 \#*
