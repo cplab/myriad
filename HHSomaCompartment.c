@@ -62,7 +62,6 @@ static int HHSomaCompartment_dtor(void* _self)
 
 static void HHSomaCompartment_simul_fxn(void* _self,
                                         void** network,
-                                        const double dt,
                                         const double global_time,
                                         const uint64_t curr_step)
 {
@@ -71,6 +70,7 @@ static void HHSomaCompartment_simul_fxn(void* _self,
 	double I_sum = 0.0;
 
 	//	Calculate mechanism contribution to current term
+#pragma GCC ivdep
 	for (uint64_t i = 0; i < self->_.num_mechs; i++)
 	{
 		struct Mechanism* curr_mech = self->_.my_mechs[i]; // TODO: GENERICSE DIS
@@ -78,11 +78,11 @@ static void HHSomaCompartment_simul_fxn(void* _self,
 
 		//TODO: Make this conditional on specific Mechanism types
 		//if (curr_mech->fx_type == CURRENT_FXN)
-		I_sum += mechanism_fxn(curr_mech, pre_comp, self, dt, global_time, curr_step);
+		I_sum += mechanism_fxn(curr_mech, pre_comp, self, global_time, curr_step);
 	}
 
 	//	Calculate new membrane voltage: (dVm) + prev_vm
-	self->vm[curr_step] = (dt * (I_sum) / (self->cm)) + self->vm[curr_step - 1];
+	self->vm[curr_step] = (DT * (I_sum) / (self->cm)) + self->vm[curr_step - 1];
 
 	return;
 }

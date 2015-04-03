@@ -38,7 +38,6 @@ static void* Compartment_ctor(void* _self, va_list* app)
 // Simulate function
 static void Compartment_simul_fxn(void* _self,
                                   void** network,
-                                  const double dt,
                                   const double global_time,
                                   const uint64_t curr_step)
 {
@@ -50,26 +49,24 @@ static void Compartment_simul_fxn(void* _self,
 
 void simul_fxn(void* _self,
                void** network,
-               const double dt,
                const double global_time,
                const uint64_t curr_step)
 {
 	const struct CompartmentClass* m_class = 
 		(const struct CompartmentClass*) myriad_class_of((void*) _self);
 	assert(m_class->m_compartment_simul_fxn);
-	m_class->m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
+	m_class->m_compartment_simul_fxn(_self, network, global_time, curr_step);
 }
 
 void super_simul_fxn(void* _class,
                      void* _self,
                      void** network,
-                     const double dt,
                      const double global_time,
                      const uint64_t curr_step)
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
 	assert(_self && s_class->m_compartment_simul_fxn);
-	s_class->m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
+	s_class->m_compartment_simul_fxn(_self, network, global_time, curr_step);
 }
 
 // Add mechanism function

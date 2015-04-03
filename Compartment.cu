@@ -13,7 +13,7 @@ extern "C"
 __device__ void Compartment_cuda_simul_fxn(
 	void* _self,
 	void** network,
-    const double dt,
+ 
     const double global_time,
 	const uint64_t curr_step
 	)
@@ -29,7 +29,7 @@ __device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartm
 __device__ void cuda_simul_fxn(
 	void* _self,
 	void** network,
-    const double dt,
+ 
     const double global_time,
 	const uint64_t curr_step
 	)
@@ -37,7 +37,7 @@ __device__ void cuda_simul_fxn(
 	const struct CompartmentClass* m_class =
 		(const struct CompartmentClass*) cuda_myriad_class_of((void*) _self);
 
-	return m_class->m_compartment_simul_fxn(_self, network, dt, global_time, curr_step);
+	return m_class->m_compartment_simul_fxn(_self, network, DT, global_time, curr_step);
 }
 
 __device__ __constant__ struct Compartment* Compartment_dev_t;

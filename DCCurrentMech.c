@@ -26,7 +26,7 @@ static void* DCCurrentMech_ctor(void* _self, va_list* app)
 static double DCCurrentMech_mech_fun(void* _self,
                                      void* pre_comp,
                                      void* post_comp,
-                                     const double dt,
+                    
                                      const double global_time,
                                      const uint64_t curr_step)
 {

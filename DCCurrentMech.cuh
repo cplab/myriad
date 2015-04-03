@@ -38,7 +38,7 @@ extern __device__ mech_fun_t DCCurrentMech_mech_fxn_t;
 extern __device__ double DCCurrentMech_cuda_mech_fun(void* _self,
                                                      void* pre_comp,
                                                      void* post_comp,
-                                                     const double dt,
+                   
                                                      const double global_time,
                                                      const uint64_t curr_step);
 

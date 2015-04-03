@@ -7,6 +7,7 @@
 #include <math.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #ifdef CUDA
 #include <vector_types.h>
@@ -40,22 +41,16 @@ extern "C"
 // DSAC Model //
 ////////////////
 
-
-#ifdef CUDA
-__global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
+// Fast exponential function structure/function
+#ifdef FAST_EXP
+union _eco _eco;
+#ifdef USE_DDTABLE
+double _exp(double y)
 {
-	void* dev_arr[1];
-	dev_arr[0] = network;
-
-	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
-
-	double curr_time = DT;
-	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
-	{
-		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
-		curr_time += DT;
-	}
+    _eco.n.i = EXP_A * (y) + (1072693248 - EXP_C);
+    return _eco.d;
 }
+#endif
 #endif
 
 static void* new_dsac_soma(unsigned int id,
@@ -169,20 +164,67 @@ static ssize_t calc_total_size(int* num_allocs)
 
 #ifdef USE_DDTABLE
 ddtable_t exp_table = NULL;
-#endif
+#endif /* USE_DDTABLE */
+
+#if NUM_THREADS > 1
+struct _pthread_vals
+{
+    void** network;
+    double curr_time;
+    uint64_t curr_step;
+    uint_fast32_t num_done;
+    pthread_mutex_t barrier_mutx;
+    pthread_cond_t barrier_cv;
+} _pthread_vals;
+
+static inline void* _thread_run(void* arg)
+{
+    const int thread_id = (unsigned long int) arg;
+    const int network_indx_start = thread_id * (NUM_CELLS / NUM_THREADS);
+    const int network_indx_end = network_indx_start + (NUM_CELLS / NUM_THREADS) - 1;
+    
+    while(_pthread_vals.curr_step < SIMUL_LEN)
+	{
+#pragma GCC ivdep
+		for (int i = network_indx_start; i < network_indx_end; i++)
+		{
+			simul_fxn(_pthread_vals.network[i],
+                      _pthread_vals.network,
+                      _pthread_vals.curr_time,
+                      _pthread_vals.curr_step);
+		}
+
+        pthread_mutex_lock(&_pthread_vals.barrier_mutx);
+        _pthread_vals.num_done++;
+        if (_pthread_vals.num_done < NUM_THREADS)
+        {
+            pthread_cond_wait(&_pthread_vals.barrier_cv,
+                              &_pthread_vals.barrier_mutx);
+        } else {
+            _pthread_vals.curr_step++;
+            _pthread_vals.curr_time += DT;
+            _pthread_vals.num_done = 0;
+            pthread_cond_broadcast(&_pthread_vals.barrier_cv);
+        }
+        pthread_mutex_unlock(&_pthread_vals.barrier_mutx);
+	}
+
+    return NULL;
+}
+#endif /* NUM_THREADS > 1 */
 
 static int dsac()
 {
-    #ifdef MYRIAD_ALLOCATOR
+#ifdef MYRIAD_ALLOCATOR
     int num_allocs = 0;
     const size_t total_mem_usage = calc_total_size(&num_allocs);
     assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
     DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
-    #endif
+#endif /* MYRIAD_ALLOCATOR */
 
-    #ifdef USE_DDTABLE
+#ifdef USE_DDTABLE
     exp_table = ddtable_new(DDTABLE_NUM_KEYS);
-    #endif
+#endif /* USE_DDTABLE */
 
 	initMechanism(false);
 	initDCCurrMech(false);
@@ -222,17 +264,46 @@ static int dsac()
                                        num_connxs);
 	}
 
-    // Run simulation
-	double curr_time = DT;
-	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
-	{
+#if NUM_THREADS > 1
+    // Pthread parallelism
+    pthread_t _threads[NUM_THREADS];
+
+    // Initialize global pthread values
+    _pthread_vals.network = network;
+    _pthread_vals.curr_time = DT;
+    _pthread_vals.curr_step = 1;
+    _pthread_vals.num_done = 0;
+    pthread_mutex_init(&_pthread_vals.barrier_mutx, NULL);
+    pthread_cond_init(&_pthread_vals.barrier_cv, NULL);
+
+    for(unsigned long int i = 0; i < NUM_THREADS; ++i)
+    {
+        if(pthread_create(&_threads[i], NULL, &_thread_run, (void*) i))
+        {
+            fprintf(stderr, "Could not create thread %lu\n", i);
+            return -1;
+        }
+    }
+    for(int i = 0; i < NUM_THREADS; ++i)
+    {
+        if(pthread_join(_threads[i], NULL))
+        {
+            fprintf(stderr, "Could not join thread %d\n", i);
+            return -1;
+        }
+    }
+#else
+    double current_time = DT;
+    for (uint_fast64_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
+    {
 #pragma GCC ivdep
-		for (int i = 0; i < NUM_CELLS; i++)
-		{
-			simul_fxn(network[i], network, DT, curr_time, curr_step);
-		}
-		curr_time += DT;
-	}
+        for (uint_fast64_t i = 0; i < NUM_CELLS; i++)
+        {
+            simul_fxn(network[i], network, current_time, curr_step);
+        }
+        current_time += DT;
+    }
+#endif /* NUM_THREADS > 1 */
 
     // Cleanup
     #ifdef USE_DDTABLE
@@ -249,7 +320,7 @@ static int dsac()
 ///////////////////
 // Main function //
 ///////////////////
-int main(int argc, char const *argv[])
+int main()
 {
     srand(42);
     // puts("Hello World!\n");

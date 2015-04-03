@@ -29,7 +29,7 @@ static void* HHNaCurrMechanism_ctor(void* _self, va_list* app)
 static double HHNaCurrMechanism_mech_fun(void* _self,
                                          void* pre_comp,
                                          void* post_comp,
-                                         const double dt,
+ 
                                          const double global_time,
                                          const uint64_t curr_step)
 {
@@ -46,7 +46,7 @@ static double HHNaCurrMechanism_mech_fun(void* _self,
 	const double beta_h = 4.0 / (1 + EXP(-(pre_vm + 18.0)/5.0));
 
 	const double minf = (alpha_m/(alpha_m + beta_m));
-	self->hh_h += dt* 5. *(alpha_h*(1. - self->hh_h) - (beta_h * self->hh_h));
+	self->hh_h += DT* 5. *(alpha_h*(1. - self->hh_h) - (beta_h * self->hh_h));
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)

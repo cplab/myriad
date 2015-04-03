@@ -31,7 +31,7 @@ __device__ __constant__ struct HHKCurrMechanismClass* HHKCurrMechanismClass_dev_
 __device__ double HHKCurrMechanism_cuda_mech_fun(void* _self,
                                                  void* pre_comp,
                                                  void* post_comp,
-                                                 const double dt,
+    
                                                  const double global_time,
                                                  const uint64_t curr_step)
 {
@@ -44,7 +44,7 @@ __device__ double HHKCurrMechanism_cuda_mech_fun(void* _self,
     const double alpha_n = (-0.01 * (pre_vm + 10.0)) / (exp((pre_vm+10.0)/-10.0) - 1.0);
     const double beta_n  = 0.125 * exp(pre_vm/-80.);
 
-    self->hh_n = dt*(alpha_n*(1-self->hh_n) - beta_n*self->hh_n) + self->hh_n;
+    self->hh_n = DT*(alpha_n*(1-self->hh_n) - beta_n*self->hh_n) + self->hh_n;
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)

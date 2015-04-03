@@ -27,7 +27,7 @@ __device__ __constant__ struct DCCurrentMechClass* DCCurrentMechClass_dev_t;
 __device__ double DCCurrentMech_cuda_mech_fun(void* _self,
                                               void* pre_comp,
                                               void* post_comp,
-                                              const double dt,
+                   
                                               const double global_time,
                                               const uint64_t curr_step)
 {

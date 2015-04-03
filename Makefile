@@ -10,7 +10,7 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 #      Compilers & Tools      #
 ###############################
 NVCC	?= $(CUDA_BIN_PATH)/nvcc
-CC	:= gcc
+CC	:= gcc-4.9
 CXX	:= g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
@@ -152,7 +152,7 @@ run: $(SIMUL_MAIN_BIN)
 	./$<
 
 clean:
-	@rm -f $(OBJECTS) $(LIBRARIES) $(BINARIES)
+	@rm -f $(OBJECTS) $(LIBRARIES) $(BINARIES) *.s *.i *.ii
 
 remake: clean build
 

@@ -48,19 +48,51 @@
 #define _my_free(loc) free(loc)
 #endif
 
+//! Fast exponential function, as per Schraudolph 1999
+#ifdef FAST_EXP
+union _eco
+{
+    double d;
+    struct _anon
+    {
+        int j, i;
+    } n;
+};
+extern union _eco _eco;
+#define EXP_A 1512775
+#define EXP_C 60801
+
+// Have to define a function in case of DDTABLE, since it uses a fxn ptr.
+#ifdef USE_DDTABLE
+extern double _exp(const double x);
+#else
+#define _exp(y) (_eco.n.i = EXP_A*(y) + (1072693248 - EXP_C), _eco.d)
+#endif /* USE_DDTABLE */
+
+#else
+// If not using fast exponential, just alias math.h exponential function
+#define _exp_helper _exp
+#define _exp _exp_helper
+#endif /* FAST_EXP */
+
+
 //! Use hash table for exponential function lookups
 #ifdef USE_DDTABLE
+// Default number of keys
 #ifndef DDTABLE_NUM_KEYS
 #define DDTABLE_NUM_KEYS 67108864
 #endif
+
 #include "ddtable.h"
 extern ddtable_t exp_table;
-#define EXP(x) ddtable_check_get_set(exp_table, x, &exp)
+#define EXP(x) ddtable_check_get_set(exp_table, x, &_exp)
 #else
-#define EXP(x) exp(x)
-#endif
+#define EXP(x) _exp(x)
+#endif /* USE_DDTABLE */
+
 
 // Simulation parameters
+#define NUM_THREADS 1
 #define SIMUL_LEN 1000000
 #define DT 0.001
 #define NUM_CELLS 20

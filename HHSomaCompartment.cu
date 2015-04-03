@@ -14,7 +14,7 @@ extern "C"
 
 __device__ void HHSomaCompartment_cuda_simul_fxn(void* _self,
                                                  void** network,
-                                                 const double dt,
+
                                                  const double global_time,
                                                  const uint64_t curr_step)
 {
@@ -30,11 +30,11 @@ __device__ void HHSomaCompartment_cuda_simul_fxn(void* _self,
 		
 		//TODO: Make this conditional on specific Mechanism types
 		//if (curr_mech->fx_type == CURRENT_FXN)
-		I_sum += cuda_mechanism_fxn(curr_mech, self, self, dt, global_time, curr_step);
+		I_sum += cuda_mechanism_fxn(curr_mech, self, self, DT, global_time, curr_step);
 	}
 
 	//	Calculate new membrane voltage: (dVm) + prev_vm
-	self->vm[curr_step] = (dt * (I_sum) / (self->cm)) + self->vm[curr_step - 1];
+	self->vm[curr_step] = (DT * (I_sum) / (self->cm)) + self->vm[curr_step - 1];
 
 	return;
 }
