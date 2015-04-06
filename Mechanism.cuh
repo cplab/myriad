@@ -38,7 +38,6 @@ extern __device__ mech_fun_t Mechanism_cuda_mechanism_fxn_t;
  *
  * @param[in]  _self        pointer to extant object instance
  * @param[in]  pre_comp     pointer to the compartment where this mechanism is
- * @param[in]  dt           timestep of the simulation
  * @param[in]  global_time  current global time of the simulation
  * @param[in]  curr_step    current global time step of the simulation
  *
@@ -47,7 +46,6 @@ extern __device__ mech_fun_t Mechanism_cuda_mechanism_fxn_t;
 extern __device__ double cuda_mechanism_fxn(void* _self,
                                             void* pre_comp,
                                             void* post_comp,
-                                            const double dt,
                                             const double global_time,
                                             const uint64_t curr_step);
 

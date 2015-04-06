@@ -31,7 +31,6 @@ __device__ __constant__ struct HHGradedGABAAMechanismClass* HHGradedGABAAMechani
 __device__ double HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
                                                        void* pre_comp,
                                                        void* post_comp,
-                                                       const double dt,
                                                        const double global_time,
                                                        const uint64_t curr_step)
 {
@@ -45,7 +44,7 @@ __device__ double HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
 	const double prev_g_s = self->g_s[curr_step-1];
 
 	const double fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
-	self->g_s[curr_step] += dt * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
+	self->g_s[curr_step] += DT * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
 
 	return -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
 }

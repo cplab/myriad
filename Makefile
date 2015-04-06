@@ -1,7 +1,7 @@
 ###############################
 #     CUDA Binaries & Libs    #
 ###############################
-CUDA_PATH	?= /usr/local/cuda
+CUDA_PATH	?= /usr/lib/nvidia-cuda-toolkit
 CUDA_INC_PATH	?= $(CUDA_PATH)/include
 CUDA_BIN_PATH	?= $(CUDA_PATH)/bin
 CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
@@ -10,8 +10,8 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 #      Compilers & Tools      #
 ###############################
 NVCC	?= $(CUDA_BIN_PATH)/nvcc
-CC	:= gcc-4.9
-CXX	:= g++
+CC	:= gcc-4.8
+CXX	:= g++-4.8
 AR	?= ar
 CTAGS ?= ctags-exuberant
 DOXYGEN ?= doxygen
@@ -104,7 +104,8 @@ ifdef CUDA
 CUDA_MYRIAD_LIB	:= lib$(CUDA_MYRIAD_LIB_LDNAME).a
 CUDA_MYRIAD_LIB_OBJS += MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 	HHSomaCompartment.cu.o HHLeakMechanism.cu.o HHNaCurrMechanism.cu.o \
-	HHKCurrMechanism.cu.o DCCurrentMech.cu.o HHGradedGABAAMechanism.cu.o
+	HHKCurrMechanism.cu.o DCCurrentMech.cu.o HHGradedGABAAMechanism.cu.o \
+	HHSpikeGABAAMechanism.cu.o
 endif
 
 # Shared Libraries
@@ -191,7 +192,7 @@ $(CUDA_MYRIAD_LIB_OBJS): %.cu.o : %.cu
 
 # ------- Linker Object -------
 
-$(CUDA_LINK_OBJ): $(SIMUL_MAIN_OBJ) $(CUDA_MYRIAD_LIB)
+$(CUDA_LINK_OBJ): $(SIMUL_MAIN_OBJ) $(CUDA_MYRIAD_LIB_OBJS)
 	$(NVCC) $(GENCODE_FLAGS) -dlink $^ -o $(CUDA_LINK_OBJ) # Necessary for seperate compilation
 
 # ------- Main binary object -------

@@ -38,6 +38,12 @@ extern "C" {
 #include "MyriadObject.cuh"
 #include "Mechanism.cuh"
 #include "Compartment.cuh"
+#include "HHSomaCompartment.cuh"
+#include "HHLeakMechanism.cuh"
+#include "HHNaCurrMechanism.cuh"
+#include "HHKCurrMechanism.cuh"
+#include "HHSpikeGABAAMechanism.cuh"
+#include "DCCurrentMech.cuh"
 #endif
 
 ////////////////
@@ -229,14 +235,20 @@ static int dsac()
     exp_table = ddtable_new(DDTABLE_NUM_KEYS);
 #endif /* USE_DDTABLE */
 
-	initMechanism(false);
-	initDCCurrMech(false);
-	initHHLeakMechanism(false);
-	initHHNaCurrMechanism(false);
-	initHHKCurrMechanism(false);
-	initHHSpikeGABAAMechanism(false);
-	initCompartment(false);
-	initHHSomaCompartment(false);
+#ifdef CUDA
+    const bool use_cuda = true;
+#else
+    const bool use_cuda = false;
+#endif
+
+	initMechanism(use_cuda);
+    initCompartment(use_cuda);
+	initDCCurrMech(use_cuda);
+	initHHLeakMechanism(use_cuda);
+	initHHNaCurrMechanism(use_cuda);
+	initHHKCurrMechanism(use_cuda);
+	initHHSpikeGABAAMechanism(use_cuda);
+	initHHSomaCompartment(use_cuda);
 
 	void* network[NUM_CELLS];
     // memset(network, 0, sizeof(void*) * NUM_CELLS);  // Necessary?

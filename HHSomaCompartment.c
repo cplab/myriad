@@ -32,25 +32,18 @@ static void* HHSomaCompartment_ctor(void* _self, va_list* app)
 
 static void* HHSomaCompartment_cudafy(void* _self, int clobber)
 {
-	#ifdef CUDA
-	{
-		return super_cudafy(HHSomaCompartment, self_copy, 0);
-	}
-	#else
-	{
-	    return NULL;
-    }
-	#endif
+#ifdef CUDA
+    return super_cudafy(HHSomaCompartment, _self, 0);
+#else
+    return NULL;
+#endif
 }
 
 static void HHSomaCompartment_decudafy(void* _self, void* cuda_self)
 {
-	#ifdef CUDA
-	{
-		super_decudafy(Compartment, self, cuda_self);
-	}
-	#endif
-
+#ifdef CUDA
+    super_decudafy(Compartment, _self, cuda_self);
+#endif
 	return;
 }
 
@@ -93,52 +86,48 @@ static void HHSomaCompartment_simul_fxn(void* _self,
 
 static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 {
-	#ifdef CUDA
-	{
-		// We know what class we are
-		struct HHSomaCompartmentClass* my_class = (struct HHSomaCompartmentClass*) _self;
+#ifdef CUDA
+    // We know what class we are
+    struct HHSomaCompartmentClass* my_class = (struct HHSomaCompartmentClass*) _self;
 
-		// Make a temporary copy-class because we need to change shit
-		struct HHSomaCompartmentClass copy_class = *my_class;
-		struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
+    // Make a temporary copy-class because we need to change shit
+    struct HHSomaCompartmentClass copy_class = *my_class;
+    struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 	
-		// !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
-		// By default we clobber the copy_class_class' superclass with
-		// the superclass' device_class' on-GPU address value. 
-		// To avoid cloberring this value (e.g. if an underclass has already
-		// clobbered it), the clobber flag should be 0.
-		if (clobber)
-		{
-			// TODO: Find a better way to get function pointers for on-card functions
-			compartment_simul_fxn_t my_comp_fun = NULL;
-			CUDA_CHECK_RETURN(
-				cudaMemcpyFromSymbol(
-					(void**) &my_comp_fun,
-					(const void*) &HHSomaCompartment_simul_fxn_t,
-					sizeof(void*),
-					0,
-					cudaMemcpyDeviceToHost
-					)
-				);
-			copy_class._.m_compartment_simul_fxn = my_comp_fun;
+    // !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
+    // By default we clobber the copy_class_class' superclass with
+    // the superclass' device_class' on-GPU address value. 
+    // To avoid cloberring this value (e.g. if an underclass has already
+    // clobbered it), the clobber flag should be 0.
+    if (clobber)
+    {
+        // TODO: Find a better way to get function pointers for on-card functions
+        compartment_simul_fxn_t my_comp_fun = NULL;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyFromSymbol(
+                (void**) &my_comp_fun,
+                (const void*) &HHSomaCompartment_simul_fxn_t,
+                sizeof(void*),
+                0,
+                cudaMemcpyDeviceToHost
+                )
+            );
+        copy_class._.m_compartment_simul_fxn = my_comp_fun;
 		
-			DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
+        DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
 		
-			const struct MyriadClass* super_class = (const struct MyriadClass*) CompartmentClass;
-			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
-		}
-
-		// This works because super methods rely on the given class'
-		// semi-static superclass definition, not it's ->super attribute.
-		// Note that we don't want to clobber, so we set it to 0.
-		return super_cudafy(CompartmentClass, (void*) &copy_class, 0);
-	}
-	#else
-	{
-	    // Can't cudafy if there's no CUDA
-    	return NULL;
+        const struct MyriadClass* super_class = (const struct MyriadClass*) CompartmentClass;
+        memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
     }
-	#endif
+
+    // This works because super methods rely on the given class'
+    // semi-static superclass definition, not it's ->super attribute.
+    // Note that we don't want to clobber, so we set it to 0.
+    return super_cudafy(CompartmentClass, (void*) &copy_class, 0);
+#else
+    // Can't cudafy if there's no CUDA
+    return NULL;
+#endif
 }
 
 ////////////////////////////
@@ -161,7 +150,7 @@ void initHHSomaCompartment(const bool init_cuda)
 				0
 			);
 
-		#ifdef CUDA
+#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_comp_c_t = myriad_cudafy((void*)HHSomaCompartmentClass, 1);
@@ -176,7 +165,7 @@ void initHHSomaCompartment(const bool init_cuda)
 					)
 				);
 		}
-		#endif
+#endif
 	}
 
 	if (!HHSomaCompartment)
@@ -194,7 +183,7 @@ void initHHSomaCompartment(const bool init_cuda)
 				0
 			);
 
-		#ifdef CUDA
+#ifdef CUDA
 		if (init_cuda)
 		{
 			void* tmp_mech_t = myriad_cudafy((void*)HHSomaCompartment, 1);
@@ -209,6 +198,6 @@ void initHHSomaCompartment(const bool init_cuda)
 					)
 				);
 		}
-		#endif
+#endif
 	}
 }

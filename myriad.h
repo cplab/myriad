@@ -89,7 +89,7 @@ extern ddtable_t exp_table;
 
 // Simulation parameters
 #define NUM_THREADS 1
-#define SIMUL_LEN 100
+#define SIMUL_LEN 1000000
 #define DT 0.001
 #define NUM_CELLS 20
 #define MAX_NUM_MECHS 32
