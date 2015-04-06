@@ -31,7 +31,7 @@
 ////////////////////////////////
 
 //! Generic function pointer type
-typedef void (* voidf) ();
+typedef void (* voidf) (void);
 
 //! Constructor function pointer type
 typedef void* (* ctor_t) (void* self, va_list* app);
@@ -68,7 +68,7 @@ extern const void* MyriadClass;    // new(MyriadClass, super, ..., 0);
   
    @returns EXIT_SUCCESS if creation completed successfully, EXIT_FAILURE o.w.
  */
-extern int initCUDAObjects();
+extern int initCUDAObjects(void);
 
 /////////////////////////////////////
 // Object management and Selectors //

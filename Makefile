@@ -20,17 +20,32 @@ DOXYGEN ?= doxygen
 #       COMPILER FLAGS        #
 ###############################
 
+# Link-time optimization is (unfortunately) incompatible with debug/profile
+ifdef FLTO
+ifdef DEBUG
+$(error cannot use flto and debug flags simultaenously)
+endif # DEBUG
+ifdef PROFILE
+$(error cannot use flto and debug flags simultaenously)
+endif # PROFILE
+endif # FLTO
+
 # OS Arch Flags
 OS_SIZE = 64
 OS_ARCH = x86_64
 
 # CC & related flags, with debug switch
-COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter
+COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter 
 
 ifdef DEBUG
 COMMON_CFLAGS += -Og -g -DDEBUG=$(DEBUG) -DUNIT_TEST
 else
 COMMON_CFLAGS += -O2 -march=native
+endif
+
+# Link-time optimization (expensive, but huge performance boost)
+ifdef FLTO
+COMMON_CFLAGS += -flto
 endif
 
 PROF_LFLAGS :=
@@ -39,7 +54,11 @@ COMMON_CFLAGS += -g -pg
 PROF_LFLAGS += -pg
 endif
 
-CCFLAGS		:= $(COMMON_CFLAGS) -std=gnu99 -Wpedantic 
+# To Consider:
+# -ffinite-math-only : Assume no -Inf/+Inf/NaN
+# -fno-trapping-math : Floating-point operations cannot generate OS traps
+# -fno-math-errno : Don't set errno for <math.h> functions
+CCFLAGS		:= $(COMMON_CFLAGS) -Wpedantic -std=gnu99
 CXXFLAGS	:= $(COMMON_CFLAGS) -std=c++11
 CUFLAGS		:= $(COMMON_CFLAGS)
 
@@ -71,12 +90,10 @@ DOXYGEN_CONF ?= Doxyfile.conf
 # Static Libraries
 
 # CPU Myriad Library
-MYRIAD_LIB_LDNAME 	:= myriad
-MYRIAD_LIB 		:= lib$(MYRIAD_LIB_LDNAME).a
 MYRIAD_LIB_OBJS 	:= MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	HHSomaCompartment.c.o HHLeakMechanism.c.o HHNaCurrMechanism.c.o HHKCurrMechanism.c.o \
 	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o myriad_alloc.c.o \
-	ddtable.c.o
+	ddtable.c.o mmq.c.o
 
 # CUDA Myriad Library
 CUDA_MYRIAD_LIB_LDNAME := cudamyriad
@@ -96,7 +113,7 @@ endif
 #      Linker (LD) Flags      #
 ###############################
 
-LD_FLAGS            := -L. -l$(MYRIAD_LIB_LDNAME) -lm -lpthread -lrt
+LD_FLAGS            := -L. -lm -lpthread -lrt
 CUDART_LD_FLAGS     := -L$(CUDA_LIB_PATH) -lcudart
 CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS)
 
@@ -104,13 +121,13 @@ CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS
 #       Definition Flags      #
 ###############################
 
-DEFINES :=
+DEFINES ?=
 ifdef CUDA
 DEFINES += -DCUDA
 endif
 
 CUDA_DEFINES := $(DEFINES)
-CUDA_BIN_DEFINES ?= $(DEFINES) 
+CUDA_BIN_DEFINES ?= $(DEFINES)
 
 ###############################
 #    Include Path & Flags     #
@@ -160,9 +177,6 @@ rebuild: remake
 
 # ------- CPU Myriad Library -------
 
-$(MYRIAD_LIB): $(MYRIAD_LIB_OBJS)
-	$(AR) $(AR_FLAGS) $@ $^
-
 $(MYRIAD_LIB_OBJS): %.c.o : %.c
 	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
 
@@ -187,17 +201,21 @@ ifdef CUDA
 	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
 	$(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
 else
-	$(CXX) $(CXXFLAGS) $(INCLUDES) $(DEFINES) -x c++ -c $< -o $@
+	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -x c -c $< -o $@
 endif
 
 # ------- Host Linker Generated Binary -------
 
-$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB) $(CUDA_MYRIAD_LIB)
+$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB_OBJS) $(CUDA_MYRIAD_LIB)
 ifdef CUDA
-	$(CC) $(PROF_LFLAGS) -I. -o $@ $+ $(CUDA_BIN_LDFLAGS)
+	$(CC) $(PROF_LFLAGS) -o $@ $+ $(CUDA_BIN_LDFLAGS)
 else
-	$(CC) $(PROF_LFLAGS) -I. -o $@ $+ $(LD_FLAGS)
-endif
+ifdef FLTO
+	$(CC) $(PROF_LFLAGS) -flto -o $@ $+ $(LD_FLAGS)
+else
+	$(CC) $(PROF_LFLAGS) -o $@ $+ $(LD_FLAGS)
+endif # FLTO
+endif # CUDA
 
 
 # ------- Doxygen Documentation Generation -------

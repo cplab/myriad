@@ -16,8 +16,9 @@
 #endif
 
 // Myriad C API Headers
-extern "C"
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
     #include "myriad.h"
     #include "MyriadObject.h"
 	#include "Mechanism.h"
@@ -26,10 +27,12 @@ extern "C"
 	#include "HHLeakMechanism.h"
 	#include "HHNaCurrMechanism.h"
 	#include "HHKCurrMechanism.h"
-//    #include "HHGradedGABAAMechanism.h"
     #include "HHSpikeGABAAMechanism.h"
     #include "DCCurrentMech.h"
+    #include "mmq.h"
+#ifdef __cplusplus
 }
+#endif
 
 #ifdef CUDA
 #include "MyriadObject.cuh"
@@ -93,9 +96,9 @@ static void* new_dsac_soma(unsigned int id,
                                                GABA_TAU_BETA,
                                                GABA_REV);
         assert(0 == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
-        DEBUG_PRINTF("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
-                     connect_to[i],
-                     id);
+        // DEBUG_PRINTF("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
+        //              connect_to[i],
+        //              id);
     }
 
 	return hh_comp_obj;
@@ -219,7 +222,7 @@ static int dsac()
     int num_allocs = 0;
     const size_t total_mem_usage = calc_total_size(&num_allocs);
     assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
-    DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
+    // DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
 #endif /* MYRIAD_ALLOCATOR */
 
 #ifdef USE_DDTABLE
@@ -254,7 +257,7 @@ static int dsac()
             } else {
                 to_connect[j] = j;   // Connect to cell j
             }
-            DEBUG_PRINTF("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
+            // DEBUG_PRINTF("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
         }
         
         const bool stimulate = rand() % 2 == 0;
@@ -309,6 +312,40 @@ static int dsac()
     #ifdef USE_DDTABLE
     ddtable_free(exp_table);
     #endif
+
+    // Do IPC with parent python process
+    struct mmq_connector conn =
+        {
+            .msg_queue = mmq_init_mq(),
+            .socket_fd = mmq_socket_init(true, NULL),
+            .connection_fd = -1,
+            .server = true
+        };
+    
+    // TODO: Probably provide some kind of way to send an exit signal
+
+    puts("Waiting for messages on queue...");
+    char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
+    ssize_t msg_size = mq_receive(conn.msg_queue,
+                                  msg_buff,
+                                  (size_t) MMQ_MSG_SIZE,
+                                  NULL);
+    if (msg_size < 0)
+    {
+        perror("mq_receive:");
+        exit(EXIT_FAILURE);
+    }
+    // Process message
+    uint64_t obj_req = 0;
+    memcpy(&obj_req, msg_buff, sizeof(MMQ_MSG_SIZE));
+    memset(msg_buff, 0, sizeof(MMQ_MSG_SIZE + 1));
+    printf("Object data request: %" PRIu64 "\n", obj_req);
+    
+    // Wait for someone to accept our sent data
+    mmq_send_data(&conn,
+                  network[obj_req],
+                  sizeof(struct HHSomaCompartment));
+    puts("Sent data");
     
     #ifdef MYRIAD_ALLOCATOR
     assert(myriad_finalize() == 0);

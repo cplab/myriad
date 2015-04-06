@@ -3,6 +3,9 @@
 *.a
 *.lib
 *.bin
+*.so
+*.la
+*.lo
 
 # C Tags
 .tags
@@ -37,3 +40,4 @@ callgrind.out.*
 /.ropeproject/
 /pymyriad/__pycache__/
 /pymyriad/docs/_build
+/build/

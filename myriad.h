@@ -67,7 +67,7 @@ extern double _exp(const double x);
 
 #else
 // If not using fast exponential, just alias math.h exponential function
-#define _exp_helper _exp
+#define _exp_helper exp
 #define _exp _exp_helper
 #endif /* FAST_EXP */
 
@@ -89,7 +89,7 @@ extern ddtable_t exp_table;
 
 // Simulation parameters
 #define NUM_THREADS 1
-#define SIMUL_LEN 1000000
+#define SIMUL_LEN 100
 #define DT 0.001
 #define NUM_CELLS 20
 #define MAX_NUM_MECHS 32
