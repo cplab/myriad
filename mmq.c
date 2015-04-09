@@ -102,7 +102,7 @@ ssize_t mmq_send_data(struct mmq_connector* connector,
                       const size_t len)
 {
     socklen_t address_length __attribute__((unused));
-    ssize_t num_bytes_sent = -1;
+    ssize_t num_bytes_sent = -1, total_bytes = 0;
     if (connector->connection_fd == -1)
     {
         if((connector->connection_fd = accept(connector->socket_fd,
@@ -114,15 +114,21 @@ ssize_t mmq_send_data(struct mmq_connector* connector,
         }
     }
 
-    // If request is too large, write directly to the socket
-    num_bytes_sent = write(connector->connection_fd, source, len);
-    if (num_bytes_sent == -1 || num_bytes_sent != (ssize_t) len)
+    // If request is too large, do muliple writes until completed
+    do
     {
-        perror("mmq_send_data: UDS write() failed");
-        return -1;
-    }
+        num_bytes_sent = write(connector->connection_fd,
+                               source,
+                               len - total_bytes);
+        if (num_bytes_sent <= 0)
+        {
+            perror("mmq_send_data: UDS write() failed");
+            return -1;
+        }
+        total_bytes += num_bytes_sent;
+    } while(total_bytes != (ssize_t) len);
 
-    return num_bytes_sent;
+    return total_bytes;
 }
 
 ssize_t mmq_request_data(struct mmq_connector* connector,
@@ -140,15 +146,20 @@ ssize_t mmq_request_data(struct mmq_connector* connector,
             return -1;
         }
     }
-
-    ssize_t nbytes = -1;
-    nbytes = read(connector->socket_fd, dest, len);
-    if (nbytes == -1 || (size_t) nbytes != len)
+    
+    ssize_t num_bytes_read = -1, total_bytes = 0;
+    do
     {
-        perror("mmq_request_data: read() failed");
-        return -1;
-    }
-
-
-    return nbytes;
+        num_bytes_read = read(connector->socket_fd,
+                              dest,
+                              len - total_bytes);
+        if (num_bytes_read <= 0)
+        {
+            perror("mmq_request_data: read() failed");
+            return -1;
+        }
+        total_bytes += num_bytes_read;
+    } while((size_t) total_bytes != len);
+    
+    return total_bytes;
 }

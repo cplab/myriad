@@ -29,7 +29,6 @@ static void* HHNaCurrMechanism_ctor(void* _self, va_list* app)
 static double HHNaCurrMechanism_mech_fun(void* _self,
                                          void* pre_comp,
                                          void* post_comp,
- 
                                          const double global_time,
                                          const uint64_t curr_step)
 {
