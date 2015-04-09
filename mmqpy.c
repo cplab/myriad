@@ -80,6 +80,23 @@ static PyObject* mmqpy_close(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
+static PyObject* terminate_simul(PyObject* self, PyObject* args)
+{
+    // Post message saying what object we want
+    puts("Putting <TERMINATE> message on queue...");
+    int64_t close_msg = -1;
+    printf("obj_req: %" PRIi64 "\n", close_msg);
+    char* msg_buff = malloc(sizeof(MMQ_MSG_SIZE));
+    memcpy(msg_buff, &close_msg, sizeof(int64_t));
+    if (mq_send(_my_q.msg_queue, msg_buff, sizeof(MMQ_MSG_SIZE), 0) != 0)
+    {
+        PyErr_SetString(PyExc_IOError, "mq_send failed");
+        return NULL;
+    }
+    
+    Py_RETURN_NONE;
+}
+
 static PyObject* retrieve_obj(PyObject* self, PyObject* args)
 {
     int id = -1;
@@ -87,15 +104,16 @@ static PyObject* retrieve_obj(PyObject* self, PyObject* args)
     {
         return NULL;
     } else if (id < 0) {
+        PyErr_BadArgument();
         return NULL;
     }
 
     // Post message saying what object we want
     puts("Putting message on queue...");
-    uint64_t obj_req = id;
-    printf("obj_req: %" PRIu64 "\n", obj_req);
+    int64_t obj_req = id;
+    printf("obj_req: %" PRIi64 "\n", obj_req);
     char* msg_buff = malloc(sizeof(MMQ_MSG_SIZE));
-    memcpy(msg_buff, &obj_req, sizeof(uint64_t));
+    memcpy(msg_buff, &obj_req, sizeof(int64_t));
     if (mq_send(_my_q.msg_queue, msg_buff, sizeof(MMQ_MSG_SIZE), 0) != 0)
     {
         PyErr_SetString(PyExc_IOError, "mq_send failed");
@@ -121,7 +139,8 @@ static PyMethodDef MmqpyMethods[] =
      {"say_hello", say_hello, METH_VARARGS, "Greet somebody."},
      {"retrieve_obj", retrieve_obj, METH_VARARGS, "Retrieve data from a Myriad object."},
      {"mmqpy_init", mmqpy_init, METH_NOARGS, "Open the Myriad connector."},
-     {"mmqpy_close", mmqpy_close, METH_NOARGS, "Close the Myriad connector"},
+     {"mmqpy_close", mmqpy_close, METH_NOARGS, "Close the Myriad connector."},
+     {"terminate_simul", terminate_simul, METH_NOARGS, "Terminates the Myriad simulation."},
      {NULL, NULL, 0, NULL}
 };
 
