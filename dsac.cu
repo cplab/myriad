@@ -349,8 +349,8 @@ static int dsac()
         }
         // Process message
         int64_t obj_req = 0;
-        memcpy(&obj_req, msg_buff, sizeof(MMQ_MSG_SIZE));
-        memset(msg_buff, 0, sizeof(MMQ_MSG_SIZE + 1));
+        memcpy(&obj_req, msg_buff, MMQ_MSG_SIZE);
+        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
         printf("Object data request: %" PRIi64 "\n", obj_req);
 
         if (obj_req == -1)
