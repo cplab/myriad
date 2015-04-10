@@ -12,24 +12,30 @@
 #ifndef HHSPIKEGABAACURRMECHANISM_H
 #define HHSPIKEGABAACURRMECHANISM_H
 
-#include <stdbool.h>
-
-#include "MyriadObject.h"
-#include "Mechanism.h"
-
-// Generic pointers for new/class-of purposes
-
-extern const void* HHSpikeGABAAMechanism;
-extern const void* HHSpikeGABAAMechanismClass;
+#include "MyriadObject.hpp"
+#include "Mechanism.hpp"
 
 /**
    HHSpikeGABAAMechanism mechanism for Hodgkin-Huxley GABA-a synapse.
 
    @see Mechanism
  */
-struct HHSpikeGABAAMechanism
+struct HHSpikeGABAAMechanism : public Mechanism
 {
-	struct Mechanism _;     //! HHSpikeGABAAMechanism : Mechanism
+public:
+    HHSpikeGABAAMechanism(uint64_t source_id,
+                          double prev_vm_thresh,
+                          double t_fired,
+                          double g_max,
+                          double tau_alpha,
+                          double tau_beta,
+                          double gaba_rev);
+    
+    virtual double mechanism_fxn(Compartment& post_comp,
+                                 const double global_time,
+                                 const uint64_t curr_step) override;
+
+private:
     double prev_vm_thresh;  //! Presynaptic membrane voltage 'threshold' for firing - mV
     double t_fired;         //! Last known firing time for presynaptic neuron - ms
 	double g_max;			//! Maximum synaptic conductance - nS
@@ -39,12 +45,5 @@ struct HHSpikeGABAAMechanism
 	double tau_beta;		//! Channel closing time constant - ms
 	double gaba_rev;		//! Synaptic reversal potential - mV
 };
-
-struct HHSpikeGABAAMechanismClass
-{
-	struct MechanismClass _; //! HHSpikeGABAAMechanismClass : MechanismClass
-};
-
-void initHHSpikeGABAAMechanism(const bool cuda_init);
 
 #endif /* HHSPIKEGABAACURRMECHANISM_H */

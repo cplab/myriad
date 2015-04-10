@@ -28,9 +28,9 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
 
 //! Use myriad's own private allocator scheme
 #ifdef MYRIAD_ALLOCATOR
@@ -120,35 +120,10 @@ extern ddtable_t exp_table;
 #include <cuda_runtime_api.h>
 #endif
 
-// Unit testing macros
-#ifdef UNIT_TEST
-    /*! 
-	 * Allows for unit testing arbitrary functions as long as they follow the
-     * standard format of 0 = PASS, anything else = FAIL 
-	 */
-    #define UNIT_TEST_FUN(fun, ...) do {                                       \
-        puts("TESTING: "#fun);                                                 \
-        fprintf(stdout, #fun":\t%s\n\n", fun( __VA_ARGS__) ? "FAIL" : "PASS"); \
-    } while(0)
-		
-	//! Compares the value of two expressions, 0 = PASS, o.w. FAIL
-    #define UNIT_TEST_VAL_EQ(a,b) do {                         \
-		printf("TESTING: "#a" == "#b" ... ");				   \
-		fprintf(stdout, "%s\n", a == b ? "PASS" : "FAIL"); \
-	} while(0)
-#else
-    #define UNIT_TEST_FUN(...) do {} while(0)
-    #define UNIT_TEST_VAL_EQ(...) do {} while(0)
-#endif
+#define UNIT_TEST_FUN(...) do {} while(0)
+#define UNIT_TEST_VAL_EQ(...) do {} while(0)
 
-#ifdef DEBUG
-	//! Prints debug information string to stdout with file and line info.
-    #define DEBUG_PRINTF(str, ...) do {  \
-        fprintf(stdout, "DEBUG @ " __FILE__ ":" __LINE__ ": "#str, __VA_ARGS__); \
-	} while(0)
-#else
-    #define DEBUG_PRINTF(...) do {} while (0)
-#endif
+#define DEBUG_PRINTF(...) fprintf(stderr, __VA__ARGS__)
 
 
 #ifdef CUDA

@@ -12,23 +12,29 @@
 #ifndef HHNACURRMECHANISM_H
 #define HHNACURRMECHANISM_H
 
-#include "MyriadObject.h"
-#include "Mechanism.h"
-
-// Generic pointers for new/class-of purposes
-
-extern const void* HHNaCurrMechanism;
-extern const void* HHNaCurrMechanismClass;
+#include "MyriadObject.hpp"
+#include "Mechanism.hpp"
 
 /**
  * HHNaCurrMechanism mechanism for Hodgkin-Huxley sodium channel.
  *
  * @see Mechanism
  */
-struct HHNaCurrMechanism
+class HHNaCurrMechanism : public Mechanism
 {
-    //! HHNaCurrMechanism : Mechanism
-	struct Mechanism _;
+public:
+    HHNaCurrMechanism(uint64_t source_id,
+                      double g_na,
+                      double e_na,
+                      double hh_m,
+                      double hh_h);
+
+    virtual double mechanism_fxn(const Compartment* pre_comp,
+                                 const Compartment* post_comp,
+                                 const double global_time,
+                                 const uint64_t curr_step) override;
+    
+private:
     //! Sodium channel conductance - nS
 	double g_na;
     //! Sodium reversal potential - mV
@@ -38,13 +44,5 @@ struct HHNaCurrMechanism
     //! @TODO Figure out what hh_h is actually called
 	double hh_h;	    
 };
-
-struct HHNaCurrMechanismClass
-{
-    //! HHNaCurrMechanismClass : MechanismClass
-	struct MechanismClass _; 
-};
-
-void initHHNaCurrMechanism(const bool init_cuda);
 
 #endif

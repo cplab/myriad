@@ -1,12 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <inttypes.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <string.h>
-#include <math.h>
-#include <dirent.h>
-#include <unistd.h>
+#include <cassert>
+#include <string>
+#include <cmath>
 #include <pthread.h>
 
 #ifdef CUDA
@@ -15,24 +12,21 @@
 #include <cuda_runtime_api.h>
 #endif
 
-// Myriad C API Headers
-#ifdef __cplusplus
+// Myriad C++ API Headers
+#include "myriad.hpp"
+#include "MyriadObject.hpp"
+#include "Mechanism.hpp"
+#include "Compartment.hpp"
+#include "HHSomaCompartment.hpp"
+#include "HHLeakMechanism.hpp"
+#include "HHNaCurrMechanism.hpp"
+#include "HHKCurrMechanism.hpp"
+#include "HHSpikeGABAAMechanism.hpp"
+#include "DCCurrentMech.hpp"
+
 extern "C" {
-#endif
-    #include "myriad.h"
-    #include "MyriadObject.h"
-	#include "Mechanism.h"
-	#include "Compartment.h"
-	#include "HHSomaCompartment.h"
-	#include "HHLeakMechanism.h"
-	#include "HHNaCurrMechanism.h"
-	#include "HHKCurrMechanism.h"
-    #include "HHSpikeGABAAMechanism.h"
-    #include "DCCurrentMech.h"
-    #include "mmq.h"
-#ifdef __cplusplus
+#include "mmq.h"   
 }
-#endif
 
 #ifdef CUDA
 #include "MyriadObject.cuh"
