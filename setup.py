@@ -17,7 +17,7 @@ COMPILER = UnixCCompiler(verbose=2)
 MYRIAD_CPYTHON_DEFS = [("_POSIX_C_SOURCE", "200809L"),
                        ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 
-MYRIAD_CPYTHON = Extension('mmqpy',
+MYRIAD_CPYTHON = Extension("mmqpy",
                            define_macros=MYRIAD_CPYTHON_DEFS,
                            extra_compile_args=["-std=gnu99"],
                            include_dirs=["/usr/include", np_includes()],
@@ -25,7 +25,34 @@ MYRIAD_CPYTHON = Extension('mmqpy',
                            libraries=["rt", "pthread"],
                            sources=['mmqpy.c', 'mmq.c'])
 
-setup(name='mmqpy',
-      version='1.0',
-      description='Python message queue package',
-      ext_modules=[MYRIAD_CPYTHON])
+NODDY = Extension("noddy",
+                  define_macros=MYRIAD_CPYTHON_DEFS,
+                  extra_compile_args=["-std=gnu99"],
+                  include_dirs=["/usr/include", np_includes()],
+                  library_dirs=["/usr/lib/"],
+                  libraries=["rt", "pthread"],
+                  sources=["noddy.c"])
+
+SPAMDICT = Extension("spamdict",
+                     define_macros=MYRIAD_CPYTHON_DEFS,
+                     extra_compile_args=["-std=gnu99"],
+                     include_dirs=["/usr/include", np_includes()],
+                     library_dirs=["/usr/lib/"],
+                     libraries=["rt", "pthread"],
+                     sources=["spamdict.c"])
+
+PYMYRIADOBJECT = Extension("pymyriadobject",
+                           define_macros=MYRIAD_CPYTHON_DEFS,
+                           extra_compile_args=["-std=gnu99"],
+                           include_dirs=["/usr/include", np_includes()],
+                           library_dirs=["/usr/lib/"],
+                           libraries=["rt", "pthread"],
+                           sources=["pymyriadobject.c"])
+
+setup(name="mmqpy",
+      version="1.0",
+      description="Python message queue package",
+      ext_modules=[MYRIAD_CPYTHON,
+                   NODDY,
+                   SPAMDICT,
+                   PYMYRIADOBJECT])
