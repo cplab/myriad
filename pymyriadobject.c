@@ -243,12 +243,15 @@ static PyMethodDef pymyriadobject_functions[] = {
 };
 
 static struct PyModuleDef pymyriadobjectmodule = {
-    PyModuleDef_HEAD_INIT,
-    "pymyriadobject",
-    pymyriadobject__doc__,
-    -1,
-    pymyriadobject_functions,
-    NULL, NULL, NULL, NULL
+    .m_base = PyModuleDef_HEAD_INIT,
+    .m_name = "pymyriadobject",
+    .m_doc = pymyriadobject__doc__,
+    .m_size = -1,
+    .m_methods = pymyriadobject_functions,
+    .m_reload = NULL,
+    .m_traverse = NULL,
+    .m_clear = NULL,
+    .m_free = NULL
 };
 
 
@@ -256,26 +259,30 @@ PyMODINIT_FUNC PyInit_pymyriadobject(void)
 {
     _import_array();
 
-    // Ready types
+    /***************/
+    /* Ready types */
+    /***************/
     if (PyType_Ready(&PyMyriadObject_type) < 0)
     {
         return NULL;
     }
 
-    // Fill in the deferred data address
+    // Fill in the deferred data address of child objects
     PyCompartment_type.tp_base = &PyMyriadObject_type;
     if (PyType_Ready(&PyCompartment_type) < 0)
     {
         return NULL;
     }
 
+    /*************************/
+    /* Add objects to module */
+    /*************************/
     PyObject* m = PyModule_Create(&pymyriadobjectmodule);
     if (m == NULL)
     {
         return NULL;
     }
-
-    // Add objects
+    
     Py_INCREF(&PyMyriadObject_type);
     if (PyModule_AddObject(m, "PyMyriadObject",
                            (PyObject *) &PyMyriadObject_type) < 0)
