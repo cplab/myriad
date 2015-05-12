@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "pymyriadobject.h"
+
 typedef struct {
     PyObject_HEAD
     PyObject *first;
@@ -186,12 +188,24 @@ static PyTypeObject NoddyType = {
     Noddy_new,                 /* tp_new */
 };
 
+static PyObject* noddy_myriad_factory(PyObject* self, PyObject* args)
+{
+    PyObject* obj = PyMyriadObject_Init(NULL, args, NULL);
+    return obj;
+}
+
+static PyMethodDef noddy_functions[] = {
+    {"MyriadFactory",  noddy_myriad_factory, METH_VARARGS, "Myriad Factory"},
+    {NULL, NULL, NULL, NULL}           /* sentinel */
+};
+
 static PyModuleDef noddymodule = {
     PyModuleDef_HEAD_INIT,
     "noddy",
     "Example module that creates an extension type.",
     -1,
-    NULL, NULL, NULL, NULL, NULL
+    noddy_functions,
+    NULL, NULL, NULL, NULL
 };
 
 PyMODINIT_FUNC PyInit_noddy(void)
@@ -206,6 +220,11 @@ PyMODINIT_FUNC PyInit_noddy(void)
 
     m = PyModule_Create(&noddymodule);
     if (m == NULL)
+    {
+        return NULL;
+    }
+
+    if (import_pymyriadobject() < 0)
     {
         return NULL;
     }

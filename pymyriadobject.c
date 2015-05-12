@@ -1,4 +1,6 @@
 #include <python3.4/Python.h>
+#define PYMYRIADOBJECT_MODULE
+#include "pymyriadobject.h"
 #include <python3.4/modsupport.h>
 #include <python3.4/structmember.h>
 #include <numpy/arrayobject.h>
@@ -238,6 +240,26 @@ PyTypeObject PyCompartment_type = {
 
 // --------------------------------------------------
 
+static PyObject* PyMyriadObject_Init(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    PyMyriadObject* new_obj = NULL;
+    new_obj = PyObject_New(PyMyriadObject, &PyMyriadObject_type);
+    if (new_obj == NULL)
+    {
+        // PyObject_Free(new_obj);
+        return NULL;
+    }
+    
+    if (PyMyriadObject_init(new_obj, args, kwds) < 0)
+    {
+        // PyObject_Free(new_obj);
+        return NULL;
+    }
+
+    Py_INCREF(new_obj); // Necessary?
+    return (PyObject*) new_obj;
+}
+
 static PyMethodDef pymyriadobject_functions[] = {
     {NULL, NULL, 0, NULL}           /* sentinel */
 };
@@ -282,7 +304,27 @@ PyMODINIT_FUNC PyInit_pymyriadobject(void)
     {
         return NULL;
     }
+
+    /************************/
+    /* C API Initialization */
+    /************************/
+    static void *PyMyriadObject_API[PyMyriadObject_API_pointers];
+    PyObject *c_api_object;
     
+    /* Initialize the C API pointer array */
+    PyMyriadObject_API[PyMyriadObject_Init_NUM] = (void *)PyMyriadObject_Init;
+
+    /* Create a Capsule containing the API pointer array's address */
+    c_api_object = PyCapsule_New((void *)PyMyriadObject_API, "pymyriadobject._C_API", NULL);
+
+    if (c_api_object != NULL)
+    {
+        PyModule_AddObject(m, "_C_API", c_api_object);
+    }
+
+    /**********************************/
+    /* Add types to module as objects */
+    /**********************************/
     Py_INCREF(&PyMyriadObject_type);
     if (PyModule_AddObject(m, "PyMyriadObject",
                            (PyObject *) &PyMyriadObject_type) < 0)
@@ -294,5 +336,7 @@ PyMODINIT_FUNC PyInit_pymyriadobject(void)
     {
         return NULL;
     }
+
+    // Return finalized module on success
     return m;
 }
