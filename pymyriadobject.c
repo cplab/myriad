@@ -1,6 +1,7 @@
+#ifndef PYMYRIADOBJECT_C
+#define PYMYRIADOBJECT_C
+
 #include <python3.4/Python.h>
-#define PYMYRIADOBJECT_MODULE
-#include "pymyriadobject.h"
 #include <python3.4/modsupport.h>
 #include <python3.4/structmember.h>
 #include <numpy/arrayobject.h>
@@ -11,22 +12,31 @@
 
 #include "MyriadObject.h"
 
-PyDoc_STRVAR(pymyriadobject__doc__,
-             "pymyriadobject is a base type for other Myriad objects.");
+//! Necessary for C API exporting
+#define PYMYRIADOBJECT_MODULE
+#include "pymyriadobject.h"
 
+#ifndef DEFERRED_ADDRESS
 #define DEFERRED_ADDRESS(ADDR) 0
+#endif
 
-/******************/
-/* PyMyriadObject */
-/******************/
+#ifndef MODULE_DEF
+#define MODULE_DEF
+#define PYMYRIADOBJECT_SELF_SET
+#endif
 
-typedef struct {
+typedef struct
+{
     PyObject_HEAD
+    //! Class name of this object
     PyObject* classname;
+    //! Pointer to extant object
     struct MyriadObject* mobject;
 } PyMyriadObject;
 
-static int PyMyriadObject_traverse(PyMyriadObject *self, visitproc visit, void *arg)
+static int PyMyriadObject_traverse(PyMyriadObject *self,
+                                   visitproc visit,
+                                   void *arg)
 {
     int vret;
 
@@ -56,7 +66,9 @@ static void PyMyriadObject_dealloc(PyMyriadObject* self)
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-static PyObject* PyMyriadObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject* PyMyriadObject_new(PyTypeObject *type,
+                                    PyObject *args __attribute__((unused)),
+                                    PyObject *kwds __attribute__((unused)))
 {
     PyMyriadObject *self;
 
@@ -76,7 +88,9 @@ static PyObject* PyMyriadObject_new(PyTypeObject *type, PyObject *args, PyObject
     return (PyObject *)self;
 }
 
-static int PyMyriadObject_init(PyMyriadObject *self, PyObject *args, PyObject *kwds)
+static int PyMyriadObject_init(PyMyriadObject *self,
+                               PyObject *args,
+                               PyObject *kwds)
 {
     PyObject* classname = NULL, *tmp = NULL;
 
@@ -104,7 +118,7 @@ static PyMethodDef PyMyriadObject_methods[] = {
 };
 
 static PyMemberDef PyMyriadObject_members[] = {
-    {"classname", T_OBJECT_EX, offsetof(PyMyriadObject, classname), 0, "Class name"},
+    {"classname", T_OBJECT_EX, offsetof(PyMyriadObject, classname), 0, "Name"},
     {NULL}, // Sentinel
 };
 
@@ -128,7 +142,7 @@ PyTypeObject PyMyriadObject_type = {
     0,                                          /* tp_getattro */
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,   /* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,  // tp_flags
     "PyMyriadObject objects",                   /* tp_doc */
     (traverseproc) PyMyriadObject_traverse,     /* tp_traverse */
     (inquiry) PyMyriadObject_clear,             /* tp_clear */
@@ -147,100 +161,22 @@ PyTypeObject PyMyriadObject_type = {
     (initproc)PyMyriadObject_init,              /* tp_init */
     0,                                          /* tp_alloc */
     PyMyriadObject_new,                         /* tp_new */
+    0,                                          // tp_free
+    0,                                          // tp_is_gc
+    0,                                          // tp_bases
+    0,                                          // tp_mro
+    0,                                          // tp_cache
+    0,                                          // tp_subclasses
+    0,                                          // tp_weaklist
+    0,                                          // tp_del
+    0,                                          // tp_version_tag
+    0,                                          // tp_finalize
 };
 
-/*****************/
-/* PyCompartment */
-/*****************/
-
-typedef struct {
-    //! Parent Myriad object
-    PyMyriadObject parent;
-    //! This compartment's unique ID number
-	uint64_t id;
-    //! Number of mechanisms in this compartment
-	uint64_t num_mechs;
-} PyCompartment;
-
-static int PyCompartment_init(PyCompartment *self, PyObject *args, PyObject *kwds)
-{
-    PyObject* str_arg = NULL;
-    uint64_t id, num_mechs;
-
-    if (!PyArg_ParseTuple(args, "OKK", &str_arg, &id, &num_mechs))
-    {
-        return -1;
-    }
-
-    self->id = id;
-    self->num_mechs = num_mechs;
-
-    PyObject* new_args = Py_BuildValue("(O)", str_arg);
-    
-    if (PyMyriadObject_type.tp_init((PyObject*) self, new_args, kwds) < 0)
-    {
-        return -1;
-    }
-
-    Py_XDECREF(new_args);
-    
-    return 0;
-}
-
-static PyMethodDef PyCompartment_methods[] = {
-    {NULL}, // Sentinel
-};
-
-static PyMemberDef PyCompartment_members[] = {
-    {"id", T_ULONGLONG, offsetof(PyCompartment, id), 0, "Compartment id"},
-    {"num_mechs", T_ULONGLONG, offsetof(PyCompartment, num_mechs), 0, "Number of mechanisms."},
-    {NULL}, // Sentinel
-};
-
-PyTypeObject PyCompartment_type = {
-    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
-    "pycompartment.PyCompartment",
-    sizeof(PyCompartment),
-    0,
-    0,                                          /* tp_dealloc */
-    0,                                          /* tp_print */
-    0,                                          /* tp_getattr */
-    0,                                          /* tp_setattr */
-    0,                                          /* tp_reserved */
-    0,                                          /* tp_repr */
-    0,                                          /* tp_as_number */
-    0,                                          /* tp_as_sequence */
-    0,                                          /* tp_as_mapping */
-    0,                                          /* tp_hash */
-    0,                                          /* tp_call */
-    0,                                          /* tp_str */
-    0,                                          /* tp_getattro */
-    0,                                          /* tp_setattro */
-    0,                                          /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags */
-    "PyCompartment objects",                    /* tp_doc */
-    0,                                          /* tp_traverse */
-    0,                                          /* tp_clear */
-    0,                                          /* tp_richcompare */
-    0,                                          /* tp_weaklistoffset */
-    0,                                          /* tp_iter */
-    0,                                          /* tp_iternext */
-    PyCompartment_methods,                      /* tp_methods */
-    PyCompartment_members,                      /* tp_members */
-    0,                                          /* tp_getset */
-    0,                                          /* tp_base */
-    0,                                          /* tp_dict */
-    0,                                          /* tp_descr_get */
-    0,                                          /* tp_descr_set */
-    0,                                          /* tp_dictoffset */
-    (initproc)PyCompartment_init,               /* tp_init */
-    0,                                          /* tp_alloc */
-    0,                                          /* tp_new */
-};
-
-// --------------------------------------------------
-
-static PyObject* PyMyriadObject_Init(PyObject* self, PyObject* args, PyObject* kwds)
+/*
+static PyObject* PyMyriadObject_Init(struct MyriadObject* ptr,
+                                     PyObject* args,
+                                     PyObject* kwds)
 {
     PyMyriadObject* new_obj = NULL;
     new_obj = PyObject_New(PyMyriadObject, &PyMyriadObject_type);
@@ -249,6 +185,7 @@ static PyObject* PyMyriadObject_Init(PyObject* self, PyObject* args, PyObject* k
         // PyObject_Free(new_obj);
         return NULL;
     }
+    new_obj->mobject = ptr;
     
     if (PyMyriadObject_init(new_obj, args, kwds) < 0)
     {
@@ -259,6 +196,13 @@ static PyObject* PyMyriadObject_Init(PyObject* self, PyObject* args, PyObject* k
     Py_INCREF(new_obj); // Necessary?
     return (PyObject*) new_obj;
 }
+*/
+
+// --------------------------------------------------
+#ifdef PYMYRIADOBJECT_SELF_SET
+
+PyDoc_STRVAR(pymyriadobject__doc__,
+             "pymyriadobject is a base type for other Myriad objects.");
 
 static PyMethodDef pymyriadobject_functions[] = {
     {NULL, NULL, 0, NULL}           /* sentinel */
@@ -276,7 +220,6 @@ static struct PyModuleDef pymyriadobjectmodule = {
     .m_free = NULL
 };
 
-
 PyMODINIT_FUNC PyInit_pymyriadobject(void)
 {
     _import_array();
@@ -285,13 +228,6 @@ PyMODINIT_FUNC PyInit_pymyriadobject(void)
     /* Ready types */
     /***************/
     if (PyType_Ready(&PyMyriadObject_type) < 0)
-    {
-        return NULL;
-    }
-
-    // Fill in the deferred data address of child objects
-    PyCompartment_type.tp_base = &PyMyriadObject_type;
-    if (PyType_Ready(&PyCompartment_type) < 0)
     {
         return NULL;
     }
@@ -308,31 +244,30 @@ PyMODINIT_FUNC PyInit_pymyriadobject(void)
     /************************/
     /* C API Initialization */
     /************************/
-    static void *PyMyriadObject_API[PyMyriadObject_API_pointers];
-    PyObject *c_api_object;
+    /*    
+    static void* PyMyriadObject_API[PyMyriadObject_API_pointers];
+    PyObject* c_api_object;
     
-    /* Initialize the C API pointer array */
-    PyMyriadObject_API[PyMyriadObject_Init_NUM] = (void *)PyMyriadObject_Init;
+    // Initialize the C API pointer array
+    PyMyriadObject_API[PyMyriadObject_Init_NUM] = (void*) PyMyriadObject_Init;
 
-    /* Create a Capsule containing the API pointer array's address */
-    c_api_object = PyCapsule_New((void *)PyMyriadObject_API, "pymyriadobject._C_API", NULL);
+    // Create a Capsule containing the API pointer array's address
+    c_api_object = PyCapsule_New((void*) PyMyriadObject_API,
+                                 "pymyriadobject._C_API",
+                                 NULL);
 
     if (c_api_object != NULL)
     {
         PyModule_AddObject(m, "_C_API", c_api_object);
     }
+    */
 
     /**********************************/
     /* Add types to module as objects */
     /**********************************/
     Py_INCREF(&PyMyriadObject_type);
     if (PyModule_AddObject(m, "PyMyriadObject",
-                           (PyObject *) &PyMyriadObject_type) < 0)
-    {
-        return NULL;
-    }
-    Py_INCREF(&PyCompartment_type);
-    if (PyModule_AddObject(m, "PyCompartment", (PyObject *) &PyCompartment_type) < 0)
+                           (PyObject*) &PyMyriadObject_type) < 0)
     {
         return NULL;
     }
@@ -340,3 +275,7 @@ PyMODINIT_FUNC PyInit_pymyriadobject(void)
     // Return finalized module on success
     return m;
 }
+
+#endif  // ifdef PYMYRIADOBJECT_SELF_SET
+
+#endif  // PYMYRIADOBJECT_C

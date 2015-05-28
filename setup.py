@@ -49,10 +49,19 @@ PYMYRIADOBJECT = Extension("pymyriadobject",
                            libraries=["rt", "pthread"],
                            sources=["pymyriadobject.c"])
 
+PYCOMPARTMENT = Extension("pycompartment",
+                          define_macros=MYRIAD_CPYTHON_DEFS,
+                          extra_compile_args=["-std=gnu99"],
+                          include_dirs=["/usr/include", np_includes()],
+                          library_dirs=["/usr/lib/"],
+                          libraries=["rt", "pthread"],
+                          sources=["pycompartment.c"])
+
 setup(name="mmqpy",
       version="1.0",
       description="Python message queue package",
       ext_modules=[MYRIAD_CPYTHON,
                    NODDY,
                    SPAMDICT,
-                   PYMYRIADOBJECT])
+                   PYMYRIADOBJECT,
+                   PYCOMPARTMENT])
