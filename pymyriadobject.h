@@ -1,14 +1,20 @@
 #ifndef PYMYRIADOBJECT_H
 #define PYMYRIADOBJECT_H
-/*
+
 #include <python3.4/Python.h>
 #include "MyriadObject.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//! Pointer to type object for MyriadObject
+extern PyTypeObject* PyMyriadObject_type_p;
 
-// Header file for pymyriadobject
+typedef struct
+{
+    PyObject_HEAD
+    //! Class name of this object
+    PyObject* classname;
+    //! Pointer to extant object
+    struct MyriadObject* mobject;
+} PyMyriadObject;
 
 // C API functions
 #define PyMyriadObject_Init_NUM 0
@@ -17,37 +23,12 @@ extern "C" {
                                    PyObject* args, \
                                    PyObject* kwds)
 
-// Total number of C API pointers
-#define PyMyriadObject_API_pointers 1
-
-
-#ifdef PYMYRIADOBJECT_MODULE
-// This section is used when compiling pymyriadobject.c
-
+#ifdef PYMYRIAD_MODULE
 static PyMyriadObject_Init_RETURN PyMyriadObject_Init PyMyriadObject_Init_PROTO;
-
 #else
-// This section is used in modules that use spammodule's API
-
-static void **PyMyriadObject_API;
-
 #define PyMyriadObject_Init \
  (*(PyMyriadObject_Init_RETURN (*)PyMyriadObject_Init_PROTO) \
-  PyMyriadObject_API[PyMyriadObject_Init_NUM])
+  PyMyriad_API[PyMyriadObject_Init_NUM])
+#endif  // ifdef PYMYRIAD_MODULE
 
-//! Return -1 on error, 0 on success.
-//! PyCapsule_Import will set an exception if there's an error.
-static int import_pymyriadobject(void)
-{
-    PyMyriadObject_API = (void **)PyCapsule_Import("pymyriadobject._C_API", 0);
-    return (PyMyriadObject_API != NULL) ? 0 : -1;
-}
-
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-*/
-
-#endif
+#endif /* PYMYRIADOBJECT_H */

@@ -1,38 +1,12 @@
-#ifndef PYMYRIADOBJECT_C
-#define PYMYRIADOBJECT_C
-
 #include <python3.4/Python.h>
 #include <python3.4/modsupport.h>
 #include <python3.4/structmember.h>
-#include <numpy/arrayobject.h>
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "MyriadObject.h"
-
-//! Necessary for C API exporting
-#define PYMYRIADOBJECT_MODULE
-#include "pymyriadobject.h"
-
-#ifndef DEFERRED_ADDRESS
-#define DEFERRED_ADDRESS(ADDR) 0
-#endif
-
-#ifndef MODULE_DEF
-#define MODULE_DEF
-#define PYMYRIADOBJECT_SELF_SET
-#endif
-
-typedef struct
-{
-    PyObject_HEAD
-    //! Class name of this object
-    PyObject* classname;
-    //! Pointer to extant object
-    struct MyriadObject* mobject;
-} PyMyriadObject;
+#include "pymyriad.h"
 
 static int PyMyriadObject_traverse(PyMyriadObject *self,
                                    visitproc visit,
@@ -40,10 +14,13 @@ static int PyMyriadObject_traverse(PyMyriadObject *self,
 {
     int vret;
 
-    if (self->classname) {
+    if (self->classname)
+    {
         vret = visit(self->classname, arg);
         if (vret != 0)
+        {
             return vret;
+        }
     }
 
     return 0;
@@ -96,7 +73,7 @@ static int PyMyriadObject_init(PyMyriadObject *self,
 
     static char *kwlist[] = {"classname", NULL};
 
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &classname))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &classname))
     {
         return -1;
     }
@@ -173,109 +150,4 @@ PyTypeObject PyMyriadObject_type = {
     0,                                          // tp_finalize
 };
 
-/*
-static PyObject* PyMyriadObject_Init(struct MyriadObject* ptr,
-                                     PyObject* args,
-                                     PyObject* kwds)
-{
-    PyMyriadObject* new_obj = NULL;
-    new_obj = PyObject_New(PyMyriadObject, &PyMyriadObject_type);
-    if (new_obj == NULL)
-    {
-        // PyObject_Free(new_obj);
-        return NULL;
-    }
-    new_obj->mobject = ptr;
-    
-    if (PyMyriadObject_init(new_obj, args, kwds) < 0)
-    {
-        // PyObject_Free(new_obj);
-        return NULL;
-    }
-
-    Py_INCREF(new_obj); // Necessary?
-    return (PyObject*) new_obj;
-}
-*/
-
-// --------------------------------------------------
-#ifdef PYMYRIADOBJECT_SELF_SET
-
-PyDoc_STRVAR(pymyriadobject__doc__,
-             "pymyriadobject is a base type for other Myriad objects.");
-
-static PyMethodDef pymyriadobject_functions[] = {
-    {NULL, NULL, 0, NULL}           /* sentinel */
-};
-
-static struct PyModuleDef pymyriadobjectmodule = {
-    .m_base = PyModuleDef_HEAD_INIT,
-    .m_name = "pymyriadobject",
-    .m_doc = pymyriadobject__doc__,
-    .m_size = -1,
-    .m_methods = pymyriadobject_functions,
-    .m_reload = NULL,
-    .m_traverse = NULL,
-    .m_clear = NULL,
-    .m_free = NULL
-};
-
-PyMODINIT_FUNC PyInit_pymyriadobject(void)
-{
-    _import_array();
-
-    /***************/
-    /* Ready types */
-    /***************/
-    if (PyType_Ready(&PyMyriadObject_type) < 0)
-    {
-        return NULL;
-    }
-
-    /*************************/
-    /* Add objects to module */
-    /*************************/
-    PyObject* m = PyModule_Create(&pymyriadobjectmodule);
-    if (m == NULL)
-    {
-        return NULL;
-    }
-
-    /************************/
-    /* C API Initialization */
-    /************************/
-    /*    
-    static void* PyMyriadObject_API[PyMyriadObject_API_pointers];
-    PyObject* c_api_object;
-    
-    // Initialize the C API pointer array
-    PyMyriadObject_API[PyMyriadObject_Init_NUM] = (void*) PyMyriadObject_Init;
-
-    // Create a Capsule containing the API pointer array's address
-    c_api_object = PyCapsule_New((void*) PyMyriadObject_API,
-                                 "pymyriadobject._C_API",
-                                 NULL);
-
-    if (c_api_object != NULL)
-    {
-        PyModule_AddObject(m, "_C_API", c_api_object);
-    }
-    */
-
-    /**********************************/
-    /* Add types to module as objects */
-    /**********************************/
-    Py_INCREF(&PyMyriadObject_type);
-    if (PyModule_AddObject(m, "PyMyriadObject",
-                           (PyObject*) &PyMyriadObject_type) < 0)
-    {
-        return NULL;
-    }
-
-    // Return finalized module on success
-    return m;
-}
-
-#endif  // ifdef PYMYRIADOBJECT_SELF_SET
-
-#endif  // PYMYRIADOBJECT_C
+PyTypeObject* PyMyriadObject_type_p = &PyMyriadObject_type;

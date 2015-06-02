@@ -54,11 +54,7 @@ struct mmq_connector
  *
  * @returns result of mq_open (on error, mq_open() returns (mqdt_t) -1).
  */
-extern mqd_t mmq_init_mq(
-    #ifndef __cplusplus
-    void
-    #endif
-    );
+extern mqd_t mmq_init_mq(void);
 
 /**
  * @brief Requests object to be sent over the UDS connector with timeout.

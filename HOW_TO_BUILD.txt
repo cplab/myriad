@@ -1,6 +1,0 @@
-autoscan
-mv configure.scan configure.ac #Make sure to comment out lmyriad
-./autogen.sh # Does autoreconf for us, use --install only for installation
-./configure
-./config.status
-make build

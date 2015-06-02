@@ -1,10 +1,9 @@
-#!/usr/bin/env python
 """
-Compile
+Compiles C Python module.
 """
-from distutils.core import setup, Extension  # pylint: disable=E0611,F0401
-from distutils.version import StrictVersion  # pylint: disable=E0611,F0401
-from distutils.unixccompiler import UnixCCompiler  # pylint: disable=E0611,F0401
+from distutils.core import setup, Extension
+from distutils.version import StrictVersion
+from distutils.unixccompiler import UnixCCompiler
 from numpy import get_include as np_includes
 from numpy.version import version as np_version
 
@@ -17,37 +16,21 @@ COMPILER = UnixCCompiler(verbose=2)
 MYRIAD_CPYTHON_DEFS = [("_POSIX_C_SOURCE", "200809L"),
                        ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 
-MYRIAD_CPYTHON = Extension("mmqpy",
-                           define_macros=MYRIAD_CPYTHON_DEFS,
-                           extra_compile_args=["-std=gnu99"],
-                           include_dirs=["/usr/include", np_includes()],
-                           library_dirs=["/usr/lib/"],
-                           libraries=["rt", "pthread"],
-                           sources=['mmqpy.c', 'mmq.c'])
-
-NODDY = Extension("noddy",
+MMQPY = Extension("mmqpy",
                   define_macros=MYRIAD_CPYTHON_DEFS,
                   extra_compile_args=["-std=gnu99"],
                   include_dirs=["/usr/include", np_includes()],
                   library_dirs=["/usr/lib/"],
                   libraries=["rt", "pthread"],
-                  sources=["noddy.c"])
+                  sources=["mmqpy.c", "mmq.c"])
 
-SPAMDICT = Extension("spamdict",
+PYMYRIAD = Extension("pymyriad",
                      define_macros=MYRIAD_CPYTHON_DEFS,
                      extra_compile_args=["-std=gnu99"],
                      include_dirs=["/usr/include", np_includes()],
                      library_dirs=["/usr/lib/"],
                      libraries=["rt", "pthread"],
-                     sources=["spamdict.c"])
-
-PYMYRIADOBJECT = Extension("pymyriadobject",
-                           define_macros=MYRIAD_CPYTHON_DEFS,
-                           extra_compile_args=["-std=gnu99"],
-                           include_dirs=["/usr/include", np_includes()],
-                           library_dirs=["/usr/lib/"],
-                           libraries=["rt", "pthread"],
-                           sources=["pymyriadobject.c"])
+                     sources=["pymyriad.c", "pymyriadobject.c"])
 
 PYCOMPARTMENT = Extension("pycompartment",
                           define_macros=MYRIAD_CPYTHON_DEFS,
@@ -57,11 +40,18 @@ PYCOMPARTMENT = Extension("pycompartment",
                           libraries=["rt", "pthread"],
                           sources=["pycompartment.c"])
 
-setup(name="mmqpy",
+PYHHSOMACOMPARTMENT = Extension("pyhhsomacompartment",
+                                define_macros=MYRIAD_CPYTHON_DEFS,
+                                extra_compile_args=["-std=gnu99"],
+                                include_dirs=["/usr/include", np_includes()],
+                                library_dirs=["/usr/lib/"],
+                                libraries=["rt", "pthread"],
+                                sources=["pyhhsomacompartment.c"])
+
+setup(name="pymyriad",
       version="1.0",
-      description="Python message queue package",
-      ext_modules=[MYRIAD_CPYTHON,
-                   NODDY,
-                   SPAMDICT,
-                   PYMYRIADOBJECT,
+      description="Myriad CPython package",
+      ext_modules=[MMQPY,
+                   PYMYRIAD,
+                   PYHHSOMACOMPARTMENT,
                    PYCOMPARTMENT])

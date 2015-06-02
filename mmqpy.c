@@ -15,27 +15,16 @@
 
 #include "mmq.h"
 
+#include "pymyriad.h"
+
 #include "HHSomaCompartment.h"
 
 //! Module-level variable for connector
 static bool _my_q_init = false;
 static struct mmq_connector _my_q;
 
-static PyObject* say_hello(PyObject* self, PyObject* args)
-{
-    const char* name; 
- 
-    if (!PyArg_ParseTuple(args, "s", &name))
-    {
-        return NULL;
-    }
- 
-    printf("Hello %s!\n", name);
- 
-    Py_RETURN_NONE;
-}
-
-static PyObject* mmqpy_init(PyObject* self, PyObject* args)
+static PyObject* mmqpy_init(PyObject* self __attribute__((unused)),
+                            PyObject* args __attribute__((unused)))
 {
     if (_my_q_init == true)
     {
@@ -61,7 +50,8 @@ static PyObject* mmqpy_init(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-static PyObject* mmqpy_close(PyObject* self, PyObject* args)
+static PyObject* mmqpy_close(PyObject* self __attribute__((unused)),
+                             PyObject* args __attribute__((unused)))
 {
     if (_my_q_init == false)
     {
@@ -80,7 +70,8 @@ static PyObject* mmqpy_close(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-static PyObject* terminate_simul(PyObject* self, PyObject* args)
+static PyObject* terminate_simul(PyObject* self __attribute__((unused)),
+                                 PyObject* args __attribute__((unused)))
 {
     // Post message saying what object we want
     puts("Putting <TERMINATE> message on queue...");
@@ -97,7 +88,8 @@ static PyObject* terminate_simul(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-static PyObject* retrieve_obj(PyObject* self, PyObject* args)
+static PyObject* retrieve_obj(PyObject* self __attribute__((unused)),
+                              PyObject* args)
 {
     int id = -1;
     if (!PyArg_ParseTuple(args, "i", &id))
@@ -121,30 +113,36 @@ static PyObject* retrieve_obj(PyObject* self, PyObject* args)
     }
 
     puts("Waiting for object data: ");
+    
     // Receive data of the object we requested
-    struct HHSomaCompartment soma;
-    mmq_request_data(&_my_q, &soma, sizeof(struct HHSomaCompartment));
-    double* arr = PyMem_Malloc(sizeof(double) * SIMUL_LEN);
-    memcpy(arr, &soma.vm, sizeof(double) * SIMUL_LEN);
+    struct HHSomaCompartment* soma = PyMem_Malloc(sizeof(struct HHSomaCompartment));
+    mmq_request_data(&_my_q, soma, sizeof(struct HHSomaCompartment));
 
-    // Prepare array data
-    npy_intp dims[1] = {SIMUL_LEN};
-    PyObject* buf_arr = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, arr);
-
-    return buf_arr;
+    // Prepare object data
+    PyObject* p_obj = NULL, *str = NULL;
+    str = Py_BuildValue("(s)", "soma");
+    p_obj = PyMyriadObject_Init((struct MyriadObject*) soma,
+                                str,
+                                NULL);
+    if (p_obj == NULL)
+    {
+        PyErr_SetString(PyExc_Exception, "failed constructing new object");
+        return NULL;
+    }
+    
+    return p_obj;
 }
 
 static PyMethodDef MmqpyMethods[] =
 {
-     {"say_hello", say_hello, METH_VARARGS, "Greet somebody."},
      {"retrieve_obj", retrieve_obj, METH_VARARGS, "Retrieve data from a Myriad object."},
-     {"mmqpy_init", mmqpy_init, METH_NOARGS, "Open the Myriad connector."},
-     {"mmqpy_close", mmqpy_close, METH_NOARGS, "Close the Myriad connector."},
+     {"init", mmqpy_init, METH_NOARGS, "Open the Myriad connector."},
+     {"close", mmqpy_close, METH_NOARGS, "Close the Myriad connector."},
      {"terminate_simul", terminate_simul, METH_NOARGS, "Terminates the Myriad simulation."},
      {NULL, NULL, 0, NULL}
 };
 
-PyDoc_STRVAR(docvar, "TODO: Docstring");
+PyDoc_STRVAR(docvar, "Myriad message queue code");
 
 struct PyModuleDef mmqpy_module_def =
 {
@@ -162,6 +160,17 @@ struct PyModuleDef mmqpy_module_def =
 PyMODINIT_FUNC PyInit_mmqpy(void)
 {
     _import_array();
+
+    import_pymyriad();
+    
     memset(&_my_q, 0, sizeof(struct mmq_connector));
-    return PyModule_Create(&mmqpy_module_def);
+
+    PyObject* m = PyModule_Create(&mmqpy_module_def);
+
+    if (m == NULL)
+    {
+        return NULL;
+    }
+
+    return m;
 }
