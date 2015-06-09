@@ -10,8 +10,8 @@ CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
 #      Compilers & Tools      #
 ###############################
 NVCC	?= $(CUDA_BIN_PATH)/nvcc
-CC	:= gcc-4.8
-CXX	:= g++-4.8
+CC	:= x86_64-linux-gnu-gcc
+CXX	:= x86_64-linux-gnu-g++
 AR	?= ar
 CTAGS ?= ctags-exuberant
 DOXYGEN ?= doxygen

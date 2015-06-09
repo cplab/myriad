@@ -118,7 +118,7 @@ ssize_t mmq_send_data(struct mmq_connector* connector,
     do
     {
         num_bytes_sent = write(connector->connection_fd,
-                               source,
+                               ((unsigned char*) source) + total_bytes,
                                len - total_bytes);
         if (num_bytes_sent <= 0)
         {
@@ -151,7 +151,7 @@ ssize_t mmq_request_data(struct mmq_connector* connector,
     do
     {
         num_bytes_read = read(connector->socket_fd,
-                              dest,
+                              ((unsigned char*) dest) + total_bytes,
                               len - total_bytes);
         if (num_bytes_read <= 0)
         {

@@ -117,28 +117,6 @@ static ssize_t calc_total_size(int* num_allocs)
 {
     ssize_t total_size = 0;
     
-    // Scan module (read: current) directory for all C files
-    /*
-    int num_modules = 0;
-    DIR* dp = opendir("./");  //TODO: Change this to look in module directory
-    if (dp != NULL)
-    {
-        struct dirent *ep;
-        while ((ep = readdir(dp)))
-        {
-            // Check if file is a C file
-            if (strstr(ep->d_name, ".c") != NULL)
-            {
-                num_modules++;
-            }
-        }
-        assert(closedir(dp) == 0);
-    } else {
-        perror("calc_total_size: Couldn't open the current directory");
-        return -1;
-    }
-    */
-
     // Class Overhead
     total_size += sizeof(struct MyriadObject) + sizeof(struct MyriadClass);
     total_size += sizeof(struct Mechanism) + sizeof(struct MechanismClass);
@@ -333,39 +311,90 @@ static int dsac()
             .connection_fd = -1,
             .server = true
         };
-    
+
+    char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
+
+    // Main message loop
     while(1)
     {
-        puts("Waiting for messages on queue...");
-        char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
+        // Reset message buffer
+        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
+
+        ///////////////////////////////
+        // PHASE 1: SEND OBJECT SIZE //
+        ///////////////////////////////
+
+        // Wait for first message
+        puts("Waiting for object request message on queue...");
         ssize_t msg_size = mq_receive(conn.msg_queue,
                                       msg_buff,
-                                      (size_t) MMQ_MSG_SIZE,
+                                      MMQ_MSG_SIZE,
                                       NULL);
         if (msg_size < 0)
         {
             perror("mq_receive:");
             exit(EXIT_FAILURE);
         }
-        // Process message
+        
+        // Process message for object request
         int64_t obj_req = 0;
         memcpy(&obj_req, msg_buff, MMQ_MSG_SIZE);
-        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
         printf("Object data request: %" PRIi64 "\n", obj_req);
-
         if (obj_req == -1)
         {
             puts("Terminating simulation.");
             break;
         }
+
+        // Send size of compartment object & wait for it to be accepted
+        size_t obj_size = myriad_size_of(network[obj_req]);
+        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
+        memcpy(msg_buff, &obj_size, sizeof(size_t));
+        if (mq_send(conn.msg_queue, msg_buff, MMQ_MSG_SIZE, 0) != 0)
+        {
+            perror("mq_send size");
+            exit(EXIT_FAILURE);
+        }
+        printf("Sent data on object size (size is %lu)\n", obj_size);
+
+        ///////////////////////////////
+        // PHASE 2: SEND OBJECT DATA //
+        ///////////////////////////////
         
-        // Wait for someone to accept our sent data
-        mmq_send_data(&conn,
-                      network[obj_req],
-                      sizeof(struct HHSomaCompartment));
-        puts("Sent data");
+        // Send object data
+        mmq_send_data(&conn, (unsigned char*) network[obj_req], obj_size);
+        puts("Sent object data.");
+
+        /////////////////////////////////////////////
+        // PHASE 3: SEND MECHANISM DATA ONE-BY-ONE //
+        /////////////////////////////////////////////
+
+        const struct Compartment* as_cmp = (const struct Compartment*) network[obj_req];
+        printf("Sending information for %" PRIu64 " mechanisms.\n", as_cmp->num_mechs);
+        
+        for (uint64_t i = 0; i < as_cmp->num_mechs; i++)
+        {
+            // Send mechanism size data
+            size_t mech_size = myriad_size_of(as_cmp->my_mechs[i]);
+            mmq_send_data(&conn, &mech_size, sizeof(size_t));
+
+            printf("Sent mechanism %" PRIu64 "'s size of %lu.\n", i, mech_size);
+
+            // Send mechanism object
+            mmq_send_data(&conn, as_cmp->my_mechs[i], mech_size);
+
+            printf("Sent mechanism %" PRIu64 " completely.\n", i);
+        }
+
+        puts("Sent all mechanism objects");
     }
+    
     puts("Exited message loop.");
+    
+    if (msg_buff != NULL)
+    {
+        free(msg_buff);
+    }
     
     #ifdef MYRIAD_ALLOCATOR
     assert(myriad_finalize() == 0);

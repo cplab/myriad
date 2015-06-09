@@ -17,7 +17,7 @@
 
 #include "pymyriad.h"
 
-#include "HHSomaCompartment.h"
+#include "Compartment.h"
 
 //! Module-level variable for connector
 static bool _my_q_init = false;
@@ -104,24 +104,61 @@ static PyObject* retrieve_obj(PyObject* self __attribute__((unused)),
     puts("Putting message on queue...");
     int64_t obj_req = id;
     printf("obj_req: %" PRIi64 "\n", obj_req);
-    char* msg_buff = malloc(sizeof(MMQ_MSG_SIZE));
+    char* msg_buff = malloc(MMQ_MSG_SIZE + 1);
     memcpy(msg_buff, &obj_req, sizeof(int64_t));
-    if (mq_send(_my_q.msg_queue, msg_buff, sizeof(MMQ_MSG_SIZE), 0) != 0)
+    if (mq_send(_my_q.msg_queue, msg_buff, MMQ_MSG_SIZE, 0) != 0)
     {
         PyErr_SetString(PyExc_IOError, "mq_send failed");
         return NULL;
     }
 
-    puts("Waiting for object data: ");
-    
-    // Receive data of the object we requested
-    struct HHSomaCompartment* soma = PyMem_Malloc(sizeof(struct HHSomaCompartment));
-    mmq_request_data(&_my_q, soma, sizeof(struct HHSomaCompartment));
+    // Wait for object size data so we can allocate
+    puts("Waiting for object size data: ");
+    memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
+    ssize_t msg_size = mq_receive(_my_q.msg_queue,
+                                  msg_buff,
+                                  MMQ_MSG_SIZE,
+                                  NULL);
+    if (msg_size < 0)
+    {
+        PyErr_SetString(PyExc_IOError, "mq_receive failed");
+        return NULL;
+    }
+    size_t obj_size = 0;
+    memcpy(&obj_size, msg_buff, MMQ_MSG_SIZE);
+    printf("Object size is: %lu\n", obj_size);
 
-    // Prepare object data
+    // Allocate space for object
+    struct Compartment* new_comp = PyMem_Malloc(obj_size);
+
+    // Request actual object data
+    puts("Waiting for object data...");
+    mmq_request_data(&_my_q, new_comp, obj_size);
+    puts("... Received object data");
+
+    // Read mechanisms one-by-one    
+    printf("Recieving information for %" PRIu64 " mechanisms.\n",
+           ((struct Compartment*)new_comp)->num_mechs);
+    
+    for (uint64_t i = 0; i < new_comp->num_mechs; i++)
+    {
+        // Read size of mechanism
+        size_t mech_size = 0;
+        mmq_request_data(&_my_q, &mech_size, sizeof(size_t));
+        printf("Mechanism %" PRIu64 " has size %lu\n", i, mech_size);
+        
+        // Allocate
+        new_comp->my_mechs[i] = PyMem_Malloc(mech_size);
+
+        // Copy contents
+        mmq_request_data(&_my_q, new_comp->my_mechs[i], mech_size);
+        printf("Copied Mechanism %" PRIu64 "\n", i);
+    }
+
+    // Prepare object data for export
     PyObject* p_obj = NULL, *str = NULL;
-    str = Py_BuildValue("(s)", "soma");
-    p_obj = PyMyriadObject_Init((struct MyriadObject*) soma,
+    str = Py_BuildValue("(s)", "Compartment");
+    p_obj = PyMyriadObject_Init((struct MyriadObject*) new_comp,
                                 str,
                                 NULL);
     if (p_obj == NULL)
