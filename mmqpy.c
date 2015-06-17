@@ -19,6 +19,13 @@
 
 #include "Compartment.h"
 
+// TODO: REMOVE
+#include "Mechanism.h"
+#include "HHLeakMechanism.h"
+#include "HHGradedGABAAMechanism.h"
+#include "HHKCurrMechanism.h"
+#include "HHNaCurrMechanism.h"
+
 //! Module-level variable for connector
 static bool _my_q_init = false;
 static struct mmq_connector _my_q;
@@ -66,6 +73,8 @@ static PyObject* mmqpy_close(PyObject* self __attribute__((unused)),
                         "Unable to close Myriad connector.\n");
         return NULL;
     }
+
+    _my_q_init = false;
 
     Py_RETURN_NONE;
 }
@@ -115,10 +124,10 @@ static PyObject* retrieve_obj(PyObject* self __attribute__((unused)),
     // Wait for object size data so we can allocate
     puts("Waiting for object size data: ");
     memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
-    ssize_t msg_size = mq_receive(_my_q.msg_queue,
-                                  msg_buff,
-                                  MMQ_MSG_SIZE,
-                                  NULL);
+    const ssize_t msg_size = mq_receive(_my_q.msg_queue,
+                                        msg_buff,
+                                        MMQ_MSG_SIZE,
+                                        NULL);
     if (msg_size < 0)
     {
         PyErr_SetString(PyExc_IOError, "mq_receive failed");
@@ -133,36 +142,74 @@ static PyObject* retrieve_obj(PyObject* self __attribute__((unused)),
 
     // Request actual object data
     puts("Waiting for object data...");
-    mmq_request_data(&_my_q, new_comp, obj_size);
+    mmq_request_data(&_my_q, (void*) new_comp, obj_size);
     puts("... Received object data");
 
     // Read mechanisms one-by-one    
     printf("Recieving information for %" PRIu64 " mechanisms.\n",
            ((struct Compartment*)new_comp)->num_mechs);
-    
+
+    // Get all the mechanisms
     for (uint64_t i = 0; i < new_comp->num_mechs; i++)
     {
+        // Clear
+        new_comp->my_mechs[i] = NULL;
+        
         // Read size of mechanism
         size_t mech_size = 0;
         mmq_request_data(&_my_q, &mech_size, sizeof(size_t));
         printf("Mechanism %" PRIu64 " has size %lu\n", i, mech_size);
         
-        // Allocate
-        new_comp->my_mechs[i] = PyMem_Malloc(mech_size);
+        // Allocate space for mechanism on Python's stack
+        void* mech_copy = PyMem_Malloc(mech_size);
+        if (mech_copy == NULL)
+        {
+            PyErr_SetString(PyExc_MemoryError, "Failed allocating Mechanism.");
+            PyMem_Free(new_comp);
+            return NULL;
+        }
 
         // Copy contents
-        mmq_request_data(&_my_q, new_comp->my_mechs[i], mech_size);
+        mmq_request_data(&_my_q, mech_copy, mech_size);
         printf("Copied Mechanism %" PRIu64 "\n", i);
+
+        // Make new object from copied contents
+        PyObject* mech_obj = NULL, *str = NULL;
+        str = Py_BuildValue("(s)", "Mechanism");
+        if (str == NULL)
+        {
+            PyErr_SetString(PyExc_RuntimeError, "Failed creating Mechanism string");
+            PyMem_Free(mech_copy);
+            PyMem_Free(new_comp);
+            return NULL;
+        }
+        Py_INCREF(str);
+
+        // Initialize object
+        mech_obj = PyMyriadObject_Init(mech_copy, str, NULL);
+        if (mech_obj == NULL)
+        {
+            Py_XDECREF(str);
+            PyMem_Free(mech_copy);
+            PyMem_Free(new_comp);
+            PyErr_SetString(PyExc_RuntimeError, "Failed copying Mechanism ");
+            return NULL;
+        }
+        Py_INCREF(mech_obj);
+
+        new_comp->my_mechs[i] = mech_obj;
     }
 
     // Prepare object data for export
     PyObject* p_obj = NULL, *str = NULL;
     str = Py_BuildValue("(s)", "Compartment");
+    Py_INCREF(str);
     p_obj = PyMyriadObject_Init((struct MyriadObject*) new_comp,
                                 str,
                                 NULL);
     if (p_obj == NULL)
     {
+        Py_XDECREF(str);
         PyErr_SetString(PyExc_Exception, "failed constructing new object");
         return NULL;
     }

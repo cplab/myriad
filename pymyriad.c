@@ -19,13 +19,13 @@ static PyObject* PyMyriadObject_Init(struct MyriadObject* ptr,
     new_obj = PyObject_New(PyMyriadObject, PyMyriadObject_type_p);
     if (new_obj == NULL)
     {
-        // PyObject_Free(new_obj);
+        PyObject_Free(new_obj);
         return NULL;
     }
     
     if (PyMyriadObject_type_p->tp_init((PyObject*) new_obj, args, kwds) < 0)
     {
-        // PyObject_Free(new_obj);
+        PyObject_Free(new_obj);
         return NULL;
     }
 

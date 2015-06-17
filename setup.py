@@ -10,7 +10,6 @@ from numpy.version import version as np_version
 # We need Numpy 1.8 or greater
 assert StrictVersion(np_version) > StrictVersion("1.8")
 
-# Create the static library
 COMPILER = UnixCCompiler(verbose=2)
 
 MYRIAD_CPYTHON_DEFS = [("_POSIX_C_SOURCE", "200809L"),
@@ -40,6 +39,14 @@ PYCOMPARTMENT = Extension("pycompartment",
                           libraries=["rt", "pthread"],
                           sources=["pycompartment.c"])
 
+PYMECHANISM = Extension("pymechanism",
+                        define_macros=MYRIAD_CPYTHON_DEFS,
+                        extra_compile_args=["-std=gnu99"],
+                        include_dirs=["/usr/include", np_includes()],
+                        library_dirs=["/usr/lib/"],
+                        libraries=["rt", "pthread"],
+                        sources=["pymechanism.c"])
+
 PYHHSOMACOMPARTMENT = Extension("pyhhsomacompartment",
                                 define_macros=MYRIAD_CPYTHON_DEFS,
                                 extra_compile_args=["-std=gnu99"],
@@ -54,4 +61,5 @@ setup(name="pymyriad",
       ext_modules=[MMQPY,
                    PYMYRIAD,
                    PYHHSOMACOMPARTMENT,
+                   PYMECHANISM,
                    PYCOMPARTMENT])

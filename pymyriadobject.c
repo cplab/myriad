@@ -69,7 +69,7 @@ static int PyMyriadObject_init(PyMyriadObject *self,
                                PyObject *args,
                                PyObject *kwds)
 {
-    PyObject* classname = NULL, *tmp = NULL;
+    PyObject* classname = NULL;
 
     static char *kwlist[] = {"classname", NULL};
 
@@ -80,10 +80,8 @@ static int PyMyriadObject_init(PyMyriadObject *self,
 
     if (classname)
     {
-        tmp = self->classname;
         Py_INCREF(classname);
         self->classname = classname;
-        Py_XDECREF(tmp);
     }
     
     self->mobject = NULL;

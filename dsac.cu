@@ -17,19 +17,21 @@
 
 // Myriad C API Headers
 #ifdef __cplusplus
+
 extern "C" {
 #endif
-    #include "myriad.h"
-    #include "MyriadObject.h"
-	#include "Mechanism.h"
-	#include "Compartment.h"
-	#include "HHSomaCompartment.h"
-	#include "HHLeakMechanism.h"
-	#include "HHNaCurrMechanism.h"
-	#include "HHKCurrMechanism.h"
-    #include "HHSpikeGABAAMechanism.h"
-    #include "DCCurrentMech.h"
-    #include "mmq.h"
+#include "myriad.h"
+#include "MyriadObject.h"
+#include "Mechanism.h"
+#include "Compartment.h"
+#include "HHSomaCompartment.h"
+#include "HHLeakMechanism.h"
+#include "HHNaCurrMechanism.h"
+#include "HHKCurrMechanism.h"
+#include "HHSpikeGABAAMechanism.h"
+#include "DCCurrentMech.h"
+#include "mmq.h"
+    
 #ifdef __cplusplus
 }
 #endif
@@ -229,7 +231,6 @@ static int dsac()
 	initHHSomaCompartment(use_cuda);
 
 	void* network[NUM_CELLS];
-    // memset(network, 0, sizeof(void*) * NUM_CELLS);  // Necessary?
     
     const unsigned int num_connxs = NUM_CELLS;
     int64_t to_connect[num_connxs];
@@ -312,13 +313,11 @@ static int dsac()
             .server = true
         };
 
-    char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
-
     // Main message loop
     while(1)
     {
         // Reset message buffer
-        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
+        char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
 
         ///////////////////////////////
         // PHASE 1: SEND OBJECT SIZE //
@@ -368,33 +367,36 @@ static int dsac()
         /////////////////////////////////////////////
         // PHASE 3: SEND MECHANISM DATA ONE-BY-ONE //
         /////////////////////////////////////////////
-
+        
         const struct Compartment* as_cmp = (const struct Compartment*) network[obj_req];
         printf("Sending information for %" PRIu64 " mechanisms.\n", as_cmp->num_mechs);
-        
-        for (uint64_t i = 0; i < as_cmp->num_mechs; i++)
+        const uint64_t my_num_mechs = as_cmp->num_mechs;
+        for (uint64_t i = 0; i < my_num_mechs; i++)
         {
             // Send mechanism size data
             size_t mech_size = myriad_size_of(as_cmp->my_mechs[i]);
-            mmq_send_data(&conn, &mech_size, sizeof(size_t));
-
-            printf("Sent mechanism %" PRIu64 "'s size of %lu.\n", i, mech_size);
+            if (mmq_send_data(&conn, &mech_size, sizeof(size_t)) != sizeof(mech_size))
+            {
+                fprintf(stderr, "Could not send mechanism %" PRIu64" size \n", i);
+            } else {
+                printf("Sent mechanism %" PRIu64 "'s size of %lu.\n", i, mech_size);
+            }
 
             // Send mechanism object
-            mmq_send_data(&conn, as_cmp->my_mechs[i], mech_size);
-
-            printf("Sent mechanism %" PRIu64 " completely.\n", i);
+            if (mmq_send_data(&conn, as_cmp->my_mechs[i], mech_size) != (ssize_t) mech_size)
+            {
+                fprintf(stderr, "Could not send mechanism %" PRIu64"\n", i);
+            } else {
+                printf("Sent mechanism %" PRIu64 " completely.\n", i);                
+            }
         }
 
         puts("Sent all mechanism objects");
+
+        free(msg_buff);
     }
     
     puts("Exited message loop.");
-    
-    if (msg_buff != NULL)
-    {
-        free(msg_buff);
-    }
     
     #ifdef MYRIAD_ALLOCATOR
     assert(myriad_finalize() == 0);

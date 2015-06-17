@@ -65,7 +65,7 @@ struct Compartment
     //! Number of mechanisms in this compartment
 	uint64_t num_mechs;
     //! List of mechanisms in this compartment
-	struct Mechanism* my_mechs[MAX_NUM_MECHS];
+	void* my_mechs[MAX_NUM_MECHS];
 };
 
 //! Generic CompartmentClass structure definition

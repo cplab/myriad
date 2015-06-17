@@ -76,7 +76,7 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 	{
 		fprintf(stderr, "Cannot add NULL mechanism/add to NULL compartment.\n");
 		return -1;
-	} 
+	}
 
 	struct Compartment* self = (struct Compartment*) _self;
 	struct Mechanism* mech = (struct Mechanism*) mechanism;
@@ -86,9 +86,9 @@ static int Compartment_add_mech(void* _self, void* mechanism)
         fprintf(stderr, "Cannot add mechanism to Compartment: out of room.\n");
         return -1;
     }
-	
+    
+	self->my_mechs[self->num_mechs] = mech;
 	self->num_mechs++;
-	self->my_mechs[self->num_mechs-1] = mech;
 
 	return 0;
 }
