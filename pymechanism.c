@@ -26,8 +26,10 @@ static PyObject* PyMechanism_source_id(PyObject* self __attribute__((unused)),
         PyErr_SetString(PyExc_IndexError, "Mechanism index out of bounds.");
         return NULL;
     }
-    
-    struct Mechanism* _self = (struct Mechanism*) parent->my_mechs[mechanism_num];
+
+    // Do some fancy conversions
+    struct Mechanism* _self = (struct Mechanism*)
+        ((PyMyriadObject*) parent->my_mechs[mechanism_num])->mobject;
 
     // Check for invalid mechanism
     if (_self == NULL)
