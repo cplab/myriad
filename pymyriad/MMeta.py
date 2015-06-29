@@ -13,6 +13,10 @@ from MyriadObject import MyriadObject
 
 
 class MyriadMeta(type):
+    """
+    Metaclass for intercepting MyriadObject child declarations and doing
+    necessary 'behind the scenes' work.
+    """
 
     @classmethod
     def __prepare__(mcs, name, bases):
@@ -26,13 +30,16 @@ class MyriadMeta(type):
 
     @staticmethod
     def myriad_set_attr(self, **kwargs):
-        # raise NotImplementedError("Cannot set object attributes.")
-        pass
+        """
+        Prevent users from accessing objects except through py_x interfaces
+        """
+        raise NotImplementedError("Cannot set object attributes (yet).")
 
     def __new__(metacls, name, bases, namespace, **kwds):
         if len(bases) > 1:
             raise NotImplementedError("Multiple inheritance is not supported.")
 
+        # Check if the class inherits from MyriadObject
         if not issubclass(bases[0], MyriadObject):
             raise TypeError("Myriad modules must inherit from MyriadObject")
 
@@ -41,18 +48,19 @@ class MyriadMeta(type):
 
         # Extracts variables and myriad methods from class definition
         for k, v in namespace.items():
-            # v is a registered myriad method
+            # if v is ...
+            # ... a registered myriad method
             if hasattr(v, "is_myriad_method"):
                 print(k + " is a myriad method")
                 myriad_methods[k] = v.original_fun
-            # v is some generic non-Myriad function or method
+            # ... some generic non-Myriad function or method
             elif inspect.isfunction(v) or inspect.ismethod(v):
                 print(k + " is a function or method")
-            # v is some generic instance of a _MyriadBase type
+            # ... some generic instance of a _MyriadBase type
             elif issubclass(v.__class__, myriad_types._MyriadBase):
                 myriad_vars[k] = v
                 print(k + " is a Myriad-type non-function attribute")
-            # v is a type statement of base type MyriadCType (e.g. MDouble)
+            # ... a type statement of base type MyriadCType (e.g. MDouble)
             elif issubclass(v.__class__, myriad_types.MyriadCType):
                 # TODO: Better type detection here for corner cases (e.g. ptr)
                 myriad_vars[k] = myriad_types.MyriadScalar(k, v)
@@ -106,7 +114,7 @@ def myriad_method(method):
 
 
 class Soma(MyriadObject, metaclass=MyriadMeta):
-
+    """TODO"""
     capacitance = myriad_types.MDouble
     vm = myriad_types.MyriadScalar("vm", myriad_types.MDouble, ptr=True)
 

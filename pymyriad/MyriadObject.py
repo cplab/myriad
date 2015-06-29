@@ -163,7 +163,7 @@ class _MyriadObject(MyriadModule):
 
     assert(prototype_class && prototype_class->size);
 
-    curr_obj = (struct MyriadObject*) calloc(1, prototype_class->size);
+    curr_obj = (struct MyriadObject*) _my_calloc(1, prototype_class->size);
     assert(curr_obj);
 
     curr_obj->m_class = prototype_class;

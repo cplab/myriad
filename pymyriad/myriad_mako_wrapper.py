@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """
 Common wrapper for Mako templates
 """
@@ -10,7 +9,7 @@ from io import StringIO
 
 
 class MakoTemplate(object):
-    """ Wraps a mako template, context, and I/O Buffer """
+    """ Wraps a mako template, context, and I/O Buffer. """
 
     @enforce_annotations
     def __init__(self, template, context: dict=None, buf: StringIO=None):

@@ -19,10 +19,11 @@ subclasses is provided for normal use (e.g. MVoid, MInt, etc.)
 from collections import OrderedDict
 import copy
 import inspect
+from warnings import warn
 
 from pycparser import c_generator
 from pycparser.c_ast import IdentifierType, Typedef
-from pycparser.c_ast import Decl, PtrDecl, TypeDecl, ID
+from pycparser.c_ast import Decl, PtrDecl, TypeDecl, ID, ArrayDecl
 from pycparser.c_ast import Struct, FuncDecl
 from pycparser.c_ast import ParamList
 
@@ -69,11 +70,32 @@ class _MyriadBase(object):
         #: C storage qualifiers for the declaration (e.g. "const").
         self.storage = [] if storage is None else storage
 
-
     def stringify_decl(self) -> str:
         """ Renders the internal C declaration and returns it as a string. """
         return self._cgen.visit(self.decl)
 
+
+_C_DECL_MAPPING = {
+    "int": 'i',
+    "char": 'b',
+    "short int": 'h',
+    "long int": 'l',
+    "unsigned char": 'B',
+    "unsigned int": 'I',
+    "unsigned long": 'k',
+    "int64_t": 'L',
+    "uint64_t": 'K',
+    "size_t": 'n',
+    "float": 'f',
+    "double": 'd',
+}
+
+
+def c_decl_to_pybuildarg(c_decl: Decl):
+    """Returns the Py_BuildValue character associated with the declaration."""
+    if c_decl is None:
+        raise TypeError("Argument cannot be None")
+    return _C_DECL_MAPPING.get(c_decl.type.type.names[0], d=None)
 
 # ----------------------------------------
 #                 CTYPES
@@ -84,7 +106,8 @@ class _MyriadBase(object):
 # is that these declarations are all childern of MyriadCType, allowing for
 # run-time typechecking for valid C types and extension of the type system
 # via subclassing.
-MyriadCType = type("MyriadCType", (object,), {'mtype': None})
+MyriadCType = type("MyriadCType", (object,), {"mtype": None})
+
 MFloat = type("MFloat",
               (MyriadCType,),
               {
@@ -140,15 +163,18 @@ class MyriadScalar(_MyriadBase):
                  ptr: bool=False,
                  quals: list=None,
                  storage: list=None,
+                 arr_id: str=None,
                  init=None):
         """
-        Initializes a scalar variable, i.e. a base type or pointer to one.
+        Initializes a scalar variable, i.e. a base type, a pointer type, or an
+        array type containing the base scalar type (variable/fixed length).
 
         :param str ident: Name of the scalar variable to be created.
         :param MyriadCType base_type: Underlying C AST base type (e.g. MInt).
         :param bool ptr: Indicates whether this is a pointer.
         :param list quals: C AST scope qualifiers (e.g. "static")
         :param list storage: C AST storage qualifiers (e.g. "const")
+        :param str arr_id: Array length ID specifier (None if this isn't one)
         :param init: Initial value given to this scalar (TODO: NOT IMPLEMENTED)
         """
         # Always call super first
@@ -157,8 +183,11 @@ class MyriadScalar(_MyriadBase):
         #: Represents the underlying C type via a MyriadCType subclass.
         self.base_type = base_type
 
-        #: Indicates if this is a pointer.
+        #: Indicates if this is a pointer (or an array of pointers).
         self.ptr = ptr
+
+        #: Indicates whether this is actually an array of this scalar type
+        self.arr_id = arr_id
 
         #: Underlying C AST type declaration, used for C generation.
         self.type_decl = TypeDecl(declname=self.ident,
@@ -168,18 +197,42 @@ class MyriadScalar(_MyriadBase):
         #: Optional pointer declaration, used for scalar pointers.
         self.ptr_decl = PtrDecl(quals=[], type=self.type_decl)
 
+        #: Optional array declaration, used for scalar arrays
+        self.arr_decl = None
+        if self.arr_id is not None:
+            # Array of scalars or array of pointers (first arg is base type)
+            self.arr_decl = ArrayDecl(self.ptr_decl if ptr else self.type_decl,
+                                      dim=ID(name=self.arr_id),
+                                      dim_quals=[])
+
         # TODO: Process init in some way
         #: Initial value of this scalar at the C level.
         self.init = init
+        if init is not None:
+            warn("Setting init is deprecated", DeprecationWarning)
 
         # Override superclass and re-initialize internal top-level declaration
-        self.decl = Decl(name=self.ident,
-                         quals=self.quals,
-                         storage=self.storage,
-                         funcspec=[],
-                         type=self.ptr_decl if ptr else self.type_decl,
-                         init=None,
-                         bitsize=None)
+        # Order of choosing declaration:
+        # 1. If it's an array declaration (aka arr_id isn't None), use that
+        # 2. Otherwise:
+        #    a) If ptr is true, use the ptr declaration
+        #    b) Otherwise, use the regular type declaration
+        if self.arr_id is None:
+            self.decl = Decl(name=self.ident,
+                             quals=self.quals,
+                             storage=self.storage,
+                             funcspec=[],
+                             type=self.ptr_decl if ptr else self.type_decl,
+                             init=None,
+                             bitsize=None)
+        else:
+            self.decl = Decl(name=self.ident,
+                             quals=self.quals,
+                             storage=self.storage,
+                             funcspec=[],
+                             type=self.arr_decl,
+                             init=None,
+                             bitsize=None)
 
     def typematch(self, other) -> bool:
         """ Checks if other is of an equivalent C type. """
@@ -534,6 +587,14 @@ def main():
     print(class_m.stringify_decl())
     class_2 = myriad_class("class_2", ptr=True)
     print(class_2.stringify_decl())
+    # Test array
+    my_arr = MyriadScalar(ident="my_arr",
+                          base_type=MDouble,
+                          ptr=False,
+                          quals=["const"],
+                          storage=["static"],
+                          arr_id="SIMUL_LEN")
+    print(my_arr.stringify_decl())
 
 
 if __name__ == "__main__":

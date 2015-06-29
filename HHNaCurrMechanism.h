@@ -36,7 +36,7 @@ struct HHNaCurrMechanism
     //! @TODO Figure out what hh_m is actually called
 	double hh_m;
     //! @TODO Figure out what hh_h is actually called
-	double hh_h;	    
+	double hh_h;
 };
 
 struct HHNaCurrMechanismClass

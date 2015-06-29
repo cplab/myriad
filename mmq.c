@@ -63,16 +63,16 @@ int mmq_socket_init(const bool server, struct timeval* timeout)
             }
         }
 
-        if(bind(socket_fd,
-                (struct sockaddr*) &address, 
-                sizeof(struct sockaddr_un)) != 0)
+        if (bind(socket_fd,
+                 (struct sockaddr*) &address, 
+                 sizeof(struct sockaddr_un)) != 0)
         {
             perror("mmq_socket_init: bind() failed");
             return -1;
         }
 
         //TODO: Get rid of magic number for backlog
-        if(listen(socket_fd, 5) != 0)
+        if (listen(socket_fd, 5) != 0)
         {
             perror("mmq_socket_init: listen() failed");
             return -1;
@@ -114,7 +114,7 @@ ssize_t mmq_send_data(struct mmq_connector* connector,
         }
     }
 
-    // If request is too large, do muliple writes until completed
+    // If request is too large (>4096KB), do muliple writes until completed
     do
     {
         num_bytes_sent = write(connector->connection_fd,

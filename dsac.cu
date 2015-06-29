@@ -17,9 +17,9 @@
 
 // Myriad C API Headers
 #ifdef __cplusplus
-
 extern "C" {
 #endif
+
 #include "myriad.h"
 #include "MyriadObject.h"
 #include "Mechanism.h"
