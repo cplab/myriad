@@ -568,34 +568,3 @@ class MyriadFunction(_MyriadBase):
             return self.fun_def
         else:
             raise NotImplementedError("Non-string representations unsupported")
-
-
-def main():
-    """ Test basic functionality. """
-    # Test Scalar
-    void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
-    print(void_ptr.stringify_decl())
-    # Test Function
-    myriad_dtor = MyriadFunction("myriad_dtor", OrderedDict({0: void_ptr}))
-    myriad_dtor.gen_typedef()
-    print(myriad_dtor.stringify_decl())
-    print(myriad_dtor.stringify_typedef())
-    # Test struct
-    myriad_class = MyriadStructType("MyriadClass", OrderedDict({0: void_ptr}))
-    print(myriad_class.stringify_decl())
-    class_m = myriad_class("class_m", quals=["const"])
-    print(class_m.stringify_decl())
-    class_2 = myriad_class("class_2", ptr=True)
-    print(class_2.stringify_decl())
-    # Test array
-    my_arr = MyriadScalar(ident="my_arr",
-                          base_type=MDouble,
-                          ptr=False,
-                          quals=["const"],
-                          storage=["static"],
-                          arr_id="SIMUL_LEN")
-    print(my_arr.stringify_decl())
-
-
-if __name__ == "__main__":
-    main()

@@ -42,7 +42,7 @@ def parse_node(node):
     literals = ["Num", "Str", "List", "NameConstant"]
 
     nodeClassName = node.__class__.__name__
-   
+
     nodeClassDispatch = {"Subscript": parse_subscript,
                          "Name": parse_var,
                          "UnaryOp": parse_unaryop,
@@ -111,7 +111,6 @@ def parse_call(node):
 
 
 def parse_unaryop(node):
-    
     return CTypes.CUnaryOp(node, parse_node(node.operand))
 
 

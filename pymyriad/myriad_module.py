@@ -629,8 +629,8 @@ class MyriadModule(object):
             # can know whether method/function calls are legal or not.
             # TODO: Fix fbody
             fbody = pyfunbody_to_cbody(method,
-                                       methods,
-                                       self.obj_struct.members)
+                                       c_methods=methods,
+                                       struct_members=self.obj_struct.members)
             sig = signature(method)  # Get current signature
             param_odict = sig.parameters.copy()
             param_odict["self"] = tmp_self

@@ -14,7 +14,8 @@ class TestScalars(unittest.TestCase):
     Test Cases for Scalars.
     """
 
-    def test_void_ptr_scalar(self):
+    def test_qual_scalar(self):
+        """ Testing qualified scalar creation """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         self.assertEqual("const void *self", void_ptr.stringify_decl())
 
@@ -24,13 +25,15 @@ class TestFunctions(unittest.TestCase):
     Test Cases for Functions
     """
 
-    def test_void_ptr_function(self):
+    def test_void_ret_function(self):
+        """ Testing for functions with void return types"""
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_dtor = MyriadFunction("dtor", OrderedDict({0: void_ptr}))
         self.assertEqual("void dtor(const void *self)",
                          myriad_dtor.stringify_decl())
 
-    def test_void_ptr_function_typedef(self):
+    def test_function_typedef(self):
+        """ Testing function typedef generation """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         dtor = MyriadFunction("dtor", OrderedDict({0: void_ptr}))
         dtor.gen_typedef()
@@ -43,7 +46,8 @@ class TestStructs(unittest.TestCase):
     Test Cases for Structs
     """
 
-    def test_struct(self):
+    def test_single_member_struct(self):
+        """ Test for struct with single member """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
@@ -52,6 +56,7 @@ class TestStructs(unittest.TestCase):
         self.assertEqual(str1, str2)
 
     def test_struct_ptr(self):
+        """ Test for having a struct pointer variable """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
@@ -59,7 +64,8 @@ class TestStructs(unittest.TestCase):
         self.assertEqual("struct MyriadClass *class_2",
                          class_2.stringify_decl())
 
-    def test_struct_const(self):
+    def test_struct_qual(self):
+        """ Test for making a struct having a qualifier """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
@@ -67,13 +73,28 @@ class TestStructs(unittest.TestCase):
         self.assertEqual("const struct MyriadClass class_m",
                          class_m.stringify_decl())
 
+    def test_struct_nesting(self):
+        """ Testing basic struct nesting """
+        void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
+        double_val = MyriadScalar("val", MDouble)
+        myriad_class = MyriadStructType("MyriadClass",
+                                        OrderedDict({0: void_ptr}))
+        class_m = myriad_class("class_m", quals=["const"])
+        toplevel_struct = MyriadStructType("toplevel",
+                                           OrderedDict({0: class_m,
+                                                        1: double_val}))
+        self.assertEqual(
+            "struct toplevel {   const struct MyriadClass class_m;   double val; }",
+            toplevel_struct.stringify_decl().replace('\n', ' '))
+
 
 class TestArray(unittest.TestCase):
     """
     Test Cases for Arrays
     """
 
-    def test_array(self):
+    def test_array_full(self):
+        """ Testing arrays with qualifiers, storage specifies, and dim IDs """
         my_arr = MyriadScalar(ident="my_arr",
                               base_type=MDouble,
                               ptr=False,
