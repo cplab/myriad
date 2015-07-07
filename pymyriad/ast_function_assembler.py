@@ -1,8 +1,9 @@
 """
 High level function assembler. Ties together ast_parse to parse
 a full function.
-Author: Alex Davies
+
 """
+__author__ = ["Alex J. Davies", "Pedro Rittner"]
 
 import inspect
 from types import FunctionType
@@ -11,7 +12,8 @@ from collections import OrderedDict
 
 import ast_parse
 import CTypes
-from myriad_types import MInt, MyriadScalar, MyriadFunction, MVoid
+from myriad_types import MInt, MyriadScalar, MyriadFunction, MVoid, MyriadCType
+from myriad_utils import remove_header_parens
 
 floatType = "double"
 
@@ -124,45 +126,6 @@ class CFunc(object):
                 if node.var == lPair[0].var:
                     lPair[0] = node
 
-
-def _remove_header_parens(lines: list) -> list:
-    """ Removes lines where top-level parentheses are found """
-    open_index = (-1, -1)  # (line number, index within line)
-    flattened_list = list('\n'.join(lines))
-
-    # Find initial location of open parens
-    linum = 0
-    for indx, char in enumerate(flattened_list):
-        if char == '\n':
-            linum += 1
-        elif char == '(':
-            open_index = (linum, indx)
-            break
-
-    # print("open parenthese index: ", open_index)
-
-    # Search for matching close parens
-    close_index = (-1, -1)
-    open_br = 0
-    linum = 0
-    for indx, char in enumerate(flattened_list[open_index[1]:]):
-        if char == '\n':
-            linum += 1
-        elif char == '(':
-            open_br += 1
-            print("Found ( at index ", indx, " open_br now ", open_br)
-        elif char == ')':
-            open_br -= 1
-            print("Found ) at index ", indx, " open_br now ", open_br)
-        # Check if we're matched
-        if open_br == 0:
-            close_index = (linum, indx)
-            break
-
-    # print("close parentheses index: ", close_index)
-    return lines[open_index[0]:][close_index[0]:]
-
-
 def pyfunbody_to_cbody(c_fun: FunctionType,
                        c_methods=None,
                        indent_lvl: int=2,
@@ -170,7 +133,7 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
     # Remove function header and leading spaces on each line
     # How many spaces are removed depends on indent level
     fun_source = inspect.getsourcelines(c_fun)[0]
-    fun_source = _remove_header_parens(fun_source)
+    fun_source = remove_header_parens(fun_source)
     print(fun_source)
 
     # Do some string processing aerobics for indent purposes
@@ -204,14 +167,18 @@ def pyfun_to_cfun(fun: FunctionType,
     # Need to call copy because parameters is a weak reference proxy
     fun_parameters = inspect.signature(fun).parameters.copy()
     # We can't legally iterate over the original, and items() returns a view
-    for key in fun_parameters.copy().keys():
+    for argname, argtype in fun_parameters.copy().items():
         # We can do this because the original key insert position is unchanged
-        fun_parameters[key] = fun_parameters[key].annotation
-    # print(fun_parameters)
+        if issubclass(argtype.annotation.__class__, MyriadCType):
+            fun_parameters[argname] = MyriadScalar(argname, argtype.annotation)
+    print(fun_parameters)
 
     # Process return type: if empty, use MVoid
     fun_return_type = inspect.signature(fun).return_annotation
-    if fun_return_type is inspect.Signature.empty:
+    if fun_return_type is not inspect.Signature.empty:
+        if issubclass(fun_return_type.__class__, MyriadCType):
+            fun_return_type = MyriadScalar("_", fun_return_type)
+    else:
         fun_return_type = MyriadScalar("_", MVoid)
 
     # Get function body
@@ -227,8 +194,7 @@ def pyfun_to_cfun(fun: FunctionType,
     # TODO: Problem: Stripping spaces doesn't work for sub functions.
 
 
-def test_fun(a: MyriadScalar("a", MInt),
-             b: MyriadScalar("b", MInt)) -> MyriadScalar("_", MInt):
+def test_fun(a: MInt, b: MInt) -> MInt:
     x = 0
     while x < 3:
         if a == b:

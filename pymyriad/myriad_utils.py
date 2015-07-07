@@ -1,8 +1,10 @@
 """
 Collection of internal utility metaclasses and function annotations.
 
-@author Pedro Rittner
+TODO: Use logging module for logging
 """
+
+__author__ = ["Pedro Rittner"]
 
 from functools import wraps
 from inspect import getcallargs
@@ -160,26 +162,43 @@ class IndexedSet(object):
         return str(_lst)
 
 
-def test_type_enforcer():
-    """ Tests TypeEnforcer functionality """
+def remove_header_parens(lines: list) -> list:
+    """ Removes lines where top-level parentheses are found """
+    open_index = (-1, -1)  # (line number, index within line)
+    flattened_list = list('\n'.join(lines))
 
-    class _Foo(object, metaclass=TypeEnforcer):
-        def __init__(self, myint: int=0):
-            self.myint = myint
+    # Find initial location of open parens
+    linum = 0
+    for indx, char in enumerate(flattened_list):
+        if char == '\n':
+            linum += 1
+        elif char == '(':
+            open_index = (linum, indx)
+            break
 
-    my_foo = None
+    # print("open parenthese index: ", open_index)
 
-    try:
-        my_foo = _Foo(5.)
-    except TypeError:
-        pass
+    # Search for matching close parens
+    close_index = (-1, -1)
+    open_br = 0
+    linum = 0
+    for indx, char in enumerate(flattened_list[open_index[1]:]):
+        if char == '\n':
+            linum += 1
+        elif char == '(':
+            open_br += 1
+            # print("Found ( at index ", indx, " open_br now ", open_br)
+        elif char == ')':
+            open_br -= 1
+            # print("Found ) at index ", indx, " open_br now ", open_br)
+        # Check if we're matched
+        if open_br == 0:
+            close_index = (linum, indx)
+            break
 
-    if my_foo is not None:
-        print("TypeEnforcer test failed!")
+    # print("close parentheses index: ", close_index)
 
-
-def main():
-    test_type_enforcer()
-
-if __name__ == "__main__":
-    main()
+    if open_index[0] == close_index[0]:
+        return lines[1:]
+    else:
+        return lines[open_index[0]:][close_index[0]:]
