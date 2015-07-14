@@ -11,11 +11,11 @@ class CObject(object):
     def __init__(self):
         pass
 
-    """def stringify(self):
-            
-            Return the C interpretation of this object as a string.
-                
-            raise NotImplementedError("Stringify is an abstract method.")"""
+    def stringify(self):
+        """
+        Return the C interpretation of this object as a string.
+        """
+        raise NotImplementedError("Stringify is an abstract method.")
 
 
 class CList(CObject):
@@ -152,15 +152,14 @@ class CVarAttr(CVar):
         elif node.__class__.__name__ == "Attribute":
             if node.value.__class__.__name__ == "Name":
                 self.var = CVar(node.value)
+                self.attr = node.attr
             elif node.value.__class__.__name__ == "Attribute":
                 self.var = CVarAttr(node.value)
                 self.attr = node.attr
 
-    """
     def stringify(self):
-        if node.attr in module.attributes or node.attr in module.methods:
-            return str(var) + "->" + str(attr)
-    """
+        return str(self.var.var) + "->" + str(self.attr)
+
 
 class CCall(CObject):
     """
@@ -455,17 +454,15 @@ def get_node_from_var(l, var):
     """
     Finds the master variable which has identifier var, and returns the
     CVar representing it.
-        
+
     :param l: master list of variables
     :param var: identifier we are looking for
-        """
-
-
+    """
     for node in l:
-            if isinstance(node, CVar) and (node.var == var):
-                return node
-            elif isinstance(node, list):
-                return get_node_from_var(node, var)
+        if isinstance(node, CVar) and (node.var == var):
+            return node
+        elif isinstance(node, list):
+            return get_node_from_var(node, var)
     return None
 
 
@@ -475,4 +472,4 @@ def get_lPair_from_var(l, var):
     """
     for node in l:
         if isinstance(node, list) and (node[0].var == var):
-                return node
+            return node

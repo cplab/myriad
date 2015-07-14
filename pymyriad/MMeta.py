@@ -100,14 +100,6 @@ def myriad_method(method):
     @wraps(method)
     def inner(*args, **kwargs):
         raise Exception("Cannot directly call a myriad method")
-
-    # Do some pre-processing stuff here for ease-of-use
-    for param_ident, p_annotation in method.__annotations__.items():
-        # Self never in __annotations__ so we don't need to worry about it
-        if issubclass(p_annotation.__class__, myriad_types.MyriadCType):
-            tmp = myriad_types.MyriadScalar(param_ident, p_annotation)
-            method.__annotations__[param_ident] = tmp
-
     inner.__dict__["is_myriad_method"] = True
     inner.__dict__["original_fun"] = method
     return inner

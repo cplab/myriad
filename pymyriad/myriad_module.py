@@ -651,8 +651,8 @@ class MyriadModule(object):
         #
         # In order to do this, we need to copy all methods from our superclass,
         # taking care to set the "inherited" flag to True for each of them.
-        # Resetting the instance methods dict is crucial to prevent double-
-        # -declarations. After reset but before adding to our own methods,
+        # Resetting the instance methods dict is crucial to prevent duplicate
+        # declarations. After reset but before adding to our own methods,
         # we inject our overrides (if any). It is also important that new
         # methods are added to the dictionary last and in the same order
         # as provided in the arguments, in order to ensure proper ordering

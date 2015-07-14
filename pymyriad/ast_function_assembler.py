@@ -15,7 +15,7 @@ import CTypes
 from myriad_types import MInt, MyriadScalar, MyriadFunction, MVoid, MyriadCType
 from myriad_utils import remove_header_parens
 
-floatType = "double"
+FLOAT_TYPE = "double"
 
 # Attributes cannot be referenced before their parent object.
 # Lists must be assigned explicitly and reassigned explicitly.
@@ -39,7 +39,7 @@ class CFunc(object):
     def stringify_declarations(self):
         retString = ""
         for var in self.variables:
-            retString = self.variables[var] + " " + var + ";\n"
+            retString = str(self.variables[var]) + " " + str(var) + ";\n"
         return retString
 
     # TODO: support for uint, void, sizet, va_list, strings?
@@ -71,9 +71,10 @@ class CFunc(object):
 
     def track_variables(self, l):
         # TODO: populate flavours
-        flavours = {type(1): "int64_t", type(3.0): floatType}
+        flavours = {type(1): "int64_t", type(3.0): FLOAT_TYPE}
         for node in l:
             if (isinstance(node, CTypes.CAssign) and
+                    not isinstance(node.target, CTypes.CVarAttr) and
                     node.target.var not in self.variables):
                 targetVar = node.target.var
                 # TODO: what about variable to variable assignments?
@@ -93,7 +94,7 @@ class CFunc(object):
         Prepare CFunc for stringification.
         """
         self.track_variables(self.nodeList)
-        self.track_attributes(self.nodeList)
+        # self.track_attributes(self.nodeList)
         self.track_lists(self.nodeList)
         self.tie_lists(self.variables, self.lists)
 
@@ -126,9 +127,10 @@ class CFunc(object):
                 if node.var == lPair[0].var:
                     lPair[0] = node
 
+
 def pyfunbody_to_cbody(c_fun: FunctionType,
                        c_methods=None,
-                       indent_lvl: int=2,
+                       indent_lvl: int=1,
                        struct_members: OrderedDict=None) -> str:
     # Remove function header and leading spaces on each line
     # How many spaces are removed depends on indent level
@@ -150,12 +152,13 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
 
 
 def pyfun_to_cfun(fun: FunctionType,
-                  indent_lvl=2) -> MyriadFunction:
+                  indent_lvl: int=1) -> MyriadFunction:
     """
     Converts a native python function into an equivalent C function, 1-to-1.
 
     Args:
-       fun (FunctionType):  function to be converted
+        fun (FunctionType):  function to be converted
+        indent_lvl: level of indentation of the function
 
     Returns:
        MyriadFunction.  converted C function definition
@@ -168,10 +171,12 @@ def pyfun_to_cfun(fun: FunctionType,
     fun_parameters = inspect.signature(fun).parameters.copy()
     # We can't legally iterate over the original, and items() returns a view
     for argname, argtype in fun_parameters.copy().items():
+        # First argument is always self, a void*
+        if argname == "self":
+            fun_parameters[argname] = MyriadScalar("self", MVoid, ptr=True)
         # We can do this because the original key insert position is unchanged
         if issubclass(argtype.annotation.__class__, MyriadCType):
             fun_parameters[argname] = MyriadScalar(argname, argtype.annotation)
-    print(fun_parameters)
 
     # Process return type: if empty, use MVoid
     fun_return_type = inspect.signature(fun).return_annotation
@@ -182,7 +187,7 @@ def pyfun_to_cfun(fun: FunctionType,
         fun_return_type = MyriadScalar("_", MVoid)
 
     # Get function body
-    fun_body = pyfunbody_to_cbody(fun, indent_lvl=1)
+    fun_body = pyfunbody_to_cbody(fun, indent_lvl=indent_lvl)
 
     # Create MyriadFunction wrapper
     myriad_fun = MyriadFunction(fun_name,
@@ -199,18 +204,19 @@ def test_fun(a: MInt, b: MInt) -> MInt:
     while x < 3:
         if a == b:
             x = x + 1
+            # TODO: sort out assignments like below
             # c[x] = 1
     return x
 
-# TODO: sort out assignments like the commented line in test
-
 
 def main():
+    # Standalone function
     mfun = pyfun_to_cfun(test_fun, indent_lvl=1)
     print(mfun.stringify_decl())
     print("{")
     print(mfun.stringify_def())
     print("}")
+    # Extract method from class and convert
 
 if __name__ == "__main__":
     main()
