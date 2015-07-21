@@ -6,6 +6,7 @@ a full function.
 __author__ = ["Alex J. Davies", "Pedro Rittner"]
 
 import inspect
+import re
 from types import FunctionType
 from ast import parse
 from collections import OrderedDict
@@ -136,7 +137,6 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
     # How many spaces are removed depends on indent level
     fun_source = inspect.getsourcelines(c_fun)[0]
     fun_source = remove_header_parens(fun_source)
-    print(fun_source)
 
     # Do some string processing aerobics for indent purposes
     fun_body = '\n'.join([line[(indent_lvl * 4):] for line in fun_source])
@@ -148,7 +148,9 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
 
     fun_parsed.prepare_stringify()
 
-    return fun_parsed.stringify()
+    fun_cstring = fun_parsed.stringify()
+
+    return fun_cstring
 
 
 def pyfun_to_cfun(fun: FunctionType,
@@ -188,6 +190,11 @@ def pyfun_to_cfun(fun: FunctionType,
 
     # Get function body
     fun_body = pyfunbody_to_cbody(fun, indent_lvl=indent_lvl)
+
+    # Add struct pointer cast to self-> instances, if this function is a method
+    if re.compile(r".+\.").match(fun.__qualname__) is not None:
+        repl = "((struct " + fun.__qualname__.split('.')[0] + "*) self)->"
+        fun_body = fun_body.replace("self->", repl)
 
     # Create MyriadFunction wrapper
     myriad_fun = MyriadFunction(fun_name,
