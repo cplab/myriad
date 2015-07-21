@@ -11,6 +11,12 @@ import myriad_types
 from myriad_module import MyriadModule
 from MyriadObject import MyriadObject
 
+"""
+#TODO: Find some way to incorporate inspect.classify_class_attrs(MyClass)
+#TODO: Error checking can be done via:
+ gcc -std=c99 -Wall -Wextra -Wpedantic -fsyntax-only -fdiagnostics-color=always
+"""
+
 
 class MyriadMeta(type):
     """

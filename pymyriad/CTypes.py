@@ -51,7 +51,7 @@ class CList(CObject):
         """
         retString = "{" + stringify(self.cargo[0])
         for elt in self.cargo[1:]:
-            retString = retString + ", " + stringify(elt) 
+            retString = retString + ", " + stringify(elt)
         retString = retString + "}"
         return retString
 
@@ -71,7 +71,7 @@ class CSubscript(CObject):
         :param sliceNode: indicates whether it's an index or a slice
         """
         self.val = variableNode.id  # String identified of the variable
-        self.sliceClass = sliceNode.__class__.__name__  # Name of the slice class
+        self.sliceClass = sliceNode.__class__.__name__  # Name of slice class
         self.sl = sliceNode
         """
         # TODO: fix for variables (e.g. l[a] where a is a variable)
@@ -83,7 +83,8 @@ class CSubscript(CObject):
         if self.sliceClass == "Slice":
             lowerValue = sliceNode.lower.n
             upperValue = sliceNode.upper.n
-            self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}"""
+            self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}
+        """
 
     def stringify(self):
         """
@@ -91,21 +92,22 @@ class CSubscript(CObject):
         """
         return str(self.val) + "[" + stringify(self.sl) + "]"
 
+
 class CChar(CObject):
     """
-    CChars are strings of one element, where their C representations are 
+    CChars are strings of one element, where their C representations are
     single-quoted.
     """
 
     def __init__(self, c: str):
-            if ((not isinstance(c, str)) or (len(c) != 1)):
-                    raise TypeError("s must be set to a string of length = 1.")
+        if ((not isinstance(c, str)) or (len(c) != 1)):
+            raise TypeError("s must be set to a string of length = 1.")
 
-            self.cargo = c
-            self.length = 1
+        self.cargo = c
+        self.length = 1
 
     def stringify(self):
-            return str("'" + self.cargo + "'")
+        return str("'" + self.cargo + "'")
 
 
 class CString(CObject):
@@ -115,14 +117,14 @@ class CString(CObject):
     """
 
     def __init__(self, s: str):
-            if not isinstance(s, str):
-                    raise TypeError("s must be set to a string.")
+        if not isinstance(s, str):
+            raise TypeError("s must be set to a string.")
 
-            self.cargo = s
-            self.length = len(s)
+        self.cargo = s
+        self.length = len(s)
 
     def stringify(self):
-            return str('"' + self.cargo + '"')
+        return str('"' + self.cargo + '"')
 
 
 class CVar(CObject):
@@ -163,49 +165,55 @@ class CVarAttr(CVar):
 
 class CCall(CObject):
     """
-    Container for a function call.        
+    Container for a function call.
     """
 
-    funcDict = {"acos"  : "acos",   "asin" : "asin", "atan" : "atan",
-                "atan2" : "atan2",  "ceil" : "ceil", "cos" : "cos",
-                "cosh" : "cosh", "exp" : "exp", "fabs" : "fabs",
-                "floor" : "floor", "fmod" : "fmod", "frexp" : "frexp",
-                "ldexp" : "ldexp", "log" : "log", "log10" : "log10",
-                "modf" : "modf", "sin" : "sin", "sinh" : "sinh",
-                "sqrt" : "sqrt", "tan" : "tan", "tanh" : "tanh",
-                "erf" : "erf", "erfc" : "erfc", "lgamma" : "lgamma",
-                "hypot" : "hypot", "isnan" : "isnan", "acosh" : "acosh",
-                "asinh" : "asinh", "atanh" : "atanh", "expm1" : "expm1",
-                "log1p" : "log1p"}
+    funcDict = {"acos": "acos", "asin": "asin", "atan": "atan",
+                "atan2": "atan2", "ceil": "ceil", "cos": "cos",
+                "cosh": "cosh", "exp": "exp", "fabs": "fabs",
+                "floor": "floor", "fmod": "fmod", "frexp": "frexp",
+                "ldexp": "ldexp", "log": "log", "log10": "log10",
+                "modf": "modf", "sin": "sin", "sinh": "sinh",
+                "sqrt": "sqrt", "tan": "tan", "tanh": "tanh",
+                "erf": "erf", "erfc": "erfc", "lgamma": "lgamma",
+                "hypot": "hypot", "isnan": "isnan", "acosh": "acosh",
+                "asinh": "asinh", "atanh": "atanh", "expm1": "expm1",
+                "log1p": "log1p"}
 
-    #No Bessel functions (j0, j1, jn, y0, y1, yn).
-    #No cube root (cbrt).
-    #No ilogb, logb.
-    #No nextafter.
-    #No remainder.
-    #No rint.
-    #No scalb.
+    # No Bessel functions (j0, j1, jn, y0, y1, yn).
+    # No cube root (cbrt).
+    # No ilogb, logb.
+    # No nextafter.
+    # No remainder.
+    # No rint.
+    # No scalb.
 
     def __init__(self, func, args):
+        # If our alleged function call is ...
+        # ... a standalone function call
         if func.var in self.funcDict:
             self.func = self.funcDict[func.var]
             self.args = args
+        # ... a call to a self method
+        elif isinstance(func.var, CVar) and func.var.var == 'self':
+            self.func = func.attr
+            self.args = [func.var] + args
+        # ... something else
         else:
-            print("Function call not valid.")
+            raise Exception("Function call not valid.")
 
     def stringify(self):
         retString = stringify(self.func)
-               
         if not self.args:
             return retString + "() "
         else:
             retString = retString + "(" + stringify(self.args[0])
             i = 1
             while i < len(self.args):
-               retString = retString + ", " + stringify(self.args[i])
-               i += 1
-            return retString + ")"
-              
+                retString = retString + ", " + stringify(self.args[i])
+                i += 1
+                return retString + ");"
+
 
 class CUnaryOp(CObject):
     """
@@ -225,6 +233,7 @@ class CUnaryOp(CObject):
 
     def stringify(self):
         return self.op + self.operand.stringify()
+
 
 class CBinaryOp(CObject):
     """
@@ -328,8 +337,8 @@ class CAssign(CObject):
         # Assignment is always single line.
 
 
-#TODO: not allow for loops - while loops only
-#TODO: implement length functions
+# TODO: not allow for loops - while loops only
+# TODO: implement length functions
 
 class CForLoop(CObject):
     """
