@@ -7,6 +7,7 @@ from collections import OrderedDict
 
 from myriad_types import MVoid, MDouble
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
+from myriad_types import cast_to_parent
 
 
 class TestScalars(unittest.TestCase):
@@ -103,6 +104,35 @@ class TestArray(unittest.TestCase):
                               arr_id="SIMUL_LEN")
         self.assertEqual("static const double my_arr[SIMUL_LEN]",
                          my_arr.stringify_decl())
+
+
+class TestCasts(unittest.TestCase):
+    """
+    Test Cases for Casting
+    """
+
+    def test_cast_to_parent(self):
+        """ Test for a simple cast where the field is in the struct. """
+        void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
+        double_val = MyriadScalar("val", MDouble)
+        myriad_class = MyriadStructType("MyriadClass",
+                                        OrderedDict({0: void_ptr,
+                                                     1: double_val}))
+        self.assertEqual("(struct MyriadClass*)",
+                         cast_to_parent(myriad_class, "val"))
+
+    def test_cast_to_parent_nested(self):
+        """ Test for a cast with 1 level of recursion. """
+        void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
+        double_val = MyriadScalar("val", MDouble)
+        myriad_class = MyriadStructType("MyriadClass",
+                                        OrderedDict({0: void_ptr}))
+        class_m = myriad_class("_", quals=["const"])
+        toplevel_struct = MyriadStructType("toplevel",
+                                           OrderedDict({0: class_m,
+                                                        1: double_val}))
+        self.assertEqual("(struct MyriadClass*)",
+                         cast_to_parent(toplevel_struct, "self"))
 
 
 if __name__ == '__main__':

@@ -289,8 +289,14 @@ class MyriadStructType(_MyriadBase):
         #: Ordered members of the struct, derived from _MyriadBase.
         self.members = OrderedDict()
 
-        # Set struct members using ordered dict: order matters for memory!
         members = OrderedDict() if members is None else members
+
+        # Store member type information for introspection. Non-ordered.
+        self.member_type_info = {}
+        for scalar in members.values():
+            self.member_type_info[scalar.ident] = scalar
+
+        # Set struct members using ordered dict: order matters for memory!
         sorted_members = [members[idx].decl for idx in members.keys()]
         members = {v.ident: v.decl for v in members.values()}
         for member_ident, member in members.items():
@@ -370,6 +376,9 @@ class MyriadStructType(_MyriadBase):
         # Initialize members as object attributes
         for member_name, member_val in new_kwargs.items():
             new_instance.__dict__[member_name] = member_val
+
+        # Set struct type information for introspection
+        new_instance.__dict__["struct_type_info"] = self
 
         return new_instance
 
@@ -568,3 +577,29 @@ class MyriadFunction(_MyriadBase):
             return self.fun_def
         else:
             raise NotImplementedError("Non-string representations unsupported")
+
+
+def cast_to_parent(struct: MyriadStructType,
+                   field: str) -> str:
+    """
+    Casts a type to a parent type to allow for accessing a given field.
+    Raises an exception if no possible cast exists to allow this.
+
+    :param struct: Struct type in which to look for field
+    :type struct: MyriadStructType
+
+    :param field: Field which we are looking for.
+    :type field: str
+
+    :return: String representing the cast, e.g. (double*) or (struct sc*)
+    :rtype: str
+    """
+    if field in struct.members:
+        return '(struct ' + struct.struct_name + '*)'
+    # i.e. if we have a member named '_', and it has a struct type
+    elif ('_' in struct.members and
+          "struct_type_info" in struct.member_type_info['_'].__dict__):
+        return cast_to_parent(struct.member_type_info['_'].struct_type_info,
+                              field)
+    else:
+        raise Exception("Field not found in struct type")

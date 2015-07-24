@@ -54,22 +54,6 @@ class CFunc(object):
                 retString = retString + node.stringify() + "\n"
         return retString
 
-
-    # TODO: do variables need to be explicitly used without attributes?
-    # Possibly, add CVarAttr tracker.
-    """def track_variables(self, l):
-        for node in l:
-            if isinstance(node, CTypes.CVar):
-                tempList = []
-                for v in self.variables:
-                    tempList.append(v.var)
-                if node.var not in tempList:
-                    self.variables.append(node)
-            elif isinstance(node, CTypes.CObject):
-                self.track_variables(list(node.__dict__.values()))
-            elif isinstance(node, list):
-                self.track_variables(node)"""
-
     def track_variables(self, l):
         # TODO: populate flavours
         flavours = {type(1): "int64_t", type(3.0): FLOAT_TYPE}
@@ -86,7 +70,7 @@ class CFunc(object):
             elif isinstance(node, list):
                 self.track_variables(node)
 
-    # TODO: write tie_variables(self, l) which will tie variables to their initial values.
+    # TODO: write tie_variables(self, l) to tie variables to initial values
     # Easily done because all variables are the first instance of themselves.
     # Just look at their CAssign state ment container.
 
@@ -150,6 +134,12 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
 
     fun_cstring = fun_parsed.stringify()
 
+    # Add struct pointer cast to self-> instances, if this function is a method
+    # TODO: Change this to take an external argument instead
+    if re.compile(r".+\.").match(c_fun.__qualname__) is not None:
+        repl = "((struct " + c_fun.__qualname__.split('.')[0] + "*) self)->"
+        fun_cstring = fun_cstring.replace("self->", repl)
+
     return fun_cstring
 
 
@@ -191,19 +181,12 @@ def pyfun_to_cfun(fun: FunctionType,
     # Get function body
     fun_body = pyfunbody_to_cbody(fun, indent_lvl=indent_lvl)
 
-    # Add struct pointer cast to self-> instances, if this function is a method
-    if re.compile(r".+\.").match(fun.__qualname__) is not None:
-        repl = "((struct " + fun.__qualname__.split('.')[0] + "*) self)->"
-        fun_body = fun_body.replace("self->", repl)
-
     # Create MyriadFunction wrapper
     myriad_fun = MyriadFunction(fun_name,
                                 fun_parameters,
                                 fun_return_type,
                                 fun_def=fun_body)
     return myriad_fun
-
-    # TODO: Problem: Stripping spaces doesn't work for sub functions.
 
 
 def test_fun(a: MInt, b: MInt) -> MInt:
