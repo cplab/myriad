@@ -10,8 +10,8 @@ import unittest
 
 from collections import OrderedDict
 
-from myriad_types import MyriadFunction, MDouble, MyriadScalar
-from myriad_metaclass import MyriadMethod
+from myriad_types import MyriadFunction, MyriadScalar, MVoid
+import myriad_metaclass
 
 
 class TestMyriadMethod(unittest.TestCase):
@@ -23,20 +23,20 @@ class TestMyriadMethod(unittest.TestCase):
         """ Testing if delegator template is correctly initialized """
         with open("templates/delegator_func.mako", 'r') as delegator_f:
             contents = delegator_f.read()
-            self.assertEqual(contents, MyriadMethod.DELG_TEMPLATE)
+            self.assertEqual(contents, myriad_metaclass.DELG_TEMPLATE)
 
     def test_super_delg_template_init(self):
         """ Testing if super delegator template is correctly initialized """
         with open("templates/super_delegator_func.mako", 'r') as s_delg_f:
             contents = s_delg_f.read()
-            self.assertEqual(contents, MyriadMethod.SUPER_DELG_TEMPLATE)
+            self.assertEqual(contents, myriad_metaclass.SUPER_DELG_TEMPLATE)
 
-    def test_method_init(self):
-        mfun_args = OrderedDict({"arg1": MyriadScalar("arg1", MDouble),
-                                 "arg2": MyriadScalar("arg1", MDouble)})
-        mfun = MyriadFunction("test_fun", mfun_args)
-        method = MyriadMethod(mfun, {"TestObject": "return;"})
-        self.assertFalse(method.inherited)
+    def test_create_super_delegator(self):
+        """ Testing if creating super delegator functions works """
+        void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
+        myriad_dtor = MyriadFunction("dtor", OrderedDict({0: void_ptr}))
+        super_delg = myriad_metaclass.create_super_delegator(myriad_dtor)
+        self.assertTrue(super_delg.ident.startswith("super_"))
 
 
 def main():

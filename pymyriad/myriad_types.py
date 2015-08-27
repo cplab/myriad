@@ -449,7 +449,7 @@ class MyriadFunction(_MyriadBase):
         _tmp_decl = copy.deepcopy(self.ret_var.decl.type)
 
         # Make sure we override the identifier in our copy
-        if type(_tmp_decl) is PtrDecl:
+        if isinstance(_tmp_decl, PtrDecl):
             _tmp_decl.type.declname = self.ident
         else:
             _tmp_decl.declname = self.ident
@@ -542,7 +542,7 @@ class MyriadFunction(_MyriadBase):
         _tmp, tmp = None, None
 
         # Fix for an insiduous bug with string identifiers (e.g. int64_t)
-        if type(self.func_decl.type.type) is TypeDecl:
+        if isinstance(self.func_decl.type.type, TypeDecl):
             _tmp = self.func_decl.type.type.type
         else:
             _tmp = IdentifierType(names=self.func_decl.type.type.names)
@@ -573,7 +573,7 @@ class MyriadFunction(_MyriadBase):
 
     def stringify_def(self) -> str:
         """ Returns string representation of this function's definition. """
-        if type(self.fun_def) is str:
+        if isinstance(self.fun_def, str):
             return self.fun_def
         else:
             raise NotImplementedError("Non-string representations unsupported")

@@ -1,4 +1,3 @@
-% if not inherited:
 <%
     fun_args = ','.join([arg.ident for arg in super_delegator.args_list.values()][1:])
 %>
@@ -16,4 +15,3 @@ ${super_delegator.stringify_decl()}
     return superclass->my_${delegator.fun_typedef.name}(${fun_args});
     % endif
 }
-% endif
