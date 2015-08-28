@@ -21,7 +21,20 @@ DELG_TEMPLATE = open("templates/delegator_func.mako", 'r').read()
 SUPER_DELG_TEMPLATE = open("templates/super_delegator_func.mako", 'r').read()
 
 
-def create_super_delegator(m_fxn: MyriadFunction):
+def create_delegator(instance_fxn: MyriadFunction, classname: str):
+    """
+    Creates a delegator function based on a function definition.
+    """
+    # Generate template and render
+    template_vars = {"delegator": instance_fxn, "classname": classname}
+    template = MakoTemplate(DELG_TEMPLATE, template_vars)
+    template.render()
+    return MyriadFunction(instance_fxn.ident.partition(classname + "_")[-1],
+                          instance_fxn.args_list,
+                          fun_def=template.buffer)
+
+
+def create_super_delegator(m_fxn: MyriadFunction, classname: str):
     """
     Create super delegator function.
     """
@@ -32,13 +45,16 @@ def create_super_delegator(m_fxn: MyriadFunction):
     super_args.move_to_end(tmp_arg_indx, last=False)
 
     # Generate template and render
-    template_vars = {}
+    delegator_f = MyriadFunction("super_" + m_fxn.ident,
+                                 super_args,
+                                 m_fxn.ret_var)
+    template_vars = {"super_delegator": delegator_f, "classname": classname}
     template = MakoTemplate(SUPER_DELG_TEMPLATE, template_vars)
     template.render()
-    return MyriadFunction("super_" + m_fxn.ident,
-                          super_args,
-                          m_fxn.ret_var,
-                          fun_def=template.buffer)
+
+    # Add rendered definition to function
+    delegator_f.fun_def = template.buffer
+    return delegator_f
 
 
 def gen_instance_method_from_str(delegator, m_name: str, method_body: str):
