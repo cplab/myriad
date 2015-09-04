@@ -578,6 +578,9 @@ class MyriadFunction(_MyriadBase):
         else:
             raise NotImplementedError("Non-string representations unsupported")
 
+    def __str__(self) -> str:
+        return self.stringify_def()
+
 
 def cast_to_parent(struct: MyriadStructType,
                    field: str) -> str:

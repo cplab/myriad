@@ -29,7 +29,9 @@ def create_delegator(instance_fxn: MyriadFunction, classname: str):
     template_vars = {"delegator": instance_fxn, "classname": classname}
     template = MakoTemplate(DELG_TEMPLATE, template_vars)
     template.render()
-    return MyriadFunction(instance_fxn.ident.partition(classname + "_")[-1],
+    name = instance_fxn.ident.partition(classname + "_")[-1]
+    print(name)
+    return MyriadFunction(name,
                           instance_fxn.args_list,
                           fun_def=template.buffer)
 

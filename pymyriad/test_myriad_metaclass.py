@@ -39,7 +39,8 @@ class TestMyriadMethod(unittest.TestCase):
     #     self.assertTrue(super_delg.ident.startswith("super_"))
 
     def test_create_delegator(self):
-        "static int Compartment_add_mech(void* _self, void* mechanism)"
+        """ Testing if creating delegators works """
+        # Create scalars and function
         args_list = OrderedDict()
         args_list["self"] = MyriadScalar("_self", MVoid, ptr=True)
         args_list["mechanism"] = MyriadScalar("mechanism", MVoid, ptr=True)
@@ -47,9 +48,21 @@ class TestMyriadMethod(unittest.TestCase):
                                       args_list,
                                       MyriadScalar("_", MInt),
                                       ["static"])
+        # Generate delegator
         classname = "Compartment"
         result_fxn = myriad_metaclass.create_delegator(instance_fxn, classname)
-        self.assertEquals(result_fxn.ident, "add_mech")
+        # Compare result strings
+        expected_result = " ".join("""
+        static int64_t Compartment_add_mech(void *_self, void *mechanism)
+        {
+        const struct Compartment* m_class = (const struct Compartment*)
+            myriad_class_of(_self);
+        assert(m_class->my_Compartment_add_mech_t);
+        return m_class->my_Compartment_add_mech_t(mechanism);
+        }
+        """.split())
+        result_str = " ".join(str(result_fxn).split())
+        self.assertEqual(result_str, expected_result)
 
 
 def main():
