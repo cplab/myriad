@@ -476,14 +476,19 @@ class MyriadFunction(_MyriadBase):
         #: Function definition represented as a string.
         self.fun_def = fun_def
 
-    def copy_init(self,
-                  ident: str=None,
-                  args_list: OrderedDict=None,
-                  ret_var: MyriadScalar=None,
-                  storage: list=None,
-                  fun_def=None):
+    @classmethod
+    def from_myriad_func(cls,
+                         other,
+                         ident: str=None,
+                         args_list: OrderedDict=None,
+                         ret_var: MyriadScalar=None,
+                         storage: list=None,
+                         fun_def=None):
         """
         Generates a "copy" of this object with modified initial values.
+
+        :param other MyriadFunction object to copy values from
+        :type other MyriadFunction
 
         :param args_list: Ordered dict of identifiers:_MyriadBase fxn args
         :type args_list: OrderedDict or None
@@ -496,20 +501,23 @@ class MyriadFunction(_MyriadBase):
 
         :param fun_def: Function definition in form of a string or template
 
-        :return: Shallow copy of this object with modified initial values.
+        :return: Shallow copy of the other object with modified initial values
         :rtype: MyriadFunction
         """
         if ident is None:
-            ident = self.ident
+            ident = other.ident
         if args_list is None:
-            args_list = self.args_list
+            args_list = other.args_list
         if ret_var is None:
-            ret_var = self.ret_var
+            ret_var = other.ret_var
         if storage is None:
-            storage = self.storage
+            storage = other.storage
         if fun_def is None:
-            fun_def = self.fun_def
-        return MyriadFunction(ident, args_list, ret_var, storage, fun_def)
+            fun_def = other.fun_def
+        # Re-generate typedef
+        new_instance = cls(ident, args_list, ret_var, storage, fun_def)
+        new_instance.gen_typedef()
+        return new_instance
 
     @classmethod
     def from_method_signature(cls,

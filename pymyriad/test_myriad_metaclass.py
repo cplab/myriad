@@ -53,12 +53,12 @@ class TestMyriadMethod(unittest.TestCase):
         result_fxn = myriad_metaclass.create_delegator(instance_fxn, classname)
         # Compare result strings
         expected_result = " ".join("""
-        static int64_t Compartment_add_mech(void *_self, void *mechanism)
+        int64_t add_mech(void *_self, void *mechanism)
         {
         const struct Compartment* m_class = (const struct Compartment*)
             myriad_class_of(_self);
-        assert(m_class->my_Compartment_add_mech_t);
-        return m_class->my_Compartment_add_mech_t(mechanism);
+        assert(m_class->my_add_mech_t);
+        return m_class->my_add_mech_t(mechanism);
         }
         """.split())
         result_str = " ".join(str(result_fxn).split())

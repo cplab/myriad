@@ -25,15 +25,17 @@ def create_delegator(instance_fxn: MyriadFunction, classname: str):
     """
     Creates a delegator function based on a function definition.
     """
-    # Generate template and render
-    template_vars = {"delegator": instance_fxn, "classname": classname}
+    # Create copy with modified identifier
+    ist_cpy = MyriadFunction.from_myriad_func(
+        instance_fxn,
+        ident=instance_fxn.ident.partition(classname + "_")[-1])
+    # Generate template and render into copy's definition
+    template_vars = {"delegator": ist_cpy, "classname": classname}
     template = MakoTemplate(DELG_TEMPLATE, template_vars)
     template.render()
-    name = instance_fxn.ident.partition(classname + "_")[-1]
-    print(name)
-    return MyriadFunction(name,
-                          instance_fxn.args_list,
-                          fun_def=template.buffer)
+    ist_cpy.fun_def = template.buffer
+    # Return created copy
+    return ist_cpy
 
 
 def create_super_delegator(m_fxn: MyriadFunction, classname: str):
