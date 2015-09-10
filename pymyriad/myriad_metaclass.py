@@ -24,6 +24,8 @@ SUPER_DELG_TEMPLATE = open("templates/super_delegator_func.mako", 'r').read()
 def create_delegator(instance_fxn: MyriadFunction, classname: str):
     """
     Creates a delegator function based on a function definition.
+
+    :param 
     """
     # Create copy with modified identifier
     ist_cpy = MyriadFunction.from_myriad_func(
@@ -38,35 +40,47 @@ def create_delegator(instance_fxn: MyriadFunction, classname: str):
     return ist_cpy
 
 
-def create_super_delegator(m_fxn: MyriadFunction, classname: str):
+def create_super_delegator(delg_fxn: MyriadFunction, classname: str):
     """
     Create super delegator function.
+
+    :param MyriadFunction delg_fxn: Delegator to create super_* wrapper for
+    :param str classname: Name of the base class for this super delegator
+
+    :return: Super delegator method as a MyriadFunction
+    :rtype: MyriadFunction
     """
-    super_args = copy(m_fxn.args_list)
+    # Create copy of delegator function with modified parameters
+    super_args = copy(delg_fxn.args_list)
     super_class_arg = MyriadScalar("_class", MVoid, True, ["const"])
     tmp_arg_indx = len(super_args) + 1
     super_args[tmp_arg_indx] = super_class_arg
     super_args.move_to_end(tmp_arg_indx, last=False)
+    s_delg_f = MyriadFunction.from_myriad_func(delg_fxn,
+                                               "super_" + delg_fxn.ident,
+                                               super_args)
 
     # Generate template and render
-    delegator_f = MyriadFunction("super_" + m_fxn.ident,
-                                 super_args,
-                                 m_fxn.ret_var)
-    template_vars = {"super_delegator": delegator_f, "classname": classname}
+    template_vars = {"delegator": delg_fxn,
+                     "super_delegator": s_delg_f,
+                     "classname": classname}
     template = MakoTemplate(SUPER_DELG_TEMPLATE, template_vars)
     template.render()
 
     # Add rendered definition to function
-    delegator_f.fun_def = template.buffer
-    return delegator_f
+    s_delg_f.fun_def = template.buffer
+    return s_delg_f
 
 
 def gen_instance_method_from_str(delegator, m_name: str, method_body: str):
     """
     Automatically generate a MyriadFunction wrapper for a method body.
 
-    :param str m_name: Name to prepend to the instance method identifier.
-    :param str method_body: String template to use as the method body.
+    :param str m_name: Name to prepend to the instance method identifier
+    :param str method_body: String template to use as the method body
+
+    :return: Instance method as a MyriadFunction
+    :rtype: MyriadFunction
     """
     return MyriadFunction(m_name + '_' + delegator.ident,
                           args_list=delegator.args_list,

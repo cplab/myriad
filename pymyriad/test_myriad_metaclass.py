@@ -31,12 +31,15 @@ class TestMyriadMethod(unittest.TestCase):
             contents = s_delg_f.read()
             self.assertEqual(contents, myriad_metaclass.SUPER_DELG_TEMPLATE)
 
-    # def test_create_super_delegator(self):
-    #     """ Testing if creating super delegator functions works """
-    #     void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
-    #     myriad_dtor = MyriadFunction("dtor", OrderedDict({0: void_ptr}))
-    #     super_delg = myriad_metaclass.create_super_delegator(myriad_dtor)
-    #     self.assertTrue(super_delg.ident.startswith("super_"))
+    def test_create_super_delegator(self):
+        """ Testing if creating super delegator functions works """
+        void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
+        myriad_dtor = MyriadFunction("dtor", OrderedDict({0: void_ptr}))
+        classname = "Compartment"
+        super_delg = myriad_metaclass.create_super_delegator(myriad_dtor,
+                                                             classname)
+        print(super_delg.fun_def)
+        self.assertTrue(super_delg.ident.startswith("super_"))
 
     def test_create_delegator(self):
         """ Testing if creating delegators works """

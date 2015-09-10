@@ -487,6 +487,8 @@ class MyriadFunction(_MyriadBase):
         """
         Generates a "copy" of this object with modified initial values.
 
+        Note that a typedef WILL be generated once the new instance is created
+
         :param other MyriadFunction object to copy values from
         :type other MyriadFunction
 
