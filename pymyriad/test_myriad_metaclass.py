@@ -38,8 +38,17 @@ class TestMyriadMethod(unittest.TestCase):
         classname = "Compartment"
         super_delg = myriad_metaclass.create_super_delegator(myriad_dtor,
                                                              classname)
-        print(super_delg.fun_def)
-        self.assertTrue(super_delg.ident.startswith("super_"))
+        # Compare result strings
+        expected_result = " ".join("""
+        void super_dtor(const void *_class, const void *self)
+        {
+        const struct Compartment* superclass = (const struct Compartment*)
+            myriad_super(_class);
+        return superclass->my_dtor_t(self);
+        }
+        """.split())
+        result_str = " ".join(str(super_delg).split())
+        self.assertEqual(result_str, expected_result)
 
     def test_create_delegator(self):
         """ Testing if creating delegators works """
