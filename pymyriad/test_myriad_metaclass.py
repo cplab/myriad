@@ -77,6 +77,28 @@ class TestMyriadMethod(unittest.TestCase):
         self.assertEqual(result_str, expected_result)
 
 
+class TestMyriadMetaclass(unittest.TestCase):
+    """
+    Tests MyriadMetaclass functionality 'standalone'
+    """
+
+    def test_create_blank_class(self):
+        """ Testing if creating a blank metaclass works """
+        class BlankObj(myriad_metaclass.MyriadObject,
+                       metaclass=myriad_metaclass.MyriadMetaclass):
+            """ Blank test class """
+            pass
+        # Test for the existence expected members
+        self.assertTrue("obj_struct" in BlankObj.__dict__)
+        self.assertTrue("myriad_obj_vars" in BlankObj.__dict__)
+        # TODO: Add more checks for other members
+        # Check if names are as we expect them
+        self.assertTrue("obj_name" in BlankObj.__dict__)
+        self.assertEqual(BlankObj.__dict__["obj_name"], "BlankObj")
+        self.assertTrue("cls_name" in BlankObj.__dict__)
+        self.assertEqual(BlankObj.__dict__["cls_name"], "BlankObjClass")
+
+
 def main():
     """ Runs the tests, doing some setup. """
     unittest.main()

@@ -16,8 +16,10 @@ from warnings import warn
 
 from myriad_mako_wrapper import MakoTemplate
 
-from myriad_types import MyriadScalar, MyriadFunction
+from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import MVoid, _MyriadBase, MyriadCType
+
+from ast_function_assembler import pyfun_to_cfun
 
 #############
 # Constants #
@@ -138,7 +140,7 @@ def myriad_method(method):
 
         @another_decorator
         @yet_another_decorator
-        @print_class_name
+        @myriad_method
         def my_fn(stuff):
             pass
 
@@ -155,6 +157,11 @@ def myriad_method(method):
 #####################
 # MetaClass Wrapper #
 #####################
+
+
+# TODO: Remove "forward declaration"
+class MyriadObject(object):
+    pass
 
 
 class MyriadMetaclass(type):
@@ -187,12 +194,22 @@ class MyriadMetaclass(type):
         if len(bases) > 1:
             raise NotImplementedError("Multiple inheritance is not supported.")
 
-        # TODO: Check if the class inherits from MyriadObject
-        # if not issubclass(bases[0], MyriadObject):
-        #     raise TypeError("Myriad modules must inherit from MyriadObject")
+        # Check if the class inherits from MyriadObject
+        if not issubclass(bases[0], MyriadObject):
+            raise TypeError("Myriad modules must inherit from MyriadObject")
+        supermodule = bases[0]  # Alias for base class
 
+        # Object Name and Class Name are automatically derived from name
+        obj_name = name
+        cls_name = name + "Class"
+
+        # Setup methods and variables as ordered dictionaries
         myriad_methods = OrderedDict()
-        myriad_vars = OrderedDict()
+        myriad_obj_vars = OrderedDict()
+        myriad_cls_vars = OrderedDict()
+
+        # Setup object with implicit superclass to start of struct definition
+        # myriad_obj_vars[0] = supermodule.obj_struct("_", quals=["const"])
 
         # Extracts variables and myriad methods from class definition
         for k, val in namespace.items():
@@ -203,19 +220,33 @@ class MyriadMetaclass(type):
                 myriad_methods[k] = val.original_fun
             # ... some generic non-Myriad function or method
             elif inspect.isfunction(val) or inspect.ismethod(val):
-                print(k + " is a function or method")
+                print(k + " is a function or method, ignoring...")
             # ... some generic instance of a _MyriadBase type
             elif issubclass(val.__class__, _MyriadBase):
-                myriad_vars[k] = val
+                myriad_obj_vars[k] = val
                 print(k + " is a Myriad-type non-function attribute")
             # ... a type statement of base type MyriadCType (e.g. MDouble)
             elif issubclass(val.__class__, MyriadCType):
                 # TODO: Better type detection here for corner cases (e.g. ptr)
-                myriad_vars[k] = MyriadScalar(k, val)
-                print(k + " has decl: " + myriad_vars[k].stringify_decl())
+                myriad_obj_vars[k] = MyriadScalar(k, val)
+                print(k + " has decl: " + myriad_obj_vars[k].stringify_decl())
+            # ... a python meta value (e.g.  __module__) we shouldn't mess with
+            elif k.startswith("__"):
+                pass
             # TODO: Figure out other valid values for namespace variables
             else:
                 warn("Unsupported variable type for " + k)
+
+        # Struct definition representing object state
+        obj_struct = MyriadStructType(obj_name, myriad_obj_vars)
+
+        # Add appropriate objects to namespace
+        namespace["obj_struct"] = obj_struct
+        namespace["obj_name"] = obj_name
+        namespace["cls_name"] = cls_name
+        namespace["myriad_methods"] = myriad_methods
+        namespace["myriad_obj_vars"] = myriad_obj_vars
+        namespace["myriad_cls_vars"] = myriad_cls_vars
 
         # Finally, delete function from namespace
         for method_id in myriad_methods.keys():
