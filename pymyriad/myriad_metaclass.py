@@ -129,13 +129,14 @@ def gen_instance_method_from_str(delegator, m_name: str,
                           storage=['static'],
                           fun_def=method_body)
 
-####################
-# Method Decorator #
-####################
+#####################
+# Method Decorators #
+#####################
 
 
 def myriad_method(method):
     """
+    Tags a method in a class to be a myriad method (i.e. converted to a C func)
     NOTE: This MUST be the first decorator applied to the function! E.g.:
 
         @another_decorator
@@ -154,13 +155,36 @@ def myriad_method(method):
     inner.__dict__["original_fun"] = method
     return inner
 
+
+def myriad_method_verbatim(method):
+    """
+    Tags a method in a class to be a myriad method (i.e. converted to a C func)
+    but takes the docstring as verbatim C code.
+    NOTE: This MUST be the first decorator applied to the function! E.g.:
+
+        @another_decorator
+        @yet_another_decorator
+        @myriad_method_verbatim
+        def my_fn(stuff):
+            pass
+
+    This is because decorators replace the wrapped function's signature.
+    """
+    @wraps(method)
+    def inner(*args, **kwargs):
+        """Dummy inner function to prevent direct method calls"""
+        raise Exception("Cannot directly call a myriad method")
+    inner.__dict__["is_myriad_method_verbatim"] = True
+    inner.__dict__["original_fun"] = method
+    return inner    
+
 #####################
 # MetaClass Wrapper #
 #####################
 
 
-# TODO: Remove "forward declaration"
-class MyriadObject(object):
+# Dummy class used for type checking
+class _MyriadObjectBase(object):
     pass
 
 
@@ -195,9 +219,10 @@ class MyriadMetaclass(type):
             raise NotImplementedError("Multiple inheritance is not supported.")
 
         # Check if the class inherits from MyriadObject
-        if not issubclass(bases[0], MyriadObject):
+        if not issubclass(bases[0], _MyriadObjectBase):
+            print(bases[0])
             raise TypeError("Myriad modules must inherit from MyriadObject")
-        supermodule = bases[0]  # Alias for base class
+        supercls = bases[0]  # Alias for base class
 
         # Object Name and Class Name are automatically derived from name
         obj_name = name
@@ -209,7 +234,8 @@ class MyriadMetaclass(type):
         myriad_cls_vars = OrderedDict()
 
         # Setup object with implicit superclass to start of struct definition
-        # myriad_obj_vars[0] = supermodule.obj_struct("_", quals=["const"])
+        if supercls != _MyriadObjectBase:
+            myriad_obj_vars["_"] = supercls.obj_struct("_", quals=["const"])
 
         # Extracts variables and myriad methods from class definition
         for k, val in namespace.items():
@@ -240,6 +266,12 @@ class MyriadMetaclass(type):
         # Struct definition representing object state
         obj_struct = MyriadStructType(obj_name, myriad_obj_vars)
 
+        # Inherit parent Myriad Methods
+        for super_ident, super_method in supercls.myriad_methods.items():
+            # ... if we haven't overriden them
+            if super_ident not in myriad_methods:
+                myriad_methods[super_ident] = super_method
+
         # Add appropriate objects to namespace
         namespace["obj_struct"] = obj_struct
         namespace["obj_name"] = obj_name
@@ -255,5 +287,11 @@ class MyriadMetaclass(type):
         # Generate internal module representation
         namespace["__init__"] = MyriadMetaclass.myriad_init
         namespace["__setattr__"] = MyriadMetaclass.myriad_set_attr
-        result = type.__new__(mcs, name, (object,), dict(namespace))
+        result = type.__new__(mcs, name, (supercls,), dict(namespace))
         return result
+
+
+# TODO: MyriadObject definition
+class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
+    """ Base class that every myriad object inherits from """
+    pass

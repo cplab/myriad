@@ -10,7 +10,7 @@ import unittest
 
 from collections import OrderedDict
 
-from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt
+from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
 
 
@@ -84,8 +84,7 @@ class TestMyriadMetaclass(unittest.TestCase):
 
     def test_create_blank_class(self):
         """ Testing if creating a blank metaclass works """
-        class BlankObj(myriad_metaclass.MyriadObject,
-                       metaclass=myriad_metaclass.MyriadMetaclass):
+        class BlankObj(myriad_metaclass.MyriadObject):
             """ Blank test class """
             pass
         # Test for the existence expected members
@@ -97,6 +96,23 @@ class TestMyriadMetaclass(unittest.TestCase):
         self.assertEqual(BlankObj.__dict__["obj_name"], "BlankObj")
         self.assertTrue("cls_name" in BlankObj.__dict__)
         self.assertEqual(BlankObj.__dict__["cls_name"], "BlankObjClass")
+
+    def test_create_variable_only_class(self):
+        """ Testing if creating a variable-only metaclass workds """
+        class VarOnlyObj(myriad_metaclass.MyriadObject):
+            capacitance = MDouble
+            vm = MyriadScalar("vm", MDouble, ptr=True)
+        result_str = " ".join(
+            VarOnlyObj.__dict__["obj_struct"].stringify_decl().split())
+        expected_result = " ".join("""
+        struct VarOnlyObj
+        {
+            const struct MyriadObject _;
+            double capacitance;
+            double *vm;
+        }
+        """.split())
+        self.assertEqual(result_str, expected_result)
 
 
 def main():
