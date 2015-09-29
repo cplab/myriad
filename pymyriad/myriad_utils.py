@@ -9,6 +9,7 @@ __author__ = ["Pedro Rittner"]
 from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
+from copy import copy
 
 
 def assert_list_type(m_list: list, m_type: type):
@@ -110,56 +111,141 @@ class TypeEnforcer(type):
         return super(TypeEnforcer, mcs).__new__(mcs, name, bases, attrs)
 
 
-class IndexedSet(object):
+class OrderedSet(object):
+    """
+    Set that remembers the order elements were added.
+    """
 
-    def __init__(self, elems=None):
+    def __init__(self, contents: list):
+        self._backing_set = set(contents)
+        self._elements_ordered = contents
+
+    @property
+    def backing_set(self):
+        """ Returns a shallow copy of the backing set """
+        return copy(self._backing_set)
+
+    def __iter__(self):
+        return self._elements_ordered.__iter__()
+
+    def __eq__(self, other):
+        if hasattr(other, "backing_set"):
+            return self._backing_set == other.backing_set
+        else:
+            raise TypeError("Invalid comparison type for OrderedSet: ",
+                            other.__class__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return self._backing_set.__hash__()
+
+    def __len__(self):
+        return len(self._backing_set)
+
+    def __contains__(self, item):
+        return self._backing_set.__contains__(item)
+
+    def isdisjoint(self, other):
         """
-        Initializes an indexed set with the given elements.
+        Return True if the set has no elements in common with other.
+        OrderedSets are disjoint if and only if their intersection is the empty
+        set.
         """
-        self._my_dict = dict()
-        self._curr_indx = -1
-        if elems is None:
-            return
+        return self._backing_set.isdisjoint(other.backing_set)
 
-        for index, elem in enumerate(elems):
-            self._curr_indx += 1
-            self._my_dict[index] = elem
+    def __le__(self, other):
+        return self._backing_set <= other.backing_set
 
-    def append(self, n_elem):
+    def issubset(self, other):
         """
-        Appends an element to the end of the set.
-
-        TODO: If the element is already in the set, it is moved to the end.
+        Test whether every element in the set is in other.
         """
-        if n_elem not in self._my_dict.values():
-            self._curr_indx += 1
-            self._my_dict[self._curr_indx] = n_elem
+        return self.__le__(other)
 
-    def prepend(self, n_elem):
+    def __lt__(self, other):
         """
-        Prepends an element to the start of the set.
-
-        TODO: If the element is already in the set, it is moved to the start.
+        Test whether the set is a proper subset of other, that is, set <= other
+        and set != other.
         """
-        if n_elem not in self._my_dict.values():
-            items = list(self._my_dict.items())
-            self._my_dict = {0: n_elem}
-            for orig_indx, elem in items:
-                self._my_dict[orig_indx+1] = elem
+        return self._backing_set < other.backing_set
 
-    def __getitem__(self, key):
-        if type(key) is not int:
-            msg = "IndexedSet indices must be integers, not {0}."
-            raise TypeError(msg.format(type(key)))
-        elif key > self._curr_indx or key < 0:
-            raise IndexError("Index out of bounds.")
-        return self._my_dict[key]
+    def __ge__(self, other):
+        return self._backing_set >= other.backing_set
+
+    def issuperset(self, other):
+        """ Test whether every element in other is in the set. """
+        return self.__ge__(other)
+
+    def __gt__(self, other):
+        return self._backing_set > other.backing_set
+
+    def __or__(self, other):
+        new_backing_set = copy(self._backing_set)
+        new_backing_set_list = copy(self._elements_ordered)
+        for other_val in other.backing_set:
+            if other_val not in new_backing_set:
+                new_backing_set.add(other_val)
+                new_backing_set_list.append(other_val)
+        return OrderedSet(new_backing_set_list)
+
+    def union(self, other):
+        """
+        Return a new OrderedSet with elements from the set and all others.
+        """
+        return self.__or__(other)
+
+    def __and__(self, other):
+        new_backing_set = set()
+        new_backing_set_list = list()
+        for our_val in self._elements_ordered:
+            if our_val in other:
+                new_backing_set.add(our_val)
+                new_backing_set_list.append(our_val)
+        return OrderedSet(new_backing_set_list)
+
+    def intersection(self, other):
+        """ Return a new set with elements common to the set and all others """
+        return self.__and__(other)
+
+    def __sub__(self, other):
+        new_backing_set = set()
+        new_backing_set_list = list()
+        for our_val in self._elements_ordered:
+            if our_val not in other:
+                new_backing_set.add(our_val)
+                new_backing_set_list.append(our_val)
+        return OrderedSet(new_backing_set_list)
+
+    def difference(self, other):
+        """
+        Return a new set with elements in the set that are not in the others.
+        """
+        return self.__sub__(other)
+
+    def __xor__(self, other):
+        new_backing_set_list = list()
+        # Get all elements together first, then only add unique ones
+        union_set = self.union(other)
+        for union_val in union_set:
+            in_ours = union_val in self
+            in_other = union_val in other
+            if in_ours ^ in_other:
+                new_backing_set_list.append(union_val)
+        return OrderedSet(new_backing_set_list)
 
     def __repr__(self):
-        _lst = list(range(self._curr_indx+1))
-        for indx, value in self._my_dict.items():
-            _lst[indx] = value
-        return str(_lst)
+        return str(self._elements_ordered)
+
+    def __str__(self):
+        return str(self._elements_ordered)
+
+    def symmetric_difference(self, other):
+        """
+        Return a new set with elements in either the set or other but not both.
+        """
+        return self.__xor__(other)
 
 
 def remove_header_parens(lines: list) -> list:

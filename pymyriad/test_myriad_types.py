@@ -27,7 +27,7 @@ class TestFunctions(unittest.TestCase):
     """
 
     def test_void_ret_function(self):
-        """ Testing for functions with void return types"""
+        """ Testing for functions with void return types """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_dtor = MyriadFunction("dtor", OrderedDict({0: void_ptr}))
         self.assertEqual("void dtor(const void *self)",
@@ -48,7 +48,7 @@ class TestStructs(unittest.TestCase):
     """
 
     def test_single_member_struct(self):
-        """ Test for struct with single member """
+        """ Testing having a struct with single member """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
@@ -57,7 +57,7 @@ class TestStructs(unittest.TestCase):
         self.assertEqual(str1, str2)
 
     def test_struct_ptr(self):
-        """ Test for having a struct pointer variable """
+        """ Testing having a struct pointer variable """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
@@ -66,7 +66,7 @@ class TestStructs(unittest.TestCase):
                          class_2.stringify_decl())
 
     def test_struct_qual(self):
-        """ Test for making a struct having a qualifier """
+        """ Testing making a struct having a qualifier """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
@@ -112,7 +112,7 @@ class TestCasts(unittest.TestCase):
     """
 
     def test_cast_to_parent(self):
-        """ Test for a simple cast where the field is in the struct. """
+        """ Testing for a simple cast where the field is in the struct """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         double_val = MyriadScalar("val", MDouble)
         myriad_class = MyriadStructType("MyriadClass",
@@ -122,7 +122,7 @@ class TestCasts(unittest.TestCase):
                          cast_to_parent(myriad_class, "val"))
 
     def test_cast_to_parent_nested(self):
-        """ Test for a cast with 1 level of recursion. """
+        """ Testing for a cast with 1 level of recursion """
         void_ptr = MyriadScalar("self", MVoid, True, quals=["const"])
         double_val = MyriadScalar("val", MDouble)
         myriad_class = MyriadStructType("MyriadClass",

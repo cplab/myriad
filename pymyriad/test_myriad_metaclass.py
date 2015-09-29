@@ -117,7 +117,7 @@ class TestMyriadMetaclass(unittest.TestCase):
 
 def main():
     """ Runs the tests, doing some setup. """
-    unittest.main()
+    unittest.main(verbosity=2)
 
 if __name__ == '__main__':
     main()

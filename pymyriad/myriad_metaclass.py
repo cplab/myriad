@@ -16,6 +16,8 @@ from warnings import warn
 
 from myriad_mako_wrapper import MakoTemplate
 
+from myriad_utils import OrderedSet
+
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import MVoid, _MyriadBase, MyriadCType
 
@@ -176,7 +178,7 @@ def myriad_method_verbatim(method):
         raise Exception("Cannot directly call a myriad method")
     inner.__dict__["is_myriad_method_verbatim"] = True
     inner.__dict__["original_fun"] = method
-    return inner    
+    return inner
 
 #####################
 # MetaClass Wrapper #
@@ -186,6 +188,41 @@ def myriad_method_verbatim(method):
 # Dummy class used for type checking
 class _MyriadObjectBase(object):
     pass
+
+
+def _method_organizer_helper(
+        myriad_methods: OrderedDict,
+        supercls: _MyriadObjectBase,
+        myriad_cls_vars: OrderedDict)-> (OrderedDict, OrderedDict):
+    """
+    # TODO: Better documentation of method_organizer_helper
+    Organizes Myriad Methods, including inheritance.
+    Returns a tuple of the class struct variables, and the myriad methods.
+    """
+    # Convert methods; remember, items() returns a read-only view
+    for m_ident, method in myriad_methods.items():
+        myriad_methods[m_ident] = pyfun_to_cfun(method)
+
+    # Inherit parent Myriad Methods
+    for super_ident, super_method in supercls.myriad_methods.items():
+        # ... if we haven't provided our own (overwriting)
+        if super_ident not in myriad_methods:
+            myriad_methods[super_ident] = super_method
+
+    # Get a set difference between super/own methods for class struct
+    super_methods_ident_set = OrderedSet(
+        [(k, v) for k, v in supercls.myriad_methods.items()])
+    all_methods_ident_set = OrderedSet(
+        [(k, v) for k, v in myriad_methods.items()])
+    own_methods = all_methods_ident_set - super_methods_ident_set
+
+    # Struct definition representing class methods
+    for m_ident, method in own_methods:
+        m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
+                              method.delegator.base_type)
+        myriad_cls_vars[m_ident] = m_scal
+
+    return (myriad_cls_vars, myriad_methods)
 
 
 class MyriadMetaclass(type):
@@ -220,7 +257,7 @@ class MyriadMetaclass(type):
 
         # Check if the class inherits from MyriadObject
         if not issubclass(bases[0], _MyriadObjectBase):
-            print(bases[0])
+            # print(bases[0])
             raise TypeError("Myriad modules must inherit from MyriadObject")
         supercls = bases[0]  # Alias for base class
 
@@ -234,28 +271,30 @@ class MyriadMetaclass(type):
         myriad_cls_vars = OrderedDict()
 
         # Setup object with implicit superclass to start of struct definition
-        if supercls != _MyriadObjectBase:
+        if supercls is not _MyriadObjectBase:
             myriad_obj_vars["_"] = supercls.obj_struct("_", quals=["const"])
+            myriad_cls_vars["_"] = supercls.cls_struct("_", quals=["const"])
 
         # Extracts variables and myriad methods from class definition
         for k, val in namespace.items():
             # if val is ...
             # ... a registered myriad method
             if hasattr(val, "is_myriad_method"):
-                print(k + " is a myriad method")
+                # print(k + " is a myriad method")
                 myriad_methods[k] = val.original_fun
             # ... some generic non-Myriad function or method
             elif inspect.isfunction(val) or inspect.ismethod(val):
-                print(k + " is a function or method, ignoring...")
+                # print(k + " is a function or method, ignoring...")
+                pass
             # ... some generic instance of a _MyriadBase type
             elif issubclass(val.__class__, _MyriadBase):
                 myriad_obj_vars[k] = val
-                print(k + " is a Myriad-type non-function attribute")
+                # print(k + " is a Myriad-type non-function attribute")
             # ... a type statement of base type MyriadCType (e.g. MDouble)
             elif issubclass(val.__class__, MyriadCType):
                 # TODO: Better type detection here for corner cases (e.g. ptr)
                 myriad_obj_vars[k] = MyriadScalar(k, val)
-                print(k + " has decl: " + myriad_obj_vars[k].stringify_decl())
+                # print(k + " has decl " + myriad_obj_vars[k].stringify_decl())
             # ... a python meta value (e.g.  __module__) we shouldn't mess with
             elif k.startswith("__"):
                 pass
@@ -266,14 +305,19 @@ class MyriadMetaclass(type):
         # Struct definition representing object state
         obj_struct = MyriadStructType(obj_name, myriad_obj_vars)
 
-        # Inherit parent Myriad Methods
-        for super_ident, super_method in supercls.myriad_methods.items():
-            # ... if we haven't overriden them
-            if super_ident not in myriad_methods:
-                myriad_methods[super_ident] = super_method
+        # Organize myriad methods and class struct members
+        if supercls is not _MyriadObjectBase:
+            myriad_cls_vars, myriad_methods = _method_organizer_helper(
+                myriad_methods,
+                supercls,
+                myriad_cls_vars)
+
+        # Create myriad class struct
+        cls_struct = MyriadStructType(cls_name, myriad_cls_vars)
 
         # Add appropriate objects to namespace
         namespace["obj_struct"] = obj_struct
+        namespace["cls_struct"] = cls_struct
         namespace["obj_name"] = obj_name
         namespace["cls_name"] = cls_name
         namespace["myriad_methods"] = myriad_methods
