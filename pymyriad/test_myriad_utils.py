@@ -9,8 +9,8 @@ __author__ = ["Pedro Rittner"]
 import unittest
 import inspect
 
-from myriad_utils import TypeEnforcer, OrderedSet, remove_header_parens
-
+from myriad_utils import TypeEnforcer, OrderedSet
+from myriad_utils import indent_fix, remove_header_parens
 
 class TestTypeEnforcer(unittest.TestCase):
     """ Test cases for TypeEnforcer """
@@ -151,6 +151,37 @@ class TestOrderedSet(unittest.TestCase):
         self.assertIn(4, xor_set)
         self.assertIn(5, xor_set)
         self.assertIn(6, xor_set)
+
+
+class TestIndentFix(unittest.TestCase):
+    """ Tests indent fixer function"""
+
+    def test_empty_str(self):
+        """ Testing if indent_fix works on empty strings and None """
+        self.assertIsNone(indent_fix(None))
+        self.assertEqual(indent_fix(""), "")
+
+    def test_single_line(self):
+        """ Testing if single-line case works """
+        test_str = """     dummy = False     """
+        self.assertEqual(indent_fix(test_str), "dummy = False")
+
+    def test_multi_line(self):
+        """ Testing if multi-line case works """
+        expected_str = """for i in list(range(1, 10)):
+    print(i)
+    if i < 10:
+        pass
+    else:
+        print("LOL")"""
+        test_str = """
+        for i in list(range(1, 10)):
+            print(i)
+            if i < 10:
+                pass
+            else:
+                print("LOL")"""
+        self.assertEqual(expected_str, indent_fix(test_str))
 
 if __name__ == "__main__":
     unittest.main()

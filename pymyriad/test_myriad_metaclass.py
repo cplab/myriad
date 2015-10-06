@@ -10,6 +10,8 @@ import unittest
 
 from collections import OrderedDict
 
+from pprint import pprint
+
 from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
 
@@ -98,7 +100,7 @@ class TestMyriadMetaclass(unittest.TestCase):
         self.assertEqual(BlankObj.__dict__["cls_name"], "BlankObjClass")
 
     def test_create_variable_only_class(self):
-        """ Testing if creating a variable-only metaclass workds """
+        """ Testing if creating a variable-only metaclass works """
         class VarOnlyObj(myriad_metaclass.MyriadObject):
             capacitance = MDouble
             vm = MyriadScalar("vm", MDouble, ptr=True)
@@ -114,6 +116,18 @@ class TestMyriadMetaclass(unittest.TestCase):
         """.split())
         self.assertEqual(result_str, expected_result)
 
+    def test_create_methods_class(self):
+        """ Testing if creating Myriad classes with methods works """
+        class MethodsObj(myriad_metaclass.MyriadObject):
+            @myriad_metaclass.myriad_method
+            def do_stuff(self):
+                return 0
+        # Test whether a function pointer scalar is created
+        self.assertIn("myriad_cls_vars", MethodsObj.__dict__)
+        self.assertIn("my_do_stuff_t", MethodsObj.__dict__["myriad_cls_vars"])
+        # Test whether a myriad method was created
+        self.assertIn("myriad_methods", MethodsObj.__dict__)
+        self.assertIn("do_stuff", MethodsObj.__dict__["myriad_methods"])
 
 def main():
     """ Runs the tests, doing some setup. """

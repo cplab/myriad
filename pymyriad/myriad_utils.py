@@ -261,9 +261,6 @@ def remove_header_parens(lines: list) -> list:
         elif char == '(':
             open_index = (linum, indx)
             break
-
-    # print("open parenthese index: ", open_index)
-
     # Search for matching close parens
     close_index = (-1, -1)
     open_br = 0
@@ -281,10 +278,46 @@ def remove_header_parens(lines: list) -> list:
         if open_br == 0:
             close_index = (linum, indx)
             break
-
-    # print("close parentheses index: ", close_index)
-
+    # If the indices match (same line), just skip the first line altogether
     if open_index[0] == close_index[0]:
         return lines[1:]
     else:
         return lines[open_index[0]:][close_index[0]:]
+
+
+def indent_fix(source_lines: str) -> str:
+    """ Returns the source lines as a single string, left-indented """
+    if source_lines is None:
+        return None
+    # Empty string indented correctly is just the empty string
+    elif source_lines == "":
+        return ""
+    # Single-line statements need only be trimmed
+    elif source_lines.count('\n') <= 1:
+        return " ".join(source_lines.split())
+
+    # Multi-line statements need to have tabs converted to 4 spaces
+    result_str = source_lines.replace('\t', '    ')
+    # Split the string into lines and get the first line (ignoring empty lines)
+    as_lines = [line for line in result_str.splitlines() if len(line) > 0]
+    # and count the number of spaces until the 1st non-whitespace character
+    count = 0
+    for char in as_lines[0]:
+        if char != ' ':
+            break
+        count += 1
+    # Now we remove the count whitespaces from each line and return
+    return "\n".join([line[count:] for line in as_lines])
+
+
+def indent_fix_lines(source_lines: list) -> list:
+    """ Returns the source lines as a list of strings, left-indented """
+    # Empty list fixed is just the empty string
+    if len(source_lines) == 0:
+        return ""
+    # Single-line strings can just be stripped of leading/lingering whitespace
+    elif len(source_lines) == 1:
+        return source_lines[0].strip()
+    # Join list to pass to indent_fix
+    result_str = indent_fix("".join(source_lines))
+    return result_str

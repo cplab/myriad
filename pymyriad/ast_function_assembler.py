@@ -14,7 +14,7 @@ from collections import OrderedDict
 import ast_parse
 import CTypes
 from myriad_types import MInt, MyriadScalar, MyriadFunction, MVoid, MyriadCType
-from myriad_utils import remove_header_parens
+from myriad_utils import remove_header_parens, indent_fix_lines
 
 FLOAT_TYPE = "double"
 
@@ -115,15 +115,13 @@ class CFunc(object):
 
 def pyfunbody_to_cbody(c_fun: FunctionType,
                        c_methods=None,
-                       indent_lvl: int=1,
                        struct_members: OrderedDict=None) -> str:
-    # Remove function header and leading spaces on each line
-    # How many spaces are removed depends on indent level
+    # Get function source and remove function header
     fun_source = inspect.getsourcelines(c_fun)[0]
     fun_source = remove_header_parens(fun_source)
 
     # Do some string processing aerobics for indent purposes
-    fun_body = '\n'.join([line[(indent_lvl * 4):] for line in fun_source])
+    fun_body = indent_fix_lines(fun_source)
 
     # Parse function body into C string
     fun_parsed = CFunc(fun_body)
@@ -143,8 +141,7 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
     return fun_cstring
 
 
-def pyfun_to_cfun(fun: FunctionType,
-                  indent_lvl: int=1) -> MyriadFunction:
+def pyfun_to_cfun(fun: FunctionType) -> MyriadFunction:
     """
     Converts a native python function into an equivalent C function, 1-to-1.
 
@@ -179,7 +176,7 @@ def pyfun_to_cfun(fun: FunctionType,
         fun_return_type = MyriadScalar("_", MVoid)
 
     # Get function body
-    fun_body = pyfunbody_to_cbody(fun, indent_lvl=indent_lvl)
+    fun_body = pyfunbody_to_cbody(fun)
 
     # Create MyriadFunction wrapper
     myriad_fun = MyriadFunction(fun_name,
@@ -201,7 +198,7 @@ def test_fun(a: MInt, b: MInt) -> MInt:
 
 def main():
     # Standalone function
-    mfun = pyfun_to_cfun(test_fun, indent_lvl=1)
+    mfun = pyfun_to_cfun(test_fun)
     print(mfun.stringify_decl())
     print("{")
     print(mfun.stringify_def())

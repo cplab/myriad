@@ -217,10 +217,10 @@ def _method_organizer_helper(
     own_methods = all_methods_ident_set - super_methods_ident_set
 
     # Struct definition representing class methods
-    for m_ident, method in own_methods:
-        m_scal = MyriadScalar("my_" + method.delegator.fun_typedef.name,
-                              method.delegator.base_type)
-        myriad_cls_vars[m_ident] = m_scal
+    for _, method in own_methods:
+        new_ident = "my_" + method.fun_typedef.name
+        m_scal = MyriadScalar(new_ident, method.base_type)
+        myriad_cls_vars[new_ident] = m_scal
 
     return (myriad_cls_vars, myriad_methods)
 
