@@ -10,8 +10,6 @@ import unittest
 
 from collections import OrderedDict
 
-from pprint import pprint
-
 from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
 
@@ -128,6 +126,18 @@ class TestMyriadMetaclass(unittest.TestCase):
         # Test whether a myriad method was created
         self.assertIn("myriad_methods", MethodsObj.__dict__)
         self.assertIn("do_stuff", MethodsObj.__dict__["myriad_methods"])
+
+    def test_verbatim_methods(self):
+        """ Testing if creating Myriad classes with verbatim methods work"""
+        class VerbatimObj(myriad_metaclass.MyriadObject):
+            @myriad_metaclass.myriad_method_verbatim
+            def do_verbatim_stuff(self):
+                """return;"""
+        self.assertIn("myriad_cls_vars", VerbatimObj.__dict__)
+        self.assertIn("my_do_verbatim_stuff_t",
+                      VerbatimObj.__dict__["myriad_cls_vars"])
+        print(str(VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"]))
+
 
 def main():
     """ Runs the tests, doing some setup. """

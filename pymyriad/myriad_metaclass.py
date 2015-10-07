@@ -162,6 +162,7 @@ def myriad_method_verbatim(method):
     """
     Tags a method in a class to be a myriad method (i.e. converted to a C func)
     but takes the docstring as verbatim C code.
+
     NOTE: This MUST be the first decorator applied to the function! E.g.:
 
         @another_decorator
@@ -177,6 +178,7 @@ def myriad_method_verbatim(method):
         """Dummy inner function to prevent direct method calls"""
         raise Exception("Cannot directly call a myriad method")
     inner.__dict__["is_myriad_method_verbatim"] = True
+    inner.__dict__["is_myriad_method"] = True
     inner.__dict__["original_fun"] = method
     return inner
 
@@ -193,15 +195,24 @@ class _MyriadObjectBase(object):
 def _method_organizer_helper(
         myriad_methods: OrderedDict,
         supercls: _MyriadObjectBase,
-        myriad_cls_vars: OrderedDict)-> (OrderedDict, OrderedDict):
+        myriad_cls_vars: OrderedDict,
+        verbatim_methods: set=None)-> (OrderedDict, OrderedDict):
     """
     # TODO: Better documentation of method_organizer_helper
     Organizes Myriad Methods, including inheritance.
+
+    Verbatim methods are converted differently than pythonic methods.
+
     Returns a tuple of the class struct variables, and the myriad methods.
     """
     # Convert methods; remember, items() returns a read-only view
     for m_ident, method in myriad_methods.items():
-        myriad_methods[m_ident] = pyfun_to_cfun(method)
+        if verbatim_methods is not None and m_ident in verbatim_methods:
+            if method.__doc__ is None or method.__doc__ == "":
+                raise Exception("Verbatim method cannot have empty docstring")
+            myriad_methods[m_ident] = method.__doc__
+        else:
+            myriad_methods[m_ident] = pyfun_to_cfun(method)
 
     # Inherit parent Myriad Methods
     for super_ident, super_method in supercls.myriad_methods.items():
@@ -257,18 +268,14 @@ class MyriadMetaclass(type):
 
         # Check if the class inherits from MyriadObject
         if not issubclass(bases[0], _MyriadObjectBase):
-            # print(bases[0])
             raise TypeError("Myriad modules must inherit from MyriadObject")
         supercls = bases[0]  # Alias for base class
-
-        # Object Name and Class Name are automatically derived from name
-        obj_name = name
-        cls_name = name + "Class"
 
         # Setup methods and variables as ordered dictionaries
         myriad_methods = OrderedDict()
         myriad_obj_vars = OrderedDict()
         myriad_cls_vars = OrderedDict()
+        verbatim_methods = set()
 
         # Setup object with implicit superclass to start of struct definition
         if supercls is not _MyriadObjectBase:
@@ -282,6 +289,9 @@ class MyriadMetaclass(type):
             if hasattr(val, "is_myriad_method"):
                 # print(k + " is a myriad method")
                 myriad_methods[k] = val.original_fun
+                # Verbatim methods are tracked in a set
+                if hasattr(val, "is_myriad_method_verbatim"):
+                    verbatim_methods.add(k)
             # ... some generic non-Myriad function or method
             elif inspect.isfunction(val) or inspect.ismethod(val):
                 # print(k + " is a function or method, ignoring...")
@@ -302,8 +312,13 @@ class MyriadMetaclass(type):
             else:
                 warn("Unsupported variable type for " + k)
 
+        # Object Name and Class Name are automatically derived from name
+        namespace["obj_name"] = name
+        namespace["cls_name"] = name + "Class"
+
         # Struct definition representing object state
-        obj_struct = MyriadStructType(obj_name, myriad_obj_vars)
+        namespace["obj_struct"] = MyriadStructType(namespace["obj_name"],
+                                                   myriad_obj_vars)
 
         # Organize myriad methods and class struct members
         if supercls is not _MyriadObjectBase:
@@ -313,13 +328,10 @@ class MyriadMetaclass(type):
                 myriad_cls_vars)
 
         # Create myriad class struct
-        cls_struct = MyriadStructType(cls_name, myriad_cls_vars)
+        namespace["cls_struct"] = MyriadStructType(namespace["cls_name"],
+                                                   myriad_cls_vars)
 
-        # Add appropriate objects to namespace
-        namespace["obj_struct"] = obj_struct
-        namespace["cls_struct"] = cls_struct
-        namespace["obj_name"] = obj_name
-        namespace["cls_name"] = cls_name
+        # Add other objects to namespace
         namespace["myriad_methods"] = myriad_methods
         namespace["myriad_obj_vars"] = myriad_obj_vars
         namespace["myriad_cls_vars"] = myriad_cls_vars
@@ -331,8 +343,7 @@ class MyriadMetaclass(type):
         # Generate internal module representation
         namespace["__init__"] = MyriadMetaclass.myriad_init
         namespace["__setattr__"] = MyriadMetaclass.myriad_set_attr
-        result = type.__new__(mcs, name, (supercls,), dict(namespace))
-        return result
+        return type.__new__(mcs, name, (supercls,), dict(namespace))
 
 
 # TODO: MyriadObject definition
