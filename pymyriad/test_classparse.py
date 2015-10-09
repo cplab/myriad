@@ -1,4 +1,5 @@
 """
+TODO: Make this into actual tests
 """
 from ast_function_assembler import pyfun_to_cfun
 from myriad_types import MInt
@@ -29,6 +30,6 @@ def dummy_fun(fun):
     return fun_body
 
 if __name__ == "__main__":
-    m_fun = pyfun_to_cfun(TestClass.test_method, indent_lvl=2)
+    m_fun = pyfun_to_cfun(TestClass.test_method)
     print(m_fun.stringify_decl())
     print(m_fun.stringify_def())

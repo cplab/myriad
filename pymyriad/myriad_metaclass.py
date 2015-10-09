@@ -196,7 +196,7 @@ def _method_organizer_helper(
         myriad_methods: OrderedDict,
         supercls: _MyriadObjectBase,
         myriad_cls_vars: OrderedDict,
-        verbatim_methods: set=None)-> (OrderedDict, OrderedDict):
+        verbatim_methods: set=None) -> (OrderedDict, OrderedDict):
     """
     # TODO: Better documentation of method_organizer_helper
     Organizes Myriad Methods, including inheritance.

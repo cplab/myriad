@@ -136,12 +136,13 @@ class TestMyriadMetaclass(unittest.TestCase):
         self.assertIn("myriad_cls_vars", VerbatimObj.__dict__)
         self.assertIn("my_do_verbatim_stuff_t",
                       VerbatimObj.__dict__["myriad_cls_vars"])
-        print(str(VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"]))
+        self.assertIsNotNone(
+            VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"])
 
 
 def main():
     """ Runs the tests, doing some setup. """
-    unittest.main(verbosity=2)
+    unittest.main()
 
 if __name__ == '__main__':
     main()
