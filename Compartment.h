@@ -76,7 +76,7 @@ struct CompartmentClass
     //! Defines compartment simulation
 	compartment_simul_fxn_t m_compartment_simul_fxn;
     //! Allows for adding mechanisms to compartment
-	compartment_add_mech_t m_compartment_add_mech_fxn; 
+	compartment_add_mech_t m_compartment_add_mech_fxn;
 };
 
 /**

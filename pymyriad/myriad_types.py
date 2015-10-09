@@ -449,7 +449,7 @@ class MyriadFunction(_MyriadBase):
         _tmp_decl = copy.deepcopy(self.ret_var.decl.type)
 
         # Make sure we override the identifier in our copy
-        if type(_tmp_decl) is PtrDecl:
+        if isinstance(_tmp_decl, PtrDecl):
             _tmp_decl.type.declname = self.ident
         else:
             _tmp_decl.declname = self.ident
@@ -476,14 +476,21 @@ class MyriadFunction(_MyriadBase):
         #: Function definition represented as a string.
         self.fun_def = fun_def
 
-    def copy_init(self,
-                  ident: str=None,
-                  args_list: OrderedDict=None,
-                  ret_var: MyriadScalar=None,
-                  storage: list=None,
-                  fun_def=None):
+    @classmethod
+    def from_myriad_func(cls,
+                         other,
+                         ident: str=None,
+                         args_list: OrderedDict=None,
+                         ret_var: MyriadScalar=None,
+                         storage: list=None,
+                         fun_def=None):
         """
         Generates a "copy" of this object with modified initial values.
+
+        Note that a typedef WILL be generated once the new instance is created
+
+        :param other MyriadFunction object to copy values from
+        :type other MyriadFunction
 
         :param args_list: Ordered dict of identifiers:_MyriadBase fxn args
         :type args_list: OrderedDict or None
@@ -496,20 +503,23 @@ class MyriadFunction(_MyriadBase):
 
         :param fun_def: Function definition in form of a string or template
 
-        :return: Shallow copy of this object with modified initial values.
+        :return: Shallow copy of the other object with modified initial values
         :rtype: MyriadFunction
         """
         if ident is None:
-            ident = self.ident
+            ident = other.ident
         if args_list is None:
-            args_list = self.args_list
+            args_list = other.args_list
         if ret_var is None:
-            ret_var = self.ret_var
+            ret_var = other.ret_var
         if storage is None:
-            storage = self.storage
+            storage = other.storage
         if fun_def is None:
-            fun_def = self.fun_def
-        return MyriadFunction(ident, args_list, ret_var, storage, fun_def)
+            fun_def = other.fun_def
+        # Re-generate typedef
+        new_instance = cls(ident, args_list, ret_var, storage, fun_def)
+        new_instance.gen_typedef()
+        return new_instance
 
     @classmethod
     def from_method_signature(cls,
@@ -542,7 +552,7 @@ class MyriadFunction(_MyriadBase):
         _tmp, tmp = None, None
 
         # Fix for an insiduous bug with string identifiers (e.g. int64_t)
-        if type(self.func_decl.type.type) is TypeDecl:
+        if isinstance(self.func_decl.type.type, TypeDecl):
             _tmp = self.func_decl.type.type.type
         else:
             _tmp = IdentifierType(names=self.func_decl.type.type.names)
@@ -573,10 +583,13 @@ class MyriadFunction(_MyriadBase):
 
     def stringify_def(self) -> str:
         """ Returns string representation of this function's definition. """
-        if type(self.fun_def) is str:
+        if isinstance(self.fun_def, str):
             return self.fun_def
         else:
             raise NotImplementedError("Non-string representations unsupported")
+
+    def __str__(self) -> str:
+        return self.stringify_def()
 
 
 def cast_to_parent(struct: MyriadStructType,

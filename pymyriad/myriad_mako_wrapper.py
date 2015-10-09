@@ -16,9 +16,9 @@ class MakoTemplate(object):
         """ Initializes a template relevant data """
         # Sets template
         self._template = None
-        if type(template) is str:
+        if isinstance(template, str):
             self._template = Template(template)
-        elif type(template) is Template:
+        elif isinstance(template, Template):
             self._template = Template
         else:
             raise TypeError("Invalid template: expected string or Template")

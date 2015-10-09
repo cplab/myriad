@@ -1,6 +1,6 @@
 """
 .. module:: myriad_module
-   :platform: Unix, Windows, Mac OS X
+   :platform: Linux
    :synopsis: Provides abstraction layer for creating inheritable modules.
 
 .. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
@@ -117,219 +117,14 @@ from myriad_types import MVoid
 
 from ast_function_assembler import pyfunbody_to_cbody
 
-HEADER_FILE_TEMPLATE = """
-<%!
-    import myriad_types
-%>
+HEADER_FILE_TEMPLATE = open("template/header_file.mako", 'r').read()
 
-## Add include guards
-<% include_guard = obj_name.upper() + "_H" %>
-#ifndef ${include_guard}
-#define ${include_guard}
+CUH_FILE_TEMPLATE = open("template/cuda_header_file.mako", 'r').read()
 
-## Top-level Myriad include
-#include "myriad.h"
-
-## Add library includes
-% for lib in lib_includes:
-#include <${lib}>
-% endfor
-
-## Add local includes
-% for lib in local_includes:
-#include "${lib}"
-% endfor
-
-## Declare typedefs
-% for method in methods.values():
-    % if not method.inherited:
-${method.delegator.stringify_typedef()};
-    % endif
-% endfor
-
-## Struct forward declarations
-struct ${cls_name};
-struct ${obj_name};
-
-## Module variables
-% for m_var in module_vars.values():
-    % if type(m_var) is not str and 'static' not in m_var.decl.storage:
-extern ${m_var.stringify_decl()};
-    % endif
-% endfor
-
-## Top-level functions
-% for fun in functions.values():
-extern ${fun.stringify_decl()};
-% endfor
-
-## Method delegators
-% for method in [m for m in methods.values() if not m.inherited]:
-
-extern ${method.delegator.stringify_decl()};
-
-extern ${method.super_delegator.stringify_decl()};
-
-% endfor
-
-## Class/Object structs
-${obj_struct.stringify_decl()};
-${cls_struct.stringify_decl()};
-
-#endif
-"""
-
-CUH_FILE_TEMPLATE = """
-## Add include guards
-<% include_guard = obj_name.upper() + "_CUH" %>
-#ifndef ${include_guard}
-#define ${include_guard}
-
-#ifdef CUDA
-
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-
-## Add local includes
-% for lib in local_includes:
-#include "${lib}"
-% endfor
-
-extern __constant__ __device__ struct ${cls_name}* ${obj_name}_dev_t;
-extern __constant__ __device__ struct ${cls_name}* ${cls_name}_dev_t;
-
-% for fun in functions.values():
-<%
-    tmp_fun = fun.copy_init(ident="cuda_" + fun.ident)
-    context.write("extern __device__ " + tmp_fun.stringify_decl() + ";")
-%>
-% endfor
-
-#endif // IFDEF CUDA
-
-#endif
-"""
-
-C_FILE_TEMPLATE = """
-## Python imports as a module-level block
-<%!
-    import myriad_types
-%>
-
-## Add lib includes
-% for lib in lib_includes:
-#include <${lib}>
-% endfor
-
-## Add local includes
-% for lib in local_includes:
-#include "${lib}"
-% endfor
-
-#include "${obj_name}.h"
-
-## Print methods forward declarations
-% for method in methods.values():
-    % for i_method in method.instance_methods.values():
-${i_method.stringify_decl()};
-    % endfor
-% endfor
-
-## Print top-level module variables
-% for module_var in module_vars.values():
-    % if type(module_var) is str:
-${module_var}
-    % else:
-        % if module_var.init is not None:
-${module_var.stringify_decl()} = ${module_var.init};
-        % else:
-${module_var.stringify_decl()};
-        % endif
-    % endif
-% endfor
-
-## Method definitions
-% for method in methods.values():
-    % for i_method in method.instance_methods.values():
-${i_method.stringify_decl()}
-{
-    ${i_method.fun_def}
-}
-    % endfor
-
-## Use this trick to force rendering before printing the buffer
-${method.delg_template.render() or method.delg_template.buffer}
-
-${method.super_delg_template.render() or method.super_delg_template.buffer}
-% endfor
-
-## Top-level functions
-% for fun in functions.values():
-${fun.stringify_decl()}
-{
-    ${fun.fun_def}
-}
-% endfor
-"""
+C_FILE_TEMPLATE = open("template/c_file.mako", 'r').read()
 
 # TODO: Finish PYC_COMP_FILE_TEMPLATE
-PYC_COMP_FILE_TEMPLATE = """
-## Top-level include (assume includes numpy)
-#include "pymyriadobject.h"
-
-#include "${obj_name}.h"
-
-% for obj_var_name, obj_var_decl in obj_struct.members.items():
-
-static PyObject* Py${obj_name}_${obj_var_name}
-    (PyObject* self __attribute__((unused)), PyObject* args)
-{
-    PyObject* ptr = NULL;
-    if (PyArg_ParseTuple(args, "O", &ptr) < 0 || ptr == NULL)
-    {
-        fprintf(stderr, "Couldn't parse tuple argument. \n");
-        return NULL;
-    }
-
-    ## TODO: Check if pointer, if so return numpy array of type
-    struct ${obj_name}* _self =
-        (struct ${obj_name}*) ((PyMyriadObject*) ptr)->mobject;
-
-    return Py_BuildValue("${myriad_types.c_decl_to_pybuildarg(obj_var_decl)}",
-                         _self->cm);
-}
-% endfor
-
-static PyMethodDef py${obj_name.lower()}_functions[] = {
-% for obj_var_name in obj_struct.members.keys():
-    {"%{obj_var_name}", Py${obj_name}_${obj_var_name}, METH_VARARGS, "TODO"},
-% endfor
-    {NULL, NULL, 0, NULL}           /* sentinel */
-};
-
-static PyModuleDef py${obj_name.lower()}_module = {
-    PyModuleDef_HEAD_INIT,
-    "py${obj_name.lower()}",
-    "${obj_name} accessor methods.",
-    -1,
-    py${obj_name.lower()}_functions,
-    NULL, NULL, NULL, NULL
-};
-
-PyMODINIT_FUNC PyInit_py${obj_name.lower()}(void)
-{
-    _import_array();  // Necessary for numpy support
-
-    PyObject* m = PyModule_Create(&py${obj_name.lower()}_module);
-    if (m == NULL)
-    {
-        return NULL;
-    }
-
-    return m;
-}
-
-"""
+PYC_COMP_FILE_TEMPLATE = open("template/pyc_file.mako", 'r').read()
 
 
 class MyriadMethod(object):
@@ -344,50 +139,10 @@ class MyriadMethod(object):
     delegators from scratch.
     """
 
-    DELG_TEMPLATE = """
-% if not inherited:
-<%
-    fun_args = ','.join([arg.ident for arg in delegator.args_list.values()])
-%>
+    DELG_TEMPLATE = open("template/delegator_func.mako", 'r').read()
 
-${delegator.stringify_decl()}
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*)
-        myriad_class_of(${list(delegator.args_list.values())[0].ident});
-
-    assert(m_class->my_${delegator.fun_typedef.name});
-
-    % if delegator.ret_var.base_type is MVoid and not delegator.ret_var.base_type.ptr:
-    m_class->my_${delegator.fun_typedef.name}(${fun_args});
-    return;
-    % else:
-    return m_class->my_${delegator.fun_typedef.name}(${fun_args});
-    % endif
-}
-% endif
-    """
-
-    SUPER_DELG_TEMPLATE = """
-% if not inherited:
-<%
-    fun_args = ','.join([arg.ident for arg in super_delegator.args_list.values()][1:])
-%>
-${super_delegator.stringify_decl()}
-{
-    const struct MyriadClass* superclass = (const struct MyriadClass*)
-        myriad_super(${list(super_delegator.args_list.values())[0].ident});
-
-    assert(superclass->my_${delegator.fun_typedef.name});
-
-    % if delegator.ret_var.base_type is MVoid and not delegator.ret_var.base_type.ptr:
-    superclass->my_${delegator.fun_typedef.name}(${fun_args});
-    return;
-    % else:
-    return superclass->my_${delegator.fun_typedef.name}(${fun_args});
-    % endif
-}
-% endif
-    """
+    SUPER_DELG_TEMPLATE = \
+        open("template/super_delegator_func.mako", 'r').read()
 
     @enforce_annotations
     def __init__(self,
@@ -492,61 +247,10 @@ class MyriadModule(object):
 
     DEFAULT_CUDA_INCLUDES = {"cuda_runtime.h", "cuda_runtime_api.h"}
 
-    CLS_CTOR_TEMPLATE = """
-    struct ${cls_name}* self = (struct ${cls_name}*) super_ctor(${cls_name}, _self, app);
+    CLS_CTOR_TEMPLATE = open("templates/class_ctor_template.mako", 'r').read()
 
-    voidf selector = NULL; selector = va_arg(*app, voidf);
-
-    while (selector)
-    {
-        const voidf method = va_arg(*app, voidf);
-
-        % for mtd in [m for m in methods.values() if not m.inherited]:
-        if (selector == (voidf) ${mtd.delegator.ident})
-        {
-            *(voidf *) &self->${"my_" + mtd.delegator.fun_typedef.name} = method;
-        }
-        % endfor
-
-        selector = va_arg(*app, voidf);
-    }
-
-    return self;
-    """
-
-    CLS_CUDAFY_TEMPLATE = """
-    #ifdef CUDA
-    {
-        struct MechanismClass* my_class = (struct MechanismClass*) _self;
-
-        struct MechanismClass copy_class = *my_class; // Assignment to stack avoids calloc/memcpy
-        struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
-
-        mech_fun_t my_mech_fun = NULL;
-        CUDA_CHECK_RETURN(
-            cudaMemcpyFromSymbol(
-                (void**) &my_mech_fun,
-                (const void*) &Mechanism_cuda_mechanism_fxn_t,
-                sizeof(void*),
-                0,
-                cudaMemcpyDeviceToHost
-            )
-        );
-        copy_class.m_mech_fxn = my_mech_fun;
-
-        if (clobber)
-        {
-            const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
-            memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));
-        }
-        return super_cudafy(MechanismClass, (void*) &copy_class, 0);
-    }
-    #else
-    {
-        return NULL;
-    }
-    #endif
-    """
+    CLS_CUDAFY_TEMPLATE = \
+        open("templates/class_cudafy_template.mako", 'r').read()
 
     @enforce_annotations
     def __init__(self,

@@ -9,6 +9,7 @@ __author__ = ["Pedro Rittner"]
 from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
+from copy import copy
 
 
 def assert_list_type(m_list: list, m_type: type):
@@ -110,56 +111,141 @@ class TypeEnforcer(type):
         return super(TypeEnforcer, mcs).__new__(mcs, name, bases, attrs)
 
 
-class IndexedSet(object):
+class OrderedSet(object):
+    """
+    Set that remembers the order elements were added.
+    """
 
-    def __init__(self, elems=None):
+    def __init__(self, contents: list):
+        self._backing_set = set(contents)
+        self._elements_ordered = contents
+
+    @property
+    def backing_set(self):
+        """ Returns a shallow copy of the backing set """
+        return copy(self._backing_set)
+
+    def __iter__(self):
+        return self._elements_ordered.__iter__()
+
+    def __eq__(self, other):
+        if hasattr(other, "backing_set"):
+            return self._backing_set == other.backing_set
+        else:
+            raise TypeError("Invalid comparison type for OrderedSet: ",
+                            other.__class__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return self._backing_set.__hash__()
+
+    def __len__(self):
+        return len(self._backing_set)
+
+    def __contains__(self, item):
+        return self._backing_set.__contains__(item)
+
+    def isdisjoint(self, other):
         """
-        Initializes an indexed set with the given elements.
+        Return True if the set has no elements in common with other.
+        OrderedSets are disjoint if and only if their intersection is the empty
+        set.
         """
-        self._my_dict = dict()
-        self._curr_indx = -1
-        if elems is None:
-            return
+        return self._backing_set.isdisjoint(other.backing_set)
 
-        for index, elem in enumerate(elems):
-            self._curr_indx += 1
-            self._my_dict[index] = elem
+    def __le__(self, other):
+        return self._backing_set <= other.backing_set
 
-    def append(self, n_elem):
+    def issubset(self, other):
         """
-        Appends an element to the end of the set.
-
-        TODO: If the element is already in the set, it is moved to the end.
+        Test whether every element in the set is in other.
         """
-        if n_elem not in self._my_dict.values():
-            self._curr_indx += 1
-            self._my_dict[self._curr_indx] = n_elem
+        return self.__le__(other)
 
-    def prepend(self, n_elem):
+    def __lt__(self, other):
         """
-        Prepends an element to the start of the set.
-
-        TODO: If the element is already in the set, it is moved to the start.
+        Test whether the set is a proper subset of other, that is, set <= other
+        and set != other.
         """
-        if n_elem not in self._my_dict.values():
-            items = list(self._my_dict.items())
-            self._my_dict = {0: n_elem}
-            for orig_indx, elem in items:
-                self._my_dict[orig_indx+1] = elem
+        return self._backing_set < other.backing_set
 
-    def __getitem__(self, key):
-        if type(key) is not int:
-            msg = "IndexedSet indices must be integers, not {0}."
-            raise TypeError(msg.format(type(key)))
-        elif key > self._curr_indx or key < 0:
-            raise IndexError("Index out of bounds.")
-        return self._my_dict[key]
+    def __ge__(self, other):
+        return self._backing_set >= other.backing_set
+
+    def issuperset(self, other):
+        """ Test whether every element in other is in the set. """
+        return self.__ge__(other)
+
+    def __gt__(self, other):
+        return self._backing_set > other.backing_set
+
+    def __or__(self, other):
+        new_backing_set = copy(self._backing_set)
+        new_backing_set_list = copy(self._elements_ordered)
+        for other_val in other.backing_set:
+            if other_val not in new_backing_set:
+                new_backing_set.add(other_val)
+                new_backing_set_list.append(other_val)
+        return OrderedSet(new_backing_set_list)
+
+    def union(self, other):
+        """
+        Return a new OrderedSet with elements from the set and all others.
+        """
+        return self.__or__(other)
+
+    def __and__(self, other):
+        new_backing_set = set()
+        new_backing_set_list = list()
+        for our_val in self._elements_ordered:
+            if our_val in other:
+                new_backing_set.add(our_val)
+                new_backing_set_list.append(our_val)
+        return OrderedSet(new_backing_set_list)
+
+    def intersection(self, other):
+        """ Return a new set with elements common to the set and all others """
+        return self.__and__(other)
+
+    def __sub__(self, other):
+        new_backing_set = set()
+        new_backing_set_list = list()
+        for our_val in self._elements_ordered:
+            if our_val not in other:
+                new_backing_set.add(our_val)
+                new_backing_set_list.append(our_val)
+        return OrderedSet(new_backing_set_list)
+
+    def difference(self, other):
+        """
+        Return a new set with elements in the set that are not in the others.
+        """
+        return self.__sub__(other)
+
+    def __xor__(self, other):
+        new_backing_set_list = list()
+        # Get all elements together first, then only add unique ones
+        union_set = self.union(other)
+        for union_val in union_set:
+            in_ours = union_val in self
+            in_other = union_val in other
+            if in_ours ^ in_other:
+                new_backing_set_list.append(union_val)
+        return OrderedSet(new_backing_set_list)
 
     def __repr__(self):
-        _lst = list(range(self._curr_indx+1))
-        for indx, value in self._my_dict.items():
-            _lst[indx] = value
-        return str(_lst)
+        return str(self._elements_ordered)
+
+    def __str__(self):
+        return str(self._elements_ordered)
+
+    def symmetric_difference(self, other):
+        """
+        Return a new set with elements in either the set or other but not both.
+        """
+        return self.__xor__(other)
 
 
 def remove_header_parens(lines: list) -> list:
@@ -175,9 +261,6 @@ def remove_header_parens(lines: list) -> list:
         elif char == '(':
             open_index = (linum, indx)
             break
-
-    # print("open parenthese index: ", open_index)
-
     # Search for matching close parens
     close_index = (-1, -1)
     open_br = 0
@@ -195,10 +278,46 @@ def remove_header_parens(lines: list) -> list:
         if open_br == 0:
             close_index = (linum, indx)
             break
-
-    # print("close parentheses index: ", close_index)
-
+    # If the indices match (same line), just skip the first line altogether
     if open_index[0] == close_index[0]:
         return lines[1:]
     else:
         return lines[open_index[0]:][close_index[0]:]
+
+
+def indent_fix(source_lines: str) -> str:
+    """ Returns the source lines as a single string, left-indented """
+    if source_lines is None:
+        return None
+    # Empty string indented correctly is just the empty string
+    elif source_lines == "":
+        return ""
+    # Single-line statements need only be trimmed
+    elif source_lines.count('\n') <= 1:
+        return " ".join(source_lines.split())
+
+    # Multi-line statements need to have tabs converted to 4 spaces
+    result_str = source_lines.replace('\t', '    ')
+    # Split the string into lines and get the first line (ignoring empty lines)
+    as_lines = [line for line in result_str.splitlines() if len(line) > 0]
+    # and count the number of spaces until the 1st non-whitespace character
+    count = 0
+    for char in as_lines[0]:
+        if char != ' ':
+            break
+        count += 1
+    # Now we remove the count whitespaces from each line and return
+    return "\n".join([line[count:] for line in as_lines])
+
+
+def indent_fix_lines(source_lines: list) -> list:
+    """ Returns the source lines as a list of strings, left-indented """
+    # Empty list fixed is just the empty string
+    if len(source_lines) == 0:
+        return ""
+    # Single-line strings can just be stripped of leading/lingering whitespace
+    elif len(source_lines) == 1:
+        return source_lines[0].strip()
+    # Join list to pass to indent_fix
+    result_str = indent_fix("".join(source_lines))
+    return result_str

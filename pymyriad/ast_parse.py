@@ -140,7 +140,6 @@ def parse_attribute(node):
 
 def parse_assign(node):
     target = parse_node(node.targets[0])
-    print(target)
     val = parse_node(node.value)
     return CTypes.CAssign(target, val)
 
