@@ -14,7 +14,7 @@ from copy import copy
 from functools import wraps
 from warnings import warn
 
-from myriad_mako_wrapper import MakoTemplate
+from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
 from myriad_utils import OrderedSet
 
@@ -51,6 +51,15 @@ SUPER_DELG_TEMPLATE = open("templates/super_delegator_func.mako", 'r').read()
 CLS_CTOR_TEMPLATE = open("templates/class_ctor_template.mako", 'r').read()
 
 CLS_CUDAFY_TEMPLATE = open("templates/class_cudafy_template.mako", 'r').read()
+
+HEADER_FILE_TEMPLATE = open("templates/header_file.mako", 'r').read()
+
+CUH_FILE_TEMPLATE = open("templates/cuda_header_file.mako", 'r').read()
+
+C_FILE_TEMPLATE = open("templates/c_file.mako", 'r').read()
+
+# TODO: Finish PYC_COMP_FILE_TEMPLATE
+PYC_COMP_FILE_TEMPLATE = open("templates/pyc_file.mako", 'r').read()
 
 
 ######################
@@ -236,6 +245,30 @@ def _method_organizer_helper(
     return (myriad_cls_vars, myriad_methods)
 
 
+def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
+    """
+    Creates templates using namespace, and returns the updated namespace.
+    """
+    namespace["c_file_template"] = MakoFileTemplate(
+        namespace["obj_name"] + ".c",
+        C_FILE_TEMPLATE,
+        namespace)
+    namespace["header_file_template"] = MakoFileTemplate(
+        namespace["obj_name"] + ".h",
+        HEADER_FILE_TEMPLATE,
+        namespace)
+    namespace["cuh_file_template"] = MakoFileTemplate(
+        namespace["obj_name"] + ".cuh",
+        CUH_FILE_TEMPLATE,
+        namespace)
+    # TODO: CU file template
+    namespace["pyc_file_template"] = MakoFileTemplate(
+        "py_" + namespace["obj_name"] + ".c",
+        PYC_COMP_FILE_TEMPLATE,
+        namespace)
+    return namespace
+
+
 class MyriadMetaclass(type):
     """
     TODO: Documentation for MyriadMetaclass
@@ -310,7 +343,7 @@ class MyriadMetaclass(type):
                 pass
             # TODO: Figure out other valid values for namespace variables
             else:
-                warn("Unsupported variable type for " + k)
+                warn("Unsupported variable type for {0}".format(k))
 
         # Object Name and Class Name are automatically derived from name
         namespace["obj_name"] = name
@@ -336,6 +369,9 @@ class MyriadMetaclass(type):
         namespace["myriad_obj_vars"] = myriad_obj_vars
         namespace["myriad_cls_vars"] = myriad_cls_vars
 
+        # Write templates now that we have full information
+        namespace = _template_creator_helper(namespace)
+
         # Finally, delete function from namespace
         for method_id in myriad_methods.keys():
             del namespace[method_id]
@@ -349,4 +385,15 @@ class MyriadMetaclass(type):
 # TODO: MyriadObject definition
 class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
     """ Base class that every myriad object inherits from """
-    pass
+
+    @classmethod
+    def render_templates(cls):
+        """ Render internal templates to files"""
+        print("Rendering C File")
+        cls.__dict__["c_file_template"].render_to_file()
+        print("Rendering H File")
+        cls.__dict__["header_file_template"].render_to_file()
+        print("Rendering CUH File")
+        cls.__dict__["cuh_file_template"].render_to_file()
+        print("Rendering PYC File")
+        cls.__dict__["pyc_file_template"].render_to_file()

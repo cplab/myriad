@@ -10,6 +10,8 @@ import unittest
 
 from collections import OrderedDict
 
+from os.path import isfile
+
 from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
 
@@ -138,6 +140,13 @@ class TestMyriadMetaclass(unittest.TestCase):
                       VerbatimObj.__dict__["myriad_cls_vars"])
         self.assertIsNotNone(
             VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"])
+
+    def test_template_rendering(self):
+        """ Testing if template rendering works """
+        class RenderObj(myriad_metaclass.MyriadObject):
+            pass
+        RenderObj.render_templates()
+        self.assertTrue(isfile("RenderObj.c"))
 
 
 def main():
