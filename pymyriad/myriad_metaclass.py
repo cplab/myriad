@@ -8,11 +8,11 @@
 
 """
 import inspect
+import logging
 
 from collections import OrderedDict
 from copy import copy
 from functools import wraps
-from warnings import warn
 
 from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
@@ -22,6 +22,13 @@ from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import MVoid, _MyriadBase, MyriadCType
 
 from ast_function_assembler import pyfun_to_cfun
+
+###########
+# LOG #
+###########
+
+LOG = logging.getLogger(__name__)
+LOG.addHandler(logging.NullHandler())
 
 #############
 # Constants #
@@ -84,6 +91,7 @@ def create_delegator(instance_fxn: MyriadFunction,
     # Generate template and render into copy's definition
     template_vars = {"delegator": ist_cpy, "classname": classname}
     template = MakoTemplate(DELG_TEMPLATE, template_vars)
+    LOG.debug("Rendering create_delegator template for %s", classname)
     template.render()
     ist_cpy.fun_def = template.buffer
     # Return created copy
@@ -116,6 +124,8 @@ def create_super_delegator(delg_fxn: MyriadFunction,
                      "super_delegator": s_delg_f,
                      "classname": classname}
     template = MakoTemplate(SUPER_DELG_TEMPLATE, template_vars)
+    LOG.debug("Rendering create_super_delegator template for %s",
+                  classname)
     template.render()
 
     # Add rendered definition to function
@@ -162,6 +172,7 @@ def myriad_method(method):
     def inner(*args, **kwargs):
         """Dummy inner function to prevent direct method calls"""
         raise Exception("Cannot directly call a myriad method")
+    LOG.debug("myriad_method annotation wrapping %s", method.__name__)
     inner.__dict__["is_myriad_method"] = True
     inner.__dict__["original_fun"] = method
     return inner
@@ -232,15 +243,21 @@ def _method_organizer_helper(
     # Get a set difference between super/own methods for class struct
     super_methods_ident_set = OrderedSet(
         [(k, v) for k, v in supercls.myriad_methods.items()])
+    LOG.debug("_method_organizer_helper super methods found: %r",
+              super_methods_ident_set)
     all_methods_ident_set = OrderedSet(
         [(k, v) for k, v in myriad_methods.items()])
     own_methods = all_methods_ident_set - super_methods_ident_set
+    LOG.debug("_method_organizer_helper own methods identified: %r",
+              own_methods)
 
     # Struct definition representing class methods
     for _, method in own_methods:
         new_ident = "my_" + method.fun_typedef.name
         m_scal = MyriadScalar(new_ident, method.base_type)
         myriad_cls_vars[new_ident] = m_scal
+    LOG.debug("_method_organizer_helper class variables selected: %r",
+              myriad_cls_vars)
 
     return (myriad_cls_vars, myriad_methods)
 
@@ -340,10 +357,12 @@ class MyriadMetaclass(type):
                 # print(k + " has decl " + myriad_obj_vars[k].stringify_decl())
             # ... a python meta value (e.g.  __module__) we shouldn't mess with
             elif k.startswith("__"):
-                pass
+                LOG.debug("Python built-in method %r ignored for %s",
+                          k, name)
             # TODO: Figure out other valid values for namespace variables
             else:
-                warn("Unsupported variable type for {0}".format(k))
+                LOG.info("Unsupported var type for %r, ignoring for %s",
+                         k, name)
 
         # Object Name and Class Name are automatically derived from name
         namespace["obj_name"] = name
@@ -370,6 +389,7 @@ class MyriadMetaclass(type):
         namespace["myriad_cls_vars"] = myriad_cls_vars
 
         # Write templates now that we have full information
+        LOG.debug("Creating templates for class %s", name)
         namespace = _template_creator_helper(namespace)
 
         # Finally, delete function from namespace
@@ -389,11 +409,11 @@ class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
     @classmethod
     def render_templates(cls):
         """ Render internal templates to files"""
-        print("Rendering C File")
+        LOG.debug("Rendering C File for %s", cls.__name__)
         cls.__dict__["c_file_template"].render_to_file()
-        print("Rendering H File")
+        LOG.debug("Rendering H File for %s", cls.__name__)
         cls.__dict__["header_file_template"].render_to_file()
-        print("Rendering CUH File")
+        LOG.debug("Rendering CUH File for %s", cls.__name__)
         cls.__dict__["cuh_file_template"].render_to_file()
-        print("Rendering PYC File")
+        LOG.debug("Rendering PYC File for %s", cls.__name__)
         cls.__dict__["pyc_file_template"].render_to_file()

@@ -7,6 +7,8 @@
 """
 
 import unittest
+import logging
+import sys
 
 from collections import OrderedDict
 
@@ -151,7 +153,15 @@ class TestMyriadMetaclass(unittest.TestCase):
 
 def main():
     """ Runs the tests, doing some setup. """
-    unittest.main()
+    # Logging setup
+    LOG = logging.getLogger(__name__)
+    LOG.setLevel(logging.DEBUG)
+    LOG_HANDLER = logging.StreamHandler(stream=sys.stdout)
+    LOG_HANDLER.setLevel(logging.DEBUG)
+    myriad_metaclass.LOG.addHandler(LOG_HANDLER)
+    myriad_metaclass.LOG.setLevel(logging.DEBUG)
+    LOG.addHandler(LOG_HANDLER)
+    unittest.main(buffer=True)
 
 if __name__ == '__main__':
     main()
