@@ -8,14 +8,18 @@
 
 import unittest
 import logging
+import io
 import sys
+import os
 
 from collections import OrderedDict
 
-from os.path import isfile
-
 from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
+
+# Log file
+LOG_FILE = io.StringIO()
+LOG_LINES = []
 
 
 def setUpModule():
@@ -24,7 +28,7 @@ def setUpModule():
     log = logging.getLogger(__name__)
     log.setLevel(logging.DEBUG)
     # Create log handler
-    log_handler = logging.StreamHandler(stream=sys.stderr)
+    log_handler = logging.StreamHandler(stream=LOG_FILE)
     log_handler.setLevel(logging.DEBUG)
     # Create and set log formatter
     log_formatter = logging.Formatter(
@@ -35,6 +39,12 @@ def setUpModule():
     # Add handler/formatter to module we're testing
     myriad_metaclass.LOG.addHandler(log_handler)
     myriad_metaclass.LOG.setLevel(logging.DEBUG)
+
+
+def tearDownModule():
+    print("", file=sys.stderr)
+    for line in LOG_LINES:
+        print(line, file=sys.stderr)
 
 
 class TestMyriadMethod(unittest.TestCase):
@@ -105,6 +115,27 @@ class TestMyriadMetaclass(unittest.TestCase):
     Tests MyriadMetaclass functionality 'standalone'
     """
 
+    # Current error/failure count
+    curr_errors = 0
+    curr_failures = 0
+
+    def run(self, result=None):
+        """ Show log output on failed tests """
+        curr_errors = len(result.errors) if result else 0
+        curr_failures = len(result.failures) if result else 0
+        if self.curr_errors < curr_errors:
+            self.curr_errors = curr_errors
+            LOG_LINES.append("Error @ " + result.errors[0][0].__repr__() +
+                             ":\n" + LOG_FILE.getvalue())
+        elif self.curr_failures < curr_failures:
+            self.curr_failures = curr_failures
+            LOG_LINES.append("Failure @ " + result.failures[0][0].__repr__() +
+                             ":\n" + LOG_FILE.getvalue())
+        else:
+            # Truncate the StringIO
+            LOG_FILE.truncate(0)
+        return super().run(result)
+
     def test_create_blank_class(self):
         """ Testing if creating a blank metaclass works """
         class BlankObj(myriad_metaclass.MyriadObject):
@@ -167,12 +198,12 @@ class TestMyriadMetaclass(unittest.TestCase):
         class RenderObj(myriad_metaclass.MyriadObject):
             pass
         RenderObj.render_templates()
-        self.assertTrue(isfile("RenderObj.c"))
+        self.assertTrue(os.path.isfile("RenderObj.c"))
 
 
 def main():
     """ Runs the tests, doing some setup. """
-    unittest.main(buffer=True)
+    unittest.main(buffer=False)
 
 
 if __name__ == '__main__':
