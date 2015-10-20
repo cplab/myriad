@@ -18,6 +18,25 @@ from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
 
 
+def setUpModule():
+    """ Logging setup """
+    # Create logger with level
+    log = logging.getLogger(__name__)
+    log.setLevel(logging.DEBUG)
+    # Create log handler
+    log_handler = logging.StreamHandler(stream=sys.stderr)
+    log_handler.setLevel(logging.DEBUG)
+    # Create and set log formatter
+    log_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    log_handler.setFormatter(log_formatter)
+    # Set log handler
+    log.addHandler(log_handler)
+    # Add handler/formatter to module we're testing
+    myriad_metaclass.LOG.addHandler(log_handler)
+    myriad_metaclass.LOG.setLevel(logging.DEBUG)
+
+
 class TestMyriadMethod(unittest.TestCase):
     """
     Tests Myriad Method functionality 'standalone'
@@ -153,15 +172,8 @@ class TestMyriadMetaclass(unittest.TestCase):
 
 def main():
     """ Runs the tests, doing some setup. """
-    # Logging setup
-    LOG = logging.getLogger(__name__)
-    LOG.setLevel(logging.DEBUG)
-    LOG_HANDLER = logging.StreamHandler(stream=sys.stdout)
-    LOG_HANDLER.setLevel(logging.DEBUG)
-    myriad_metaclass.LOG.addHandler(LOG_HANDLER)
-    myriad_metaclass.LOG.setLevel(logging.DEBUG)
-    LOG.addHandler(LOG_HANDLER)
     unittest.main(buffer=True)
+
 
 if __name__ == '__main__':
     main()
