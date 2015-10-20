@@ -24,6 +24,9 @@ doc/
 *.bak
 *.old
 
+# Log crap
+*.log
+
 # Callgrind/perf crap
 callgrind.out.*
 *.perf
