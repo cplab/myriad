@@ -17,11 +17,7 @@ from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
 import myriad_metaclass
 
 
-@set_external_loggers(
-    "TestMyriadMethod",
-    myriad_metaclass.LOG,
-    # log_filename="TestMyriadMethod.log"
-)
+@set_external_loggers("TestMyriadMethod", myriad_metaclass.LOG)
 class TestMyriadMethod(MyriadTestCase):
     """
     Tests Myriad Method functionality 'standalone'
@@ -85,11 +81,7 @@ class TestMyriadMethod(MyriadTestCase):
         self.assertEqual(result_str, expected_result)
 
 
-@set_external_loggers(
-    "TestMyriadMetaclass",
-    myriad_metaclass.LOG,
-    log_filename="TestMyriadMetaclass.log"
-)
+@set_external_loggers("TestMyriadMetaclass", myriad_metaclass.LOG)
 class TestMyriadMetaclass(MyriadTestCase):
     """
     Tests MyriadMetaclass functionality 'standalone'
@@ -166,7 +158,7 @@ class TestMyriadMetaclass(MyriadTestCase):
 
 def main():
     """ Runs the tests, doing some setup. """
-    unittest.main(buffer=False)
+    unittest.main()
 
 
 if __name__ == '__main__':

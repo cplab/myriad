@@ -85,7 +85,7 @@ class TestStructs(unittest.TestCase):
                                            OrderedDict({0: class_m,
                                                         1: double_val}))
         self.assertEqual(
-            "struct toplevel {   const struct MyriadClass class_m;   double val; }",
+            "struct toplevel{ const struct MyriadClass class_m; double val; }",
             toplevel_struct.stringify_decl().replace('\n', ' '))
 
 

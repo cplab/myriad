@@ -1,10 +1,15 @@
+## Top-level module includes
+<%!
+    import myriad_types
+%>
+
 ## Top-level include (assume includes numpy)
 #include "pymyriadobject.h"
 
 #include "${obj_name}.h"
 
 % for obj_var_name, obj_var_decl in obj_struct.members.items():
-
+% if not obj_var_name.startswith("_"):
 static PyObject* Py${obj_name}_${obj_var_name}
     (PyObject* self __attribute__((unused)), PyObject* args)
 {
@@ -22,11 +27,14 @@ static PyObject* Py${obj_name}_${obj_var_name}
     return Py_BuildValue("${myriad_types.c_decl_to_pybuildarg(obj_var_decl)}",
                          _self->cm);
 }
+% endif
 % endfor
 
 static PyMethodDef py${obj_name.lower()}_functions[] = {
 % for obj_var_name in obj_struct.members.keys():
+% if not obj_var_name.startswith("_"):
     {"%{obj_var_name}", Py${obj_name}_${obj_var_name}, METH_VARARGS, "TODO"},
+% endif
 % endfor
     {NULL, NULL, 0, NULL}           /* sentinel */
 };

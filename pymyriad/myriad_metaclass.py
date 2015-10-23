@@ -124,8 +124,7 @@ def create_super_delegator(delg_fxn: MyriadFunction,
                      "super_delegator": s_delg_f,
                      "classname": classname}
     template = MakoTemplate(SUPER_DELG_TEMPLATE, template_vars)
-    LOG.debug("Rendering create_super_delegator template for %s",
-                  classname)
+    LOG.debug("Rendering create_super_delegator template for %s", classname)
     template.render()
 
     # Add rendered definition to function
@@ -286,6 +285,14 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
     return namespace
 
 
+def _generate_includes_helper(superclass, features: set=None) -> (set, set):
+    """ Generates local and lib includes based on superclass and features """
+    local_includes = [superclass.__name__]
+    lib_includes = copy(DEFAULT_LIB_INCLUDES)
+    # TODO: Add CUDA includes on-demand
+    return (local_includes, lib_includes)
+
+
 class MyriadMetaclass(type):
     """
     TODO: Documentation for MyriadMetaclass
@@ -378,6 +385,8 @@ class MyriadMetaclass(type):
                 myriad_methods,
                 supercls,
                 myriad_cls_vars)
+            namespace["local_includes"], namespace["lib_includes"] = \
+                _generate_includes_helper(supercls)
 
         # Create myriad class struct
         namespace["cls_struct"] = MyriadStructType(namespace["cls_name"],
@@ -409,10 +418,10 @@ class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
     @classmethod
     def render_templates(cls):
         """ Render internal templates to files"""
-        LOG.debug("Rendering C File for %s", cls.__name__)
-        cls.__dict__["c_file_template"].render_to_file()
         LOG.debug("Rendering H File for %s", cls.__name__)
         cls.__dict__["header_file_template"].render_to_file()
+        LOG.debug("Rendering C File for %s", cls.__name__)
+        cls.__dict__["c_file_template"].render_to_file()
         LOG.debug("Rendering CUH File for %s", cls.__name__)
         cls.__dict__["cuh_file_template"].render_to_file()
         LOG.debug("Rendering PYC File for %s", cls.__name__)

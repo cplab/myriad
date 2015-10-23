@@ -16,12 +16,9 @@
 extern __constant__ __device__ struct ${cls_name}* ${obj_name}_dev_t;
 extern __constant__ __device__ struct ${cls_name}* ${cls_name}_dev_t;
 
-% for fun in functions.values():
-<%
-    tmp_fun = fun.copy_init(ident="cuda_" + fun.ident)
-    context.write("extern __device__ " + tmp_fun.stringify_decl() + ";")
-%>
-% endfor
+## TODO: Add __device__ function pointer variables (using typedef'd type for myriad method)
+
+## TODO: Add cuda_* versions of delegator function
 
 #endif // IFDEF CUDA
 

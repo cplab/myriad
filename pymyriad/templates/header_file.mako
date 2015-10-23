@@ -1,5 +1,6 @@
 <%!
     import myriad_types
+    import myriad_metaclass
 %>
 
 ## Add include guards
@@ -21,34 +22,28 @@
 % endfor
 
 ## Declare typedefs
-% for method in methods.values():
-    % if not method.inherited:
+% for method in myriad_methods:
 ${method.delegator.stringify_typedef()};
-    % endif
 % endfor
 
 ## Struct forward declarations
 struct ${cls_name};
 struct ${obj_name};
 
-## Module variables
-% for m_var in module_vars.values():
-    % if type(m_var) is not str and 'static' not in m_var.decl.storage:
-extern ${m_var.stringify_decl()};
-    % endif
-% endfor
-
 ## Top-level functions
-% for fun in functions.values():
-extern ${fun.stringify_decl()};
-% endfor
+## % for fun in functions.values():
+## extern ${fun.stringify_decl()};
+## % endfor
 
 ## Method delegators
-% for method in [m for m in methods.values() if not m.inherited]:
+% for method in myriad_methods:
+<%
+    delg = myriad_metaclass.create_delegator(method, cls_name)
+    super_delg = myriad_metaclass.create_super_delegator(delg, cls_name)
+%>
+extern ${delg.stringify_decl()};
 
-extern ${method.delegator.stringify_decl()};
-
-extern ${method.super_delegator.stringify_decl()};
+extern ${super_delg.stringify_decl()};
 
 % endfor
 
