@@ -12,13 +12,21 @@ import io
 import sys
 
 
+def trim_spaces(string: str) -> str:
+    """ Removes insignificant whitespace for comparison purposes"""
+    if string is None:
+        return ""
+    else:
+        return " ".join(string.split())
+
+
 def set_external_loggers(
         logger_name: str,
         *args,
         log_filename=None,
         log_level=logging.DEBUG,
         log_format: str="%(name)s - %(levelname)s - %(message)s"):
-    """ Decorator utility """
+    """ Sets external loggers to be activated by the wrapped test case """
     # Create logger with level
     log = logging.getLogger(logger_name)
     log.setLevel(log_level)
@@ -64,10 +72,14 @@ class MyriadTestCase(unittest.TestCase):
             cls.log_file = io.StringIO()
         cls.log_list = []
 
+    def assertTrimStrEquals(self, str1: str, str2: str):
+        """ Asserts two strings are equal after trimming whitespaces """
+        self.assertEqual(trim_spaces(str1), trim_spaces(str2))
+
     def _format_log(self,
                     is_err: bool,
                     err_rslt: (unittest.TestResult, str)) -> str:
-        """ Formats the log string in a pretty way"""
+        """ Formats the log string in a pretty way """
         desc_str = " Log for " + ("Error @ " if is_err else "Failure @ ")
         header_str = desc_str + err_rslt[0].__repr__() + ' '
         hyphens = '=' * max(0, (80 - len(header_str)) // 2)

@@ -43,16 +43,15 @@ class TestMyriadMethod(MyriadTestCase):
         super_delg = myriad_metaclass.create_super_delegator(myriad_dtor,
                                                              classname)
         # Compare result strings
-        expected_result = " ".join("""
+        expected_result = """
         void super_dtor(const void *_class, const void *self)
         {
         const struct Compartment* superclass = (const struct Compartment*)
             myriad_super(_class);
         return superclass->my_dtor_t(self);
         }
-        """.split())
-        result_str = " ".join(str(super_delg).split())
-        self.assertEqual(result_str, expected_result)
+        """
+        self.assertTrimStrEquals(str(super_delg), expected_result)
 
     def test_create_delegator(self):
         """ Testing if creating delegators works """
@@ -68,7 +67,7 @@ class TestMyriadMethod(MyriadTestCase):
         classname = "Compartment"
         result_fxn = myriad_metaclass.create_delegator(instance_fxn, classname)
         # Compare result strings
-        expected_result = " ".join("""
+        expected_result = """
         int64_t add_mech(void *_self, void *mechanism)
         {
         const struct Compartment* m_class = (const struct Compartment*)
@@ -76,9 +75,8 @@ class TestMyriadMethod(MyriadTestCase):
         assert(m_class->my_add_mech_t);
         return m_class->my_add_mech_t(mechanism);
         }
-        """.split())
-        result_str = " ".join(str(result_fxn).split())
-        self.assertEqual(result_str, expected_result)
+        """
+        self.assertTrimStrEquals(str(result_fxn), expected_result)
 
 
 @set_external_loggers("TestMyriadMetaclass", myriad_metaclass.LOG)
@@ -111,17 +109,16 @@ class TestMyriadMetaclass(MyriadTestCase):
         class VarOnlyObj(myriad_metaclass.MyriadObject):
             capacitance = MDouble
             vm = MyriadScalar("vm", MDouble, ptr=True)
-        result_str = " ".join(
-            VarOnlyObj.__dict__["obj_struct"].stringify_decl().split())
-        expected_result = " ".join("""
+        result_str = VarOnlyObj.__dict__["obj_struct"].stringify_decl()
+        expected_result = """
         struct VarOnlyObj
         {
             const struct MyriadObject _;
             double capacitance;
             double *vm;
         }
-        """.split())
-        self.assertEqual(result_str, expected_result)
+        """
+        self.assertTrimStrEquals(result_str, expected_result)
 
     def test_create_methods_class(self):
         """ Testing if creating Myriad classes with methods works """

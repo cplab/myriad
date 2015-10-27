@@ -5,6 +5,8 @@ import unittest
 
 from collections import OrderedDict
 
+from myriad_testing import trim_spaces
+
 from myriad_types import MVoid, MDouble
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import cast_to_parent
@@ -54,7 +56,7 @@ class TestStructs(unittest.TestCase):
                                         OrderedDict({0: void_ptr}))
         str1 = myriad_class.stringify_decl().replace('\n', ' ')
         str2 = "struct MyriadClass {   const void *self; }"
-        self.assertEqual(str1, str2)
+        self.assertEqual(trim_spaces(str1), trim_spaces(str2))
 
     def test_struct_ptr(self):
         """ Testing having a struct pointer variable """
@@ -62,8 +64,8 @@ class TestStructs(unittest.TestCase):
         myriad_class = MyriadStructType("MyriadClass",
                                         OrderedDict({0: void_ptr}))
         class_2 = myriad_class("class_2", ptr=True)
-        self.assertEqual("struct MyriadClass *class_2",
-                         class_2.stringify_decl())
+        self.assertEqual(trim_spaces("struct MyriadClass *class_2"),
+                         trim_spaces(class_2.stringify_decl()))
 
     def test_struct_qual(self):
         """ Testing making a struct having a qualifier """
@@ -84,9 +86,11 @@ class TestStructs(unittest.TestCase):
         toplevel_struct = MyriadStructType("toplevel",
                                            OrderedDict({0: class_m,
                                                         1: double_val}))
-        self.assertEqual(
-            "struct toplevel{ const struct MyriadClass class_m; double val; }",
-            toplevel_struct.stringify_decl().replace('\n', ' '))
+        expected_result = \
+            "struct toplevel { const struct MyriadClass class_m; double val; }"
+        str_result = toplevel_struct.stringify_decl().replace('\n', ' ')
+        self.assertEqual(trim_spaces(expected_result),
+                         trim_spaces(str_result))
 
 
 class TestArray(unittest.TestCase):

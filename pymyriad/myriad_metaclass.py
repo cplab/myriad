@@ -215,14 +215,17 @@ def _method_organizer_helper(
         myriad_methods: OrderedDict,
         supercls: _MyriadObjectBase,
         myriad_cls_vars: OrderedDict,
-        verbatim_methods: set=None) -> (OrderedDict, OrderedDict):
+        verbatim_methods: set=None) -> (OrderedDict, OrderedDict, OrderedSet):
     """
     # TODO: Better documentation of method_organizer_helper
     Organizes Myriad Methods, including inheritance.
 
     Verbatim methods are converted differently than pythonic methods.
 
-    Returns a tuple of the class struct variables, and the myriad methods.
+    Returns a 3-tuple consisting of:
+        1) Class' struct variables (OrderedDict)
+        2) Class' myriad methods (OrderedDict)
+        3) Methods whose point of origin is the provided class' (OrderedSet)
     """
     # Convert methods; remember, items() returns a read-only view
     for m_ident, method in myriad_methods.items():
@@ -258,7 +261,7 @@ def _method_organizer_helper(
     LOG.debug("_method_organizer_helper class variables selected: %r",
               myriad_cls_vars)
 
-    return (myriad_cls_vars, myriad_methods)
+    return (myriad_cls_vars, myriad_methods, own_methods)
 
 
 def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
@@ -381,10 +384,10 @@ class MyriadMetaclass(type):
 
         # Organize myriad methods and class struct members
         if supercls is not _MyriadObjectBase:
-            myriad_cls_vars, myriad_methods = _method_organizer_helper(
-                myriad_methods,
-                supercls,
-                myriad_cls_vars)
+            myriad_cls_vars, myriad_methods, own_methods = \
+                _method_organizer_helper(myriad_methods,
+                                         supercls,
+                                         myriad_cls_vars)
             namespace["local_includes"], namespace["lib_includes"] = \
                 _generate_includes_helper(supercls)
 
