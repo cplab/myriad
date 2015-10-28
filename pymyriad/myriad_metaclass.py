@@ -23,9 +23,9 @@ from myriad_types import MVoid, _MyriadBase, MyriadCType
 
 from ast_function_assembler import pyfun_to_cfun
 
-###########
-# LOG #
-###########
+#######
+# Log #
+#######
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
@@ -296,6 +296,51 @@ def _generate_includes_helper(superclass, features: set=None) -> (set, set):
     return (local_includes, lib_includes)
 
 
+def _parse_namespace(namespace: dict,
+                     name: str,
+                     myriad_methods: OrderedDict,
+                     myriad_obj_vars: OrderedDict,
+                     verbatim_methods: set):
+    """
+    Parses the given namespace, updates the last three input arguments to have:
+        1) OrderedDict of myriad_methods
+        2) OrderedDict of myriad_obj_vars
+        3) set of verbatim methods
+    """
+    # Extracts variables and myriad methods from class definition
+    for k, val in namespace.items():
+        # if val is ...
+        # ... a registered myriad method
+        if hasattr(val, "is_myriad_method"):
+            LOG.debug("%s is a myriad method in %s", k, name)
+            myriad_methods[k] = val.original_fun
+            # Verbatim methods are tracked in a set
+            if hasattr(val, "is_myriad_method_verbatim"):
+                LOG.debug("%s is a verbatim myriad method in %s", k, name)
+                verbatim_methods.add(k)
+        # ... some generic non-Myriad function or method
+        elif inspect.isfunction(val) or inspect.ismethod(val):
+            LOG.debug("%s is a function or method, ignoring for %s", k, name)
+        # ... some generic instance of a _MyriadBase type
+        elif issubclass(val.__class__, _MyriadBase):
+            LOG.debug("%s is a Myriad-type non-function attribute", k)
+            myriad_obj_vars[k] = val
+            LOG.debug("%s was added as an object variable to %s", k, name)
+        # ... a type statement of base type MyriadCType (e.g. MDouble)
+        elif issubclass(val.__class__, MyriadCType):
+            # TODO: Better type detection here for corner cases (e.g. ptr)
+            myriad_obj_vars[k] = MyriadScalar(k, val)
+            LOG.debug("%s has decl %s", k, myriad_obj_vars[k].stringify_decl())
+            LOG.debug("%s was added as an object variable to %s", k, name)
+        # ... a python meta value (e.g.  __module__) we shouldn't mess with
+        elif k.startswith("__"):
+            LOG.debug("Built-in method %r ignored for %s", k, name)
+        # TODO: Figure out other valid values for namespace variables
+        else:
+            LOG.info("Unsupported var type for %r, ignoring in %s", k, name)
+    LOG.debug("myriad_obj_vars for %s: %s ", name, myriad_obj_vars)
+
+
 class MyriadMetaclass(type):
     """
     TODO: Documentation for MyriadMetaclass
@@ -331,10 +376,10 @@ class MyriadMetaclass(type):
             raise TypeError("Myriad modules must inherit from MyriadObject")
         supercls = bases[0]  # Alias for base class
 
-        # Setup methods and variables as ordered dictionaries
-        myriad_methods = OrderedDict()
-        myriad_obj_vars = OrderedDict()
+        # Setup object/class variables, methods, and verbatim methods
         myriad_cls_vars = OrderedDict()
+        myriad_obj_vars = OrderedDict()
+        myriad_methods = OrderedDict()
         verbatim_methods = set()
 
         # Setup object with implicit superclass to start of struct definition
@@ -342,41 +387,16 @@ class MyriadMetaclass(type):
             myriad_obj_vars["_"] = supercls.obj_struct("_", quals=["const"])
             myriad_cls_vars["_"] = supercls.cls_struct("_", quals=["const"])
 
-        # Extracts variables and myriad methods from class definition
-        for k, val in namespace.items():
-            # if val is ...
-            # ... a registered myriad method
-            if hasattr(val, "is_myriad_method"):
-                # print(k + " is a myriad method")
-                myriad_methods[k] = val.original_fun
-                # Verbatim methods are tracked in a set
-                if hasattr(val, "is_myriad_method_verbatim"):
-                    verbatim_methods.add(k)
-            # ... some generic non-Myriad function or method
-            elif inspect.isfunction(val) or inspect.ismethod(val):
-                # print(k + " is a function or method, ignoring...")
-                pass
-            # ... some generic instance of a _MyriadBase type
-            elif issubclass(val.__class__, _MyriadBase):
-                myriad_obj_vars[k] = val
-                # print(k + " is a Myriad-type non-function attribute")
-            # ... a type statement of base type MyriadCType (e.g. MDouble)
-            elif issubclass(val.__class__, MyriadCType):
-                # TODO: Better type detection here for corner cases (e.g. ptr)
-                myriad_obj_vars[k] = MyriadScalar(k, val)
-                # print(k + " has decl " + myriad_obj_vars[k].stringify_decl())
-            # ... a python meta value (e.g.  __module__) we shouldn't mess with
-            elif k.startswith("__"):
-                LOG.debug("Python built-in method %r ignored for %s",
-                          k, name)
-            # TODO: Figure out other valid values for namespace variables
-            else:
-                LOG.info("Unsupported var type for %r, ignoring for %s",
-                         k, name)
-
         # Object Name and Class Name are automatically derived from name
         namespace["obj_name"] = name
         namespace["cls_name"] = name + "Class"
+
+        # Parse namespace into appropriate variables
+        _parse_namespace(namespace,
+                         name,
+                         myriad_methods,
+                         myriad_obj_vars,
+                         verbatim_methods)
 
         # Struct definition representing object state
         namespace["obj_struct"] = MyriadStructType(namespace["obj_name"],

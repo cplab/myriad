@@ -151,6 +151,9 @@ class TestMyriadMetaclass(MyriadTestCase):
             pass
         RenderObj.render_templates()
         self.assertTrue(os.path.isfile("RenderObj.c"))
+        self.assertTrue(os.path.isfile("RenderObj.h"))
+        self.assertTrue(os.path.isfile("RenderObj.cuh"))
+        self.assertTrue(os.path.isfile("py_RenderObj.c"))
 
 
 def main():

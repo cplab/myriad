@@ -11,6 +11,8 @@ import unittest
 import io
 import sys
 
+from termcolor import cprint
+
 
 def trim_spaces(string: str) -> str:
     """ Removes insignificant whitespace for comparison purposes"""
@@ -80,12 +82,12 @@ class MyriadTestCase(unittest.TestCase):
                     is_err: bool,
                     err_rslt: (unittest.TestResult, str)) -> str:
         """ Formats the log string in a pretty way """
-        desc_str = " Log for " + ("Error @ " if is_err else "Failure @ ")
+        desc_str = "Log for " + ("Error @ " if is_err else "Failure @ ")
         header_str = desc_str + err_rslt[0].__repr__() + ' '
         hyphens = '=' * max(0, (80 - len(header_str)) // 2)
         header_str = hyphens + header_str + hyphens + '\n'
-        foot_str = ('=' * len(header_str)) + '\n'
-        log_contents = self.log_file.getvalue().strip(u"\x00")  # UTF format
+        foot_str = ('=' * min(80, len(header_str))) + '\n'
+        log_contents = self.log_file.getvalue().strip(u"\x00")  # UTF8 format
         if len(hyphens) < 2:
             return foot_str + header_str + foot_str.replace('=', '-') +\
                 log_contents + '\n' + err_rslt[1] + foot_str
@@ -128,4 +130,4 @@ class MyriadTestCase(unittest.TestCase):
         else:
             print('\n', file=sys.stderr)
             for line in cls.log_list:
-                print(line, file=sys.stderr)
+                cprint(line, color='red', file=sys.stderr)
