@@ -41,6 +41,7 @@ def _print_log(lines: str):
         else:
             print(line, file=sys.stderr)
 
+
 def set_external_loggers(
         logger_name: str,
         *args,

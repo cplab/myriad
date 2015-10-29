@@ -29,6 +29,11 @@ ${method.stringify_decl()}
 % endfor
 
 ## Method delegators
+% for method_name, method in own_methods:
+
+${str(method)}
+
+% endfor
 
 
 ## Top-level functions

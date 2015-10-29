@@ -145,15 +145,38 @@ class TestMyriadMetaclass(MyriadTestCase):
         self.assertIsNotNone(
             VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"])
 
-    def test_template_rendering(self):
-        """ Testing if template rendering works """
+
+@set_external_loggers("TestMyriadRendering", myriad_metaclass.LOG)
+class TestMyriadRendering(MyriadTestCase):
+    """
+    Tests MyriadMetaclass rendering of objects
+    """
+
+    def assertFilesExist(self, base_cls):
+        """ Raises AssertionError if template files do not exist """
+        base_name = base_cls.__name__
+        file_list = [base_name + ".c",
+                     base_name + ".h",
+                     base_name + ".cuh",
+                     "py_" + base_name + ".c"]
+        for filename in file_list:
+            if not os.path.isfile(filename):
+                raise AssertionError("Template file not found: " + filename)
+
+    def test_template_instantiation(self):
+        """ Testing if template rendering produces files """
         class RenderObj(myriad_metaclass.MyriadObject):
             pass
         RenderObj.render_templates()
-        self.assertTrue(os.path.isfile("RenderObj.c"))
-        self.assertTrue(os.path.isfile("RenderObj.h"))
-        self.assertTrue(os.path.isfile("RenderObj.cuh"))
-        self.assertTrue(os.path.isfile("py_RenderObj.c"))
+        self.assertFilesExist(RenderObj)
+
+    @unittest.skip("Skip until vectors/arrays are properly implemented")
+    def test_render_variable_only_class(self):
+        """ Testing if rendering a variable-only metaclass works """
+        class VarOnlyObj(myriad_metaclass.MyriadObject):
+            capacitance = MDouble
+            vm = MyriadScalar("vm", MDouble, ptr=True)
+        VarOnlyObj.render_templates()
 
 
 def main():

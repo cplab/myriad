@@ -95,7 +95,7 @@ def c_decl_to_pybuildarg(c_decl: Decl):
     """Returns the Py_BuildValue character associated with the declaration."""
     if c_decl is None:
         raise TypeError("Argument cannot be None")
-    return _C_DECL_MAPPING.get(c_decl.type.type.names[0], d=None)
+    return _C_DECL_MAPPING.get(c_decl.type.type.names[0])
 
 # ----------------------------------------
 #                 CTYPES

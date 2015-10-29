@@ -21,9 +21,11 @@
 #include "${lib}"
 % endfor
 
-## Declare typedefs
+## Declare typedefs for own methods ONLY
 % for method in myriad_methods:
+    % if method in own_methods:
 ${method.delegator.stringify_typedef()};
+    % endif
 % endfor
 
 ## Struct forward declarations
@@ -36,7 +38,7 @@ struct ${obj_name};
 ## % endfor
 
 ## Method delegators
-% for method in myriad_methods:
+% for method_name, method in own_methods:
 <%
     delg = myriad_metaclass.create_delegator(method, cls_name)
     super_delg = myriad_metaclass.create_super_delegator(delg, cls_name)

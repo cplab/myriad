@@ -211,21 +211,19 @@ class _MyriadObjectBase(object):
     pass
 
 
-def _method_organizer_helper(
-        myriad_methods: OrderedDict,
-        supercls: _MyriadObjectBase,
-        myriad_cls_vars: OrderedDict,
-        verbatim_methods: set=None) -> (OrderedDict, OrderedDict, OrderedSet):
+def _method_organizer_helper(supercls: _MyriadObjectBase,
+                             myriad_methods: OrderedDict,
+                             myriad_cls_vars: OrderedDict,
+                             verbatim_methods: OrderedSet=None) -> OrderedSet:
     """
-    # TODO: Better documentation of method_organizer_helper
-    Organizes Myriad Methods, including inheritance.
+    Organizes Myriad Methods, including inheritance and verbatim methods.
 
-    Verbatim methods are converted differently than pythonic methods.
+    Verbatim methods are converted differently than pythonic methods; their
+    docstring is embedded 'verbatim' into the template instead of going through
+    the AST conversion.
 
-    Returns a 3-tuple consisting of:
-        1) Class' struct variables (OrderedDict)
-        2) Class' myriad methods (OrderedDict)
-        3) Methods whose point of origin is the provided class' (OrderedSet)
+    Returns an OrderedSet of methods not defined in the superclass
+    # TODO: Make sure own_methods aren't also defined in super-superclass/etc
     """
     # Convert methods; remember, items() returns a read-only view
     for m_ident, method in myriad_methods.items():
@@ -261,7 +259,7 @@ def _method_organizer_helper(
     LOG.debug("_method_organizer_helper class variables selected: %r",
               myriad_cls_vars)
 
-    return (myriad_cls_vars, myriad_methods, own_methods)
+    return own_methods
 
 
 def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
@@ -300,12 +298,12 @@ def _parse_namespace(namespace: dict,
                      name: str,
                      myriad_methods: OrderedDict,
                      myriad_obj_vars: OrderedDict,
-                     verbatim_methods: set):
+                     verbatim_methods: OrderedSet):
     """
     Parses the given namespace, updates the last three input arguments to have:
         1) OrderedDict of myriad_methods
         2) OrderedDict of myriad_obj_vars
-        3) set of verbatim methods
+        3) OrderedSet of verbatim methods
     """
     # Extracts variables and myriad methods from class definition
     for k, val in namespace.items():
@@ -317,7 +315,7 @@ def _parse_namespace(namespace: dict,
             # Verbatim methods are tracked in a set
             if hasattr(val, "is_myriad_method_verbatim"):
                 LOG.debug("%s is a verbatim myriad method in %s", k, name)
-                verbatim_methods.add(k)
+                verbatim_methods.add(val)
         # ... some generic non-Myriad function or method
         elif inspect.isfunction(val) or inspect.ismethod(val):
             LOG.debug("%s is a function or method, ignoring for %s", k, name)
@@ -387,10 +385,6 @@ class MyriadMetaclass(type):
             myriad_obj_vars["_"] = supercls.obj_struct("_", quals=["const"])
             myriad_cls_vars["_"] = supercls.cls_struct("_", quals=["const"])
 
-        # Object Name and Class Name are automatically derived from name
-        namespace["obj_name"] = name
-        namespace["cls_name"] = name + "Class"
-
         # Parse namespace into appropriate variables
         _parse_namespace(namespace,
                          name,
@@ -398,16 +392,21 @@ class MyriadMetaclass(type):
                          myriad_obj_vars,
                          verbatim_methods)
 
+        # Object Name and Class Name are automatically derived from name
+        namespace["obj_name"] = name
+        namespace["cls_name"] = name + "Class"
+
         # Struct definition representing object state
         namespace["obj_struct"] = MyriadStructType(namespace["obj_name"],
                                                    myriad_obj_vars)
 
         # Organize myriad methods and class struct members
         if supercls is not _MyriadObjectBase:
-            myriad_cls_vars, myriad_methods, own_methods = \
-                _method_organizer_helper(myriad_methods,
-                                         supercls,
-                                         myriad_cls_vars)
+            namespace["own_methods"] = _method_organizer_helper(
+                supercls,
+                myriad_methods,
+                myriad_cls_vars,
+                verbatim_methods)
             namespace["local_includes"], namespace["lib_includes"] = \
                 _generate_includes_helper(supercls)
 
