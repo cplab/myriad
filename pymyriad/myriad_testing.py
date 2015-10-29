@@ -22,6 +22,25 @@ def trim_spaces(string: str) -> str:
         return " ".join(string.split())
 
 
+def _print_log(lines: str):
+    """ Prints log lines, coloring where appropriate """
+    # If empty, don't print anything - better than printing an empty line
+    if lines is None or lines == '':
+        return
+    for line in lines.split("\n"):
+        if line.count("DEBUG"):
+            cprint(line, color="white", on_color="on_grey", file=sys.stderr)
+        elif line.count("INFO"):
+            cprint(line, color="blue", on_color="on_grey", file=sys.stderr)
+        elif line.count("WARNING"):
+            cprint(line, color="yellow", on_color="on_grey", file=sys.stderr)
+        elif line.count("ERROR"):
+            cprint(line, color="red", on_color="on_grey", file=sys.stderr)
+        elif line.count("CRITICAL"):
+            cprint(line, color="white", on_color="on_red", file=sys.stderr)
+        else:
+            print(line, file=sys.stderr)
+
 def set_external_loggers(
         logger_name: str,
         *args,
@@ -130,4 +149,4 @@ class MyriadTestCase(unittest.TestCase):
         else:
             print('\n', file=sys.stderr)
             for line in cls.log_list:
-                cprint(line, color='red', file=sys.stderr)
+                _print_log(line)
