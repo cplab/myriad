@@ -1,4 +1,8 @@
 """
+ANSII Color formatting for output in terminal.
+"""
+
+__license__ = """
 Copyright (c) Pedro Rittner <pedro.rittner@outlook.com>
 
 This file is free software: you may copy, redistribute and/or modify it under
@@ -37,17 +41,14 @@ notice:
 # THE SOFTWARE.
 #
 # Author: Konstantin Lepa <konstantin.lepa@gmail.com>
-
-ANSII Color formatting for output in terminal.
 """
 
-from __future__ import print_function
 import os
 
 
 __ALL__ = ['colored', 'cprint']
 
-VERSION = (1, 1, 0)
+__version__ = "1.1.1"
 
 ATTRIBUTES = dict(
     list(zip([
