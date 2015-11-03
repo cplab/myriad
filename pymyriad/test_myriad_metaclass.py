@@ -170,12 +170,12 @@ class TestMyriadRendering(MyriadTestCase):
         RenderObj.render_templates()
         self.assertFilesExist(RenderObj)
 
-    @unittest.skip("Skip until vectors/arrays are properly implemented")
+    # @unittest.skip("Skip until vectors/arrays are properly implemented")
     def test_render_variable_only_class(self):
         """ Testing if rendering a variable-only metaclass works """
         class VarOnlyObj(myriad_metaclass.MyriadObject):
             capacitance = MDouble
-            vm = MyriadScalar("vm", MDouble, ptr=True)
+            vm = MyriadScalar("vm", MDouble, arr_id="SIMUL_LEN")
         VarOnlyObj.render_templates()
 
 

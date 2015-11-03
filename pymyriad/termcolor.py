@@ -12,10 +12,10 @@ version.
 
 This file is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this program.  If not, see <http://www.gnu.org/licenses/>.
+this program. If not, see <http://www.gnu.org/licenses/>.
 
 This file incorporates work covered by the following copyright and permission
 notice:
@@ -174,4 +174,3 @@ if __name__ == '__main__':
     cprint('Underline red on grey color', 'red', 'on_grey',
            ['underline'])
     cprint('Reversed green on red color', 'green', 'on_red', ['reverse'])
-

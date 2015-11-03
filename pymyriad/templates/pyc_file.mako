@@ -1,11 +1,12 @@
 ## Top-level module includes
 <%!
     import myriad_types
+    from pycparser.c_ast import ArrayDecl
 %>
 
 ## Top-level include (assume includes numpy)
 #include "pymyriadobject.h"
-
+#include <numpy/arrayobject.h>
 #include "${obj_name}.h"
 
 % for obj_var_name, obj_var_decl in obj_struct.members.items():
@@ -20,12 +21,23 @@ static PyObject* Py${obj_name}_${obj_var_name}
         return NULL;
     }
 
-    ## TODO: Check if pointer, if so return numpy array of type
     struct ${obj_name}* _self =
         (struct ${obj_name}*) ((PyMyriadObject*) ptr)->mobject;
 
+    ## Check if pointer, if so return numpy array of type
+    ## TODO: Array type should not always be NPY_FLOAT64
+    % if isinstance(obj_var_decl.type, ArrayDecl):
+    npy_intp dims[1] = {SIMUL_LEN};
+    PyObject* buf_arr = PyArray_SimpleNewFromData(1,
+                                                  dims,
+                                                  NPY_FLOAT64,
+                                                  _self->${obj_var_name});
+    Py_XINCREF(buf_arr);
+    return buf_arr;
+    % else:
     return Py_BuildValue("${myriad_types.c_decl_to_pybuildarg(obj_var_decl)}",
-                         _self->cm);
+                         _self->${obj_var_name});
+    % endif
 }
 % endif
 % endfor
