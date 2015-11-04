@@ -19,7 +19,8 @@ from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 from myriad_utils import OrderedSet
 
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
-from myriad_types import MVoid, _MyriadBase, MyriadCType
+from myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
+from myriad_types import MDouble, MVoid
 
 from ast_function_assembler import pyfun_to_cfun
 
@@ -326,10 +327,13 @@ def _parse_namespace(namespace: dict,
             LOG.debug("%s was added as an object variable to %s", k, name)
         # ... a type statement of base type MyriadCType (e.g. MDouble)
         elif issubclass(val.__class__, MyriadCType):
-            # TODO: Better type detection here for corner cases (e.g. ptr)
             myriad_obj_vars[k] = MyriadScalar(k, val)
             LOG.debug("%s has decl %s", k, myriad_obj_vars[k].stringify_decl())
             LOG.debug("%s was added as an object variable to %s", k, name)
+        # ... a timeseries variable
+        elif val is MyriadTimeseriesVector:
+            # TODO: Enable different precisions for MyriadTimeseries
+            myriad_obj_vars[k] = MyriadScalar(k, MDouble, arr_id="SIMUL_LEN")
         # ... a python meta value (e.g.  __module__) we shouldn't mess with
         elif k.startswith("__"):
             LOG.debug("Built-in method %r ignored for %s", k, name)

@@ -12,7 +12,9 @@ import os
 from collections import OrderedDict
 
 from myriad_testing import set_external_loggers, MyriadTestCase
+
 from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
+from myriad_types import MyriadTimeseriesVector
 
 import myriad_metaclass
 
@@ -170,19 +172,21 @@ class TestMyriadRendering(MyriadTestCase):
         RenderObj.render_templates()
         self.assertFilesExist(RenderObj)
 
-    # @unittest.skip("Skip until vectors/arrays are properly implemented")
     def test_render_variable_only_class(self):
-        """ Testing if rendering a variable-only metaclass works """
+        """ Testing if rendering a variable-only class works """
         class VarOnlyObj(myriad_metaclass.MyriadObject):
             capacitance = MDouble
-            vm = MyriadScalar("vm", MDouble, arr_id="SIMUL_LEN")
         VarOnlyObj.render_templates()
+        self.assertFilesExist(VarOnlyObj)
 
-
-def main():
-    """ Runs the tests, doing some setup. """
-    unittest.main()
+    def test_render_timeseries_class(self):
+        """ Testing if rendering a timeseries-containing class works"""
+        class TimeseriesObj(myriad_metaclass.MyriadObject):
+            capacitance = MDouble
+            vm = MyriadTimeseriesVector
+        TimeseriesObj.render_templates()
+        self.assertFilesExist(TimeseriesObj)
 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

@@ -106,7 +106,15 @@ def c_decl_to_pybuildarg(c_decl: Decl):
 # is that these declarations are all childern of MyriadCType, allowing for
 # run-time typechecking for valid C types and extension of the type system
 # via subclassing.
-MyriadCType = type("MyriadCType", (object,), {"mtype": None})
+
+
+def _ctype_call(self):
+    """ Dummy function to make Myriad CTypes more pythonic """
+    return self
+
+MyriadCType = type("MyriadCType",
+                   (object,),
+                   {"mtype": None, "__call__": _ctype_call})
 
 MFloat = type("MFloat",
               (MyriadCType,),
@@ -143,6 +151,9 @@ MVarArgs = type("MVarArgs",
                 {
                     'mtype': IdentifierType(names=["va_list"]),
                 })()
+
+# Corner-case: Can't be a MyriadCType or a Scalar
+MyriadTimeseriesVector = type("MyriadTimeseriesVector", (object,), dict())
 
 
 class MyriadScalar(_MyriadBase):
