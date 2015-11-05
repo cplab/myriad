@@ -14,6 +14,9 @@ from collections import OrderedDict
 from copy import copy
 from functools import wraps
 
+# from pkgutil import get_data
+from pkg_resources import resource_string
+
 from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
 from myriad_utils import OrderedSet
@@ -52,23 +55,38 @@ DEFAULT_CUDA_INCLUDES = {"cuda_runtime.h", "cuda_runtime_api.h"}
 # Templates #
 #############
 
-DELG_TEMPLATE = open("templates/delegator_func.mako", 'r').read()
+DELG_TEMPLATE = resource_string(
+    __name__,
+    "templates/delegator_func.mako").decode("UTF-8")
 
-SUPER_DELG_TEMPLATE = open("templates/super_delegator_func.mako", 'r').read()
+SUPER_DELG_TEMPLATE = resource_string(
+    __name__,
+    "templates/super_delegator_func.mako").decode("UTF-8")
 
-CLS_CTOR_TEMPLATE = open("templates/class_ctor_template.mako", 'r').read()
+CLS_CTOR_TEMPLATE = resource_string(
+    __name__,
+    "templates/class_ctor_template.mako").decode("UTF-8")
 
-CLS_CUDAFY_TEMPLATE = open("templates/class_cudafy_template.mako", 'r').read()
+CLS_CUDAFY_TEMPLATE = resource_string(
+    __name__,
+    "templates/class_cudafy_template.mako").decode("UTF-8")
 
-HEADER_FILE_TEMPLATE = open("templates/header_file.mako", 'r').read()
+HEADER_FILE_TEMPLATE = resource_string(
+    __name__,
+    "templates/header_file.mako").decode("UTF-8")
 
-CUH_FILE_TEMPLATE = open("templates/cuda_header_file.mako", 'r').read()
+CUH_FILE_TEMPLATE = resource_string(
+    __name__,
+    "templates/cuda_header_file.mako").decode("UTF-8")
 
-C_FILE_TEMPLATE = open("templates/c_file.mako", 'r').read()
+C_FILE_TEMPLATE = resource_string(
+    __name__,
+    "templates/c_file.mako").decode("UTF-8")
 
 # TODO: Finish PYC_COMP_FILE_TEMPLATE
-PYC_COMP_FILE_TEMPLATE = open("templates/pyc_file.mako", 'r').read()
-
+PYC_COMP_FILE_TEMPLATE = resource_string(
+    __name__,
+    "templates/pyc_file.mako").decode("UTF-8")
 
 ######################
 # Delegator Creation #
