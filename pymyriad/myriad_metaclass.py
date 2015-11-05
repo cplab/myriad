@@ -5,7 +5,6 @@
 
 .. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
 
-
 """
 import inspect
 import logging
@@ -14,7 +13,6 @@ from collections import OrderedDict
 from copy import copy
 from functools import wraps
 
-# from pkgutil import get_data
 from pkg_resources import resource_string
 
 from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
@@ -83,7 +81,6 @@ C_FILE_TEMPLATE = resource_string(
     __name__,
     "templates/c_file.mako").decode("UTF-8")
 
-# TODO: Finish PYC_COMP_FILE_TEMPLATE
 PYC_COMP_FILE_TEMPLATE = resource_string(
     __name__,
     "templates/pyc_file.mako").decode("UTF-8")
@@ -188,11 +185,11 @@ def myriad_method(method):
     """
     @wraps(method)
     def inner(*args, **kwargs):
-        """Dummy inner function to prevent direct method calls"""
+        """ Dummy inner function to prevent direct method calls """
         raise Exception("Cannot directly call a myriad method")
     LOG.debug("myriad_method annotation wrapping %s", method.__name__)
-    inner.__dict__["is_myriad_method"] = True
-    inner.__dict__["original_fun"] = method
+    setattr(inner, "is_myriad_method", True)
+    setattr(inner, "original_fun", method)
     return inner
 
 
@@ -213,11 +210,11 @@ def myriad_method_verbatim(method):
     """
     @wraps(method)
     def inner(*args, **kwargs):
-        """Dummy inner function to prevent direct method calls"""
+        """ Dummy inner function to prevent direct method calls """
         raise Exception("Cannot directly call a myriad method")
-    inner.__dict__["is_myriad_method_verbatim"] = True
-    inner.__dict__["is_myriad_method"] = True
-    inner.__dict__["original_fun"] = method
+    setattr(inner, "is_myriad_method_verbatim", True)
+    setattr(inner, "is_myriad_method", True)
+    setattr(inner, "original_fun", method)
     return inner
 
 #####################
@@ -225,8 +222,8 @@ def myriad_method_verbatim(method):
 #####################
 
 
-# Dummy class used for type checking
 class _MyriadObjectBase(object):
+    """ Dummy placeholder class used for type checking """
     pass
 
 
@@ -463,10 +460,10 @@ class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
     def render_templates(cls):
         """ Render internal templates to files"""
         LOG.debug("Rendering H File for %s", cls.__name__)
-        cls.__dict__["header_file_template"].render_to_file()
+        getattr(cls, "header_file_template").render_to_file()
         LOG.debug("Rendering C File for %s", cls.__name__)
-        cls.__dict__["c_file_template"].render_to_file()
+        getattr(cls, "c_file_template").render_to_file()
         LOG.debug("Rendering CUH File for %s", cls.__name__)
-        cls.__dict__["cuh_file_template"].render_to_file()
+        getattr(cls, "cuh_file_template").render_to_file()
         LOG.debug("Rendering PYC File for %s", cls.__name__)
-        cls.__dict__["pyc_file_template"].render_to_file()
+        getattr(cls, "pyc_file_template").render_to_file()
