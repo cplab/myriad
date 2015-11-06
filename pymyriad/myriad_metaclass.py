@@ -407,6 +407,92 @@ static struct MyriadClass object[] =
     return module_vars
 
 
+MYRIAD_OBJ_INIT_FUN = """
+#ifdef CUDA
+const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
+const size_t obj_size = sizeof(struct MyriadObject);
+const size_t class_size = sizeof(struct MyriadClass);
+
+CUDA_CHECK_RETURN(cudaMalloc((void**)&obj_addr, class_size));
+CUDA_CHECK_RETURN(cudaMalloc((void**)&class_addr, class_size));
+
+const struct MyriadClass anon_class_class = {
+    {class_addr},
+    obj_addr,
+    class_addr,
+    class_size,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+};
+
+CUDA_CHECK_RETURN(
+    cudaMemcpy(
+        (void**) class_addr,
+        &anon_class_class,
+        sizeof(struct MyriadClass),
+        cudaMemcpyHostToDevice
+        )
+    );
+
+object[1].device_class = class_addr;
+
+const struct MyriadClass anon_obj_class = {
+    {class_addr},
+    obj_addr,
+    class_addr,
+    obj_size,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+};
+
+CUDA_CHECK_RETURN(
+    cudaMemcpy(
+        (void**) obj_addr,
+        &anon_obj_class,
+        sizeof(struct MyriadClass),
+        cudaMemcpyHostToDevice
+        )
+    );
+
+object[0].device_class = (const struct MyriadClass*) obj_addr;
+
+CUDA_CHECK_RETURN(
+    cudaMemcpyToSymbol(
+        (const void*) &MyriadClass_dev_t,
+        &class_addr,
+        sizeof(void*),
+        0,
+        cudaMemcpyHostToDevice
+        )
+    );
+
+CUDA_CHECK_RETURN(
+    cudaMemcpyToSymbol(
+        (const void*) &MyriadObject_dev_t,
+        &obj_addr,
+        sizeof(void*),
+        0,
+        cudaMemcpyHostToDevice
+        )
+    );
+
+return 0;
+#else
+return -1;
+#endif
+"""
+
+
+# TODO: _gen_init_fun
+def _gen_init_fun(obj_name: str, cls_name: str, is_myriad_obj: bool) -> str:
+    """ Generates the init* function for modules """
+    raise NotImplementedError("_gen_init_fun not implemented")
+
+
 class MyriadMetaclass(type):
     """
     TODO: Documentation for MyriadMetaclass
@@ -495,6 +581,10 @@ class MyriadMetaclass(type):
                 supercls is _MyriadObjectBase)
 
         # TODO: Initialize module functions
+        _gen_init_fun(
+            namespace["obj_name"],
+            namespace["cls_name"],
+            supercls is _MyriadObjectBase)
 
         # Write templates now that we have full information
         LOG.debug("Creating templates for class %s", name)
