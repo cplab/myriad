@@ -20,6 +20,15 @@
 static ${obj_name}_${method.stringify_decl()};
 % endfor
 
+## Global static variables
+% for module_var in myriad_module_vars.values():
+    % if type(module_var) is str:
+${module_var}
+    % else:
+${module_var.stringify_decl()};
+    % endif
+% endfor
+
 ## Method definitions
 % for method in myriad_methods:
 ${method.stringify_decl()}

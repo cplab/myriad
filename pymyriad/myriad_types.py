@@ -186,7 +186,7 @@ class MyriadScalar(_MyriadBase):
         :param list quals: C AST scope qualifiers (e.g. "static")
         :param list storage: C AST storage qualifiers (e.g. "const")
         :param str arr_id: Array length ID specifier (None if this isn't one)
-        :param init: Initial value given to this scalar (TODO: NOT IMPLEMENTED)
+        :param init: Initial value given to this scalar # TODO: NOT IMPLEMENTED
         """
         # Always call super first
         super().__init__(ident, quals=quals, storage=storage)
@@ -234,7 +234,7 @@ class MyriadScalar(_MyriadBase):
                              storage=self.storage,
                              funcspec=[],
                              type=self.ptr_decl if ptr else self.type_decl,
-                             init=None,
+                             init=self.init,
                              bitsize=None)
         else:
             self.decl = Decl(name=self.ident,

@@ -358,6 +358,55 @@ def _parse_namespace(namespace: dict,
     LOG.debug("myriad_obj_vars for %s: %s ", name, myriad_obj_vars)
 
 
+def _init_module_vars(obj_name: str,
+                      cls_name: str,
+                      is_myriad_obj: bool) -> OrderedDict:
+    """ Special method for initializing MyriadObject objects"""
+    # TODO: Make this templatable (for myriad_* methods)
+    module_vars = OrderedDict()
+    if is_myriad_obj:
+        module_vars['object'] = """
+static struct MyriadClass object[] =
+{
+    {
+        { object + 1 },
+        object,
+        NULL,
+        sizeof(struct MyriadObject),
+        MyriadObject_myriad_ctor,
+        MyriadObject_myriad_dtor,
+        MyriadObject_myriad_cudafy,
+        MyriadObject_myriad_decudafy,
+    },
+    {
+        { object + 1 },
+        object,
+        NULL,
+        sizeof(struct MyriadClass),
+        MyriadClass_myriad_ctor,
+        MyriadClass_myriad_dtor,
+        MyriadClass_myriad_cudafy,
+        MyriadClass_myriad_decudafy,
+    }
+};
+        """
+    module_vars[obj_name] =\
+        MyriadScalar(
+            obj_name,
+            MVoid,
+            True,
+            quals=["const"],
+            init="object" if is_myriad_obj else None)
+    module_vars[cls_name] =\
+        MyriadScalar(
+            cls_name,
+            MVoid,
+            True,
+            quals=["const"],
+            init="object + 1" if is_myriad_obj else None)
+    return module_vars
+
+
 class MyriadMetaclass(type):
     """
     TODO: Documentation for MyriadMetaclass
@@ -437,6 +486,15 @@ class MyriadMetaclass(type):
         namespace["myriad_methods"] = myriad_methods
         namespace["myriad_obj_vars"] = myriad_obj_vars
         namespace["myriad_cls_vars"] = myriad_cls_vars
+
+        # Initialize module variables
+        namespace["myriad_module_vars"] =\
+            _init_module_vars(
+                namespace["obj_name"],
+                namespace["cls_name"],
+                supercls is _MyriadObjectBase)
+
+        # TODO: Initialize module functions
 
         # Write templates now that we have full information
         LOG.debug("Creating templates for class %s", name)
