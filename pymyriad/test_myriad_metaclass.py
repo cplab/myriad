@@ -61,7 +61,7 @@ class TestMyriadMethod(MyriadTestCase):
         args_list = OrderedDict()
         args_list["self"] = MyriadScalar("_self", MVoid, ptr=True)
         args_list["mechanism"] = MyriadScalar("mechanism", MVoid, ptr=True)
-        instance_fxn = MyriadFunction("Compartment_add_mech",
+        instance_fxn = MyriadFunction("add_mech",
                                       args_list,
                                       MyriadScalar("_", MInt),
                                       ["static"])

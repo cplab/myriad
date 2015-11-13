@@ -116,7 +116,9 @@ class OrderedSet(object):
     Set that remembers the order elements were added.
     """
 
-    def __init__(self, contents: list):
+    def __init__(self, contents: list=None):
+        if contents is None:
+            contents = []
         self._backing_set = set(contents)
         self._elements_ordered = contents
 
@@ -134,6 +136,13 @@ class OrderedSet(object):
         else:
             raise TypeError("Invalid comparison type for OrderedSet: ",
                             other.__class__)
+
+    def add(self, item):
+        """ Adds the item to the backing set """
+        if item in self._backing_set:
+            raise ValueError("Item '${0}' already in OrderedSet".format(item))
+        self._backing_set.add(item)
+        self._elements_ordered.append(item)
 
     def __ne__(self, other):
         return not self.__eq__(other)

@@ -1,6 +1,5 @@
 <%!
-    import myriad_types
-    import myriad_metaclass
+    from myriad_metaclass import create_delegator, create_super_delegator
 %>
 
 ## Add include guards
@@ -22,26 +21,22 @@
 % endfor
 
 ## Declare typedefs for own methods ONLY
-% for method in myriad_methods:
-    % if method in own_methods:
-${method.delegator.stringify_typedef()};
-    % endif
+% for delg in [create_delegator(m, cls_name) for m in own_methods]:
+${delg.stringify_typedef()};
 % endfor
 
 ## Struct forward declarations
 struct ${cls_name};
 struct ${obj_name};
 
-## Top-level functions
-## % for fun in functions.values():
-## extern ${fun.stringify_decl()};
-## % endfor
+## Top-level init function
+extern void init${obj_name}(void);
 
 ## Method delegators
-% for method_name, method in own_methods:
+% for method in own_methods:
 <%
-    delg = myriad_metaclass.create_delegator(method, cls_name)
-    super_delg = myriad_metaclass.create_super_delegator(delg, cls_name)
+    delg = create_delegator(method, cls_name)
+    super_delg = create_super_delegator(delg, cls_name)
 %>
 extern ${delg.stringify_decl()};
 
@@ -51,6 +46,7 @@ extern ${super_delg.stringify_decl()};
 
 ## Class/Object structs
 ${obj_struct.stringify_decl()};
+
 ${cls_struct.stringify_decl()};
 
 #endif

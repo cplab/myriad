@@ -141,7 +141,7 @@ def pyfunbody_to_cbody(c_fun: FunctionType,
     return fun_cstring
 
 
-def pyfun_to_cfun(fun: FunctionType) -> MyriadFunction:
+def pyfun_to_cfun(fun: FunctionType, verbatim: bool=False) -> MyriadFunction:
     """
     Converts a native python function into an equivalent C function, 1-to-1.
 
@@ -163,9 +163,12 @@ def pyfun_to_cfun(fun: FunctionType) -> MyriadFunction:
         # First argument is always self, a void*
         if argname == "self":
             fun_parameters[argname] = MyriadScalar("self", MVoid, ptr=True)
+            continue
         # We can do this because the original key insert position is unchanged
         if issubclass(argtype.annotation.__class__, MyriadCType):
             fun_parameters[argname] = MyriadScalar(argname, argtype.annotation)
+        elif isinstance(argtype.annotation, MyriadScalar):
+            fun_parameters[argname] = argtype.annotation
 
     # Process return type: if empty, use MVoid
     fun_return_type = inspect.signature(fun).return_annotation
@@ -175,8 +178,8 @@ def pyfun_to_cfun(fun: FunctionType) -> MyriadFunction:
     else:
         fun_return_type = MyriadScalar("_", MVoid)
 
-    # Get function body
-    fun_body = pyfunbody_to_cbody(fun)
+    # Get function body; verbatim methods have C code in their docstrings
+    fun_body = fun.__doc__ if verbatim else pyfunbody_to_cbody(fun)
 
     # Create MyriadFunction wrapper
     myriad_fun = MyriadFunction(fun_name,

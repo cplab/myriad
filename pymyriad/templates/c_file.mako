@@ -1,6 +1,6 @@
 ## Python imports as a module-level block
 <%!
-    import myriad_types
+    from myriad_metaclass import create_delegator, create_super_delegator
 %>
 
 ## Add lib includes
@@ -16,8 +16,8 @@
 #include "${obj_name}.h"
 
 ## Print methods forward declarations
-% for method in myriad_methods:
-static ${obj_name}_${method.stringify_decl()};
+% for mtd in [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]:
+static ${mtd.stringify_decl()};
 % endfor
 
 ## Global static variables
@@ -30,25 +30,26 @@ ${module_var.stringify_decl()};
 % endfor
 
 ## Method definitions
-% for method in myriad_methods:
-${method.stringify_decl()}
+% for mtd in [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]:
+${mtd.stringify_decl()}
 {
-    ${method.stringify_def()}
+${mtd.stringify_def()}
 }
 % endfor
 
 ## Method delegators
-% for method_name, method in own_methods:
+% for method in own_methods:
+<%
+    delg = create_delegator(method, cls_name)
+    super_delg = create_super_delegator(delg, cls_name)
+%>
+${delg.stringify_def()}
 
-${str(method)}
-
+${super_delg.stringify_def()}
 % endfor
 
-
-## Top-level functions
-## % for fun in functions:
-## ${fun.stringify_decl()}
-## {
-##     ${fun.stringify_def()}
-## }
-## % endfor
+## Top-level init function
+void init${obj_name}(void)
+{
+    ${init_fun}
+}
