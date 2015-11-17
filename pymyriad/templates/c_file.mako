@@ -15,8 +15,13 @@
 
 #include "${obj_name}.h"
 
+## Process static methods
+<%
+static_methods = [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]
+%>
+
 ## Print methods forward declarations
-% for mtd in [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]:
+% for mtd in static_methods:
 static ${mtd.stringify_decl()};
 % endfor
 
@@ -30,7 +35,7 @@ ${module_var.stringify_decl()};
 % endfor
 
 ## Method definitions
-% for mtd in [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]:
+% for mtd in static_methods:
 ${mtd.stringify_decl()}
 {
 ${mtd.stringify_def()}

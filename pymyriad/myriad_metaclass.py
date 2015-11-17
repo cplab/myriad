@@ -23,7 +23,7 @@ from myriad_utils import OrderedSet
 
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
-from myriad_types import MDouble, MVoid, MVarArgs, MSizeT
+from myriad_types import MDouble, MVoid, MVarArgs, MSizeT, MInt
 
 from ast_function_assembler import pyfun_to_cfun
 
@@ -215,6 +215,36 @@ def myriad_method_verbatim(method):
     setattr(inner, "original_fun", method)
     return inner
 
+
+def _myriadclass_method(method):
+    """
+    Tags a method in a class to be a MyriadClass method.
+
+    MyriadClass methods are methods exclusive to MyriadClass; they are not
+    declared as part of the MyriadClass struct but are used internally in
+    MyriadObject.c to define behaviour tied to MyriadObject inheritance.
+
+    NOTE: This MUST be the first decorator applied to the function! E.g.:
+
+        @another_decorator
+        @yet_another_decorator
+        @_myriadclass_method
+        def my_fn(stuff):
+            pass
+
+    This is because decorators replace the wrapped function's signature.
+    """
+    @wraps(method)
+    def inner(*args, **kwargs):
+        """ Dummy inner function to prevent direct method calls """
+        raise Exception("Cannot directly call a myriad method")
+    LOG.debug("myriad_method annotation wrapping %s", method.__name__)
+    setattr(inner, "is_myriad_method_verbatim", True)
+    setattr(inner, "is_myriad_method", True)
+    setattr(inner, "is_myriadclass_method", True)
+    setattr(inner, "original_fun", method)
+    return inner
+
 #####################
 # MetaClass Wrapper #
 #####################
@@ -239,12 +269,16 @@ def _method_organizer_helper(supercls: _MyriadObjectBase,
     """
     # Convert methods; remember, items() returns a read-only view
     for m_ident, method in myriad_methods.items():
+        # Process verbatim methods
         verbatim = hasattr(method, "is_myriad_method_verbatim")
         # Check if verbatim methods have a docstring to use
         if verbatim and (method.__doc__ is None or method.__doc__ == ""):
             raise Exception("Verbatim method cannot have empty docstring")
-        # Parse function, converting the body only if not verbatim
+        # Parse method, converting the body only if not verbatim
         myriad_methods[m_ident] = pyfun_to_cfun(method.original_fun, verbatim)
+        # TODO: Use local var to avoid adding to own_methods (instead of attr)
+        if hasattr(method, "is_myriadclass_method"):
+            setattr(myriad_methods[m_ident], "is_myriadclass_method", True)
 
     # The important thing here is to decide which methods
     # 1) WE'VE CREATED, and
@@ -263,13 +297,13 @@ def _method_organizer_helper(supercls: _MyriadObjectBase,
 
     # 'Own methods' are methods we've created (1); everything else is (2)
     own_methods = OrderedSet()
-    for method in myriad_methods.values():
-        if method in parent_methods:
+    for mtd in myriad_methods.values():
+        if mtd in parent_methods or hasattr(mtd, "is_myriadclass_method"):
             continue
         # For methods we've created, generate class variables for class struct
-        own_methods.add(method)
-        new_ident = "my_" + method.fun_typedef.name
-        m_scal = MyriadScalar(new_ident, method.base_type)
+        own_methods.add(mtd)
+        new_ident = "my_" + mtd.fun_typedef.name
+        m_scal = MyriadScalar(new_ident, mtd.base_type)
         myriad_cls_vars[new_ident] = m_scal
 
     LOG.debug("_method_organizer_helper class variables selected: %r",
@@ -326,7 +360,9 @@ def _parse_namespace(namespace: dict,
         # if val is ...
         # ... a registered myriad method
         if hasattr(val, "is_myriad_method"):
-            if hasattr(val, "is_myriad_method_verbatim"):
+            if hasattr(val, "is_myriadclass_method"):
+                LOG.debug("%s is a MyriadClass method in %s", k, name)
+            elif hasattr(val, "is_myriad_method_verbatim"):
                 LOG.debug("%s is a verbatim myriad method in %s", k, name)
             else:
                 LOG.debug("%s is a myriad method in %s", k, name)
@@ -361,9 +397,9 @@ def _init_module_vars(obj_name: str,
                       cls_name: str,
                       is_myriad_obj: bool) -> OrderedDict:
     """ Special method for initializing MyriadObject objects"""
-    # TODO: Make this templatable (for myriad_* methods)
     module_vars = OrderedDict()
     if is_myriad_obj:
+        # TODO: Replace this string with MyriadObject_obj_arr.mako template
         module_vars['object'] = """
 static struct MyriadClass object[] =
 {
@@ -406,6 +442,7 @@ static struct MyriadClass object[] =
     return module_vars
 
 
+# TODO: Replace this with a Mako template
 MYRIAD_OBJ_INIT_FUN = """
 #ifdef CUDA
 const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
@@ -485,6 +522,7 @@ return -1;
 #endif
 """
 
+
 def _initialize_obj_cls_structs(supercls: _MyriadObjectBase,
                                 myriad_obj_vars: OrderedDict,
                                 myriad_cls_vars: OrderedDict):
@@ -505,8 +543,10 @@ def _initialize_obj_cls_structs(supercls: _MyriadObjectBase,
                         init=None, bitsize=None)
         myriad_cls_vars["_"] = tmp
         myriad_cls_vars["super"] = _gen_mclass_ptr_scalar("super")
-        myriad_cls_vars["device_class"] = _gen_mclass_ptr_scalar("device_class")
+        myriad_cls_vars["device_class"] =\
+            _gen_mclass_ptr_scalar("device_class")
         myriad_cls_vars["size"] = MyriadScalar("size", MSizeT)
+
 
 def _gen_mclass_ptr_scalar(ident: str):
     """ Quick and dirty way of hard-coding MyriadClass struct pointers """
@@ -568,10 +608,9 @@ class MyriadMetaclass(type):
         if len(bases) > 1:
             raise NotImplementedError("Multiple inheritance is not supported.")
 
-        # Check if the class inherits from MyriadObject
-        if not issubclass(bases[0], _MyriadObjectBase):
-            raise TypeError("Myriad modules must inherit from MyriadObject")
         supercls = bases[0]  # Alias for base class
+        if not issubclass(supercls, _MyriadObjectBase):
+            raise TypeError("Myriad modules must inherit from MyriadObject")
 
         # Setup object/class variables, methods, and verbatim methods
         myriad_cls_vars = OrderedDict()
@@ -601,7 +640,7 @@ class MyriadMetaclass(type):
                                                             myriad_cls_vars)
 
         # Add #include's from system libraries, local files, and CUDA headers
-        namespace["local_includes"], namespace["lib_includes"] = \
+        namespace["local_includes"], namespace["lib_includes"] =\
             _generate_includes_helper(supercls)
 
         # Create myriad class struct
@@ -647,9 +686,171 @@ class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
     """ Base class that every myriad object inherits from """
 
     @myriad_method_verbatim
-    def ctor(self, app: MyriadScalar("app", MVarArgs, ptr=True)
-            ) -> MyriadScalar('', MVoid, ptr=True):
+    def ctor(self,
+             app: MyriadScalar("app", MVarArgs, ptr=True)
+             ) -> MyriadScalar('', MVoid, ptr=True):
         """    return self;"""
+
+    @myriad_method_verbatim
+    def dtor(self) -> MInt:
+        """
+    _my_free(_self);
+    return 0;
+        """
+
+    @myriad_method_verbatim
+    def cudafy(self, clobber: MInt) -> MyriadScalar('', MVoid, ptr=True):
+        """
+    #ifdef CUDA
+    struct MyriadObject* _self = (struct MyriadObject*) self;
+    void* n_dev_obj = NULL;
+    size_t my_size = myriad_size_of(self);
+
+    const struct MyriadClass* tmp = _self->m_class;
+    _self->m_class = _self->m_class->device_class;
+
+    CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
+
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            n_dev_obj,
+            _self,
+            my_size,
+            cudaMemcpyHostToDevice
+            )
+        );
+
+    _self->m_class = tmp;
+
+    return n_dev_obj;
+    #else
+    return NULL;
+    #endif
+        """
+
+    @myriad_method_verbatim
+    def decudafy(self, cuda_self: MyriadScalar("cuda_self", MVoid, ptr=True)):
+        """    return;"""
+
+    @_myriadclass_method
+    def cls_ctor(self,
+                 app: MyriadScalar("app", MVarArgs, ptr=True)
+                 ) -> MyriadScalar('', MVoid, ptr=True):
+        """
+    struct MyriadClass* _self = (struct MyriadClass*) self;
+    const size_t offset = offsetof(struct MyriadClass, my_ctor);
+
+    _self->super = va_arg(*app, struct MyriadClass*);
+    _self->size = va_arg(*app, size_t);
+
+    assert(_self->super);
+
+    memcpy((char*) _self + offset,
+           (char*) _self->super + offset,
+           myriad_size_of(_self->super) - offset);
+
+    va_list ap;
+    va_copy(ap, *app);
+
+    voidf selector = NULL; selector = va_arg(ap, voidf);
+
+    while (selector)
+    {
+        const voidf curr_method = va_arg(ap, voidf);
+        if (selector == (voidf) myriad_ctor)
+        {
+            *(voidf *) &_self->my_ctor = curr_method;
+        } else if (selector == (voidf) myriad_cudafy) {
+            *(voidf *) &_self->my_cudafy = curr_method;
+        } else if (selector == (voidf) myriad_dtor) {
+            *(voidf *) &_self->my_dtor = curr_method;
+        } else if (selector == (voidf) myriad_decudafy) {
+            *(voidf *) &_self->my_decudafy = curr_method;
+        }
+        selector = va_arg(ap, voidf);
+    }
+    return _self;
+        """
+
+    @_myriadclass_method
+    def cls_dtor(self) -> MInt:
+        """
+    fprintf(stderr, "Destroying a Class is undefined behavior.");
+    return -1;
+        """
+
+    @_myriadclass_method
+    def cls_cudafy(self, clobber: MInt) -> MyriadScalar('', MVoid, ptr=True):
+        """
+    /*
+     * Invariants/Expectations:
+     *
+     * A) The class we're given (_self) is fully initialized on the CPU
+     * B) _self->device_class == NULL, will receive this fxn's result
+     * C) _self->super has been set with (void*) SuperClass->device_class
+     *
+     * The problem here is that we're currently ignoring anything the
+     * extended class passes up at us through super_, and so we're only
+     * copying the c_class struct, not the rest of the class. To solve this,
+     * what we need to do is to:
+     *
+     * 1) Memcopy the ENTIRETY of the old class onto a new heap pointer
+     *     - This works because the extended class has already made any
+     *       and all of their pointers/functions CUDA-compatible.
+     * 2) Alter the "top-part" of the copied-class to go to CUDA
+     *     - cudaMalloc the future location of the class on the device
+     *     - Set our internal object's class pointer to that location
+     * 3) Copy our copied-class to the device
+     * 3a) Free our copied-class
+     * 4) Return the device pointer to whoever called us
+     *
+     * Q: How do we keep track of on-device super class?
+     * A: We take it on good faith that the under class has set their supercls
+     *    to be the visible SuperClass->device_class.
+     */
+    #ifdef CUDA
+    struct MyriadClass* _self = (struct MyriadClass*) self;
+
+    const struct MyriadClass* dev_class = NULL;
+
+    // DO NOT USE sizeof(struct MyriadClass)!
+    const size_t class_size = myriad_size_of(_self);
+
+    // Allocate space for new class on the card
+    CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
+
+    // Memcpy the entirety of the old class onto a new CPU heap pointer
+    const struct MyriadClass* class_cpy =
+        (const struct MyriadClass*) calloc(1, class_size);
+    memcpy((void*)class_cpy, self, class_size);
+
+    // Embedded object's class set to our GPU class; this ignores $clobber
+    memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*));
+
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            (void*)dev_class,
+            class_cpy,
+            class_size,
+            cudaMemcpyHostToDevice
+            )
+        );
+
+    free((void*)class_cpy); // Can safely free since underclasses get nothing
+
+    return (void*) dev_class;
+    #else
+    return NULL;
+    #endif
+        """
+
+    @_myriadclass_method
+    def cls_decudafy(self,
+                     cuda_self: MyriadScalar("cuda_self", MVoid, ptr=True)):
+        """
+    fputs("De-CUDAfying a class is undefined behavior. Aborted. ", stderr);
+    return;
+        """
 
     @classmethod
     def render_templates(cls):
