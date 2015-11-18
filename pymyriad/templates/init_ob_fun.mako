@@ -1,21 +1,16 @@
-<%doc>
-    Expected values:
-    obj_name: object name
-    cls_name: class name
-    super_obj_name: superobject name
-    super_cls_name: superclass name
-</%doc>
-
 void init${obj_name}(void)
 {
 	if (!${cls_name})
 	{
 		${cls_name} = 
 			myriad_new(
-				   ${super_cls_name},
-				   ${super_cls_name},
+				   ${super_cls},
+				   ${super_cls},
 				   sizeof(struct ${cls_name}),
-                   ## TODO: Overwrite methods here
+## Overwrite methods here
+% for method in myriad_methods.values():
+                   ${method.ident}, ${obj_name}_${method.ident},
+% endfor
 				   0
 			);
 		struct MyriadObject* class_obj = (struct MyriadObject*) ${cls_name};
@@ -23,7 +18,7 @@ void init${obj_name}(void)
 
 #ifdef CUDA
 	   	void* tmp_c = myriad_cudafy((void*)${cls_name}, 1);
-		((struct MyriadClass*) CompartmentClass)->device_class = (struct MyriadClass*) tmp_c;
+		((struct MyriadClass*) ${cls_name})->device_class = (struct MyriadClass*) tmp_c;
 		CUDA_CHECK_RETURN(
 			cudaMemcpyToSymbol(
 				(const void*) &${cls_name}_dev_t,
@@ -41,10 +36,15 @@ void init${obj_name}(void)
 		${obj_name} = 
 			myriad_new(
 				   ${cls_name},
-				   ${super_obj_name},
+				   ${super_obj},
 				   sizeof(struct ${obj_name}),
-                   ## TODO: Overwrite methods here
-                   ## TODO: Add new functions here (own_methods) as 'delg_name, static_func'
+% for method in myriad_methods.values():
+                   ${method.ident}, ${obj_name}_${method.ident},
+% endfor
+## Add new functions here (own_methods)
+% for method in own_methods:
+                   ${method.ident}, ${obj_name}_${method.ident},
+% endfor
 				   0
 			);
 #ifdef CUDA

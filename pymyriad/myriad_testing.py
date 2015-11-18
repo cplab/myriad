@@ -107,7 +107,12 @@ class MyriadTestCase(unittest.TestCase):
         hyphens = '=' * max(0, (80 - len(header_str)) // 2)
         header_str = hyphens + header_str + hyphens + '\n'
         foot_str = ('=' * min(80, len(header_str))) + '\n'
-        log_contents = self.log_file.getvalue().strip(u"\x00")  # UTF8 format
+        # Read differently depending on log_file type
+        if isinstance(self.log_file, io.StringIO):
+            log_contents = self.log_file.getvalue().strip(u"\x00")  # UTF8
+        else:
+            log_contents = self.log_file.read().strip(u"\x00")  # UTF8
+        # Truncate the hyphens if header is too long
         if len(hyphens) < 2:
             return foot_str + header_str + foot_str.replace('=', '-') +\
                 log_contents + '\n' + err_rslt[1] + foot_str

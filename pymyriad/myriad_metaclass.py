@@ -63,6 +63,10 @@ SUPER_DELG_TEMPLATE = resource_string(
     __name__,
     "templates/super_delegator_func.mako").decode("UTF-8")
 
+CTOR_TEMPLATE_TEMPLATE = resource_string(
+    __name__,
+    "templates/ctor_template.mako").decode("UTF-8")
+
 CLS_CTOR_TEMPLATE = resource_string(
     __name__,
     "templates/class_ctor_template.mako").decode("UTF-8")
@@ -70,6 +74,10 @@ CLS_CTOR_TEMPLATE = resource_string(
 CLS_CUDAFY_TEMPLATE = resource_string(
     __name__,
     "templates/class_cudafy_template.mako").decode("UTF-8")
+
+INIT_OB_FUN_TEMPLATE = resource_string(
+    __name__,
+    "templates/init_ob_fun.mako").decode("UTF-8")
 
 HEADER_FILE_TEMPLATE = resource_string(
     __name__,
@@ -251,8 +259,17 @@ def _myriadclass_method(method):
 
 
 class _MyriadObjectBase(object):
-    """ Dummy placeholder class used for type checking """
-    pass
+    """ Dummy placeholder class used for type checking, circular dependency"""
+
+    @classmethod
+    def _fill_in_base_methods(cls,
+                              child_namespace: OrderedDict,
+                              myriad_methods: OrderedDict):
+        """
+        Fills in missing base methods (e.g. ctor/etc) in child's namespace
+        """
+        # raise NotImplementedError("Not implemented in _MyriadObjectBase")
+        pass
 
 
 def _method_organizer_helper(supercls: _MyriadObjectBase,
@@ -281,19 +298,18 @@ def _method_organizer_helper(supercls: _MyriadObjectBase,
             setattr(myriad_methods[m_ident], "is_myriadclass_method", True)
 
     # The important thing here is to decide which methods
-    # 1) WE'VE CREATED, and
-    # 2) Which methods are being OVERRRIDEN BY US that ORIGINATED ELSEWHERE
+    # (1) WE'VE CREATED, and
+    # (2) Which methods are being OVERRRIDEN BY US that ORIGINATED ELSEWHERE
     def get_parent_methods(cls: _MyriadObjectBase) -> OrderedSet:
         """ Gets the own_methods of the parent class, and its parents, etc. """
+        # If we're MyriadObject, we don't have any parent methods
         if cls is _MyriadObjectBase:
             return OrderedSet()
         else:
             return cls.own_methods.union(get_parent_methods(cls.__bases__[0]))
 
-    # If we're MyriadObject, we don't have any parent methods
-    parent_methods = OrderedSet()
-    if supercls is not _MyriadObjectBase:
-        parent_methods = get_parent_methods(supercls)
+    parent_methods = get_parent_methods(supercls)
+    LOG.debug("_method_organizer_helper parent methods: %r", parent_methods)
 
     # 'Own methods' are methods we've created (1); everything else is (2)
     own_methods = OrderedSet()
@@ -569,13 +585,17 @@ def _gen_mclass_ptr_scalar(ident: str):
     return tmp
 
 
-# TODO: _gen_init_fun
-def _gen_init_fun(obj_name: str, cls_name: str, is_myriad_obj: bool) -> str:
+def _gen_init_fun(namespace: OrderedDict, supercls: _MyriadObjectBase) -> str:
     """ Generates the init* function for modules """
-    if is_myriad_obj:
+    if supercls is _MyriadObjectBase:
         return MYRIAD_OBJ_INIT_FUN
-    warn("_gen_init_fun not fully implemented")
-    return ""
+    # Make temporary dictionary since we need to add an extra value
+    tmp_dict = {"super_obj": supercls.obj_name, "super_cls": supercls.cls_name}
+    tmp_dict.update(namespace)
+    template = MakoTemplate(INIT_OB_FUN_TEMPLATE, tmp_dict)
+    LOG.debug("Rendering init function for %s", namespace["obj_name"])
+    template.render()
+    return template.buffer
 
 
 class MyriadMetaclass(type):
@@ -652,6 +672,9 @@ class MyriadMetaclass(type):
         namespace["myriad_obj_vars"] = myriad_obj_vars
         namespace["myriad_cls_vars"] = myriad_cls_vars
 
+        # Fill in missing methods (ctor/etc.)
+        supercls._fill_in_base_methods(namespace, myriad_methods)
+
         # Initialize module variables
         namespace["myriad_module_vars"] =\
             _init_module_vars(
@@ -660,11 +683,7 @@ class MyriadMetaclass(type):
                 supercls is _MyriadObjectBase)
 
         # Initialize module functions
-        namespace["init_fun"] =\
-            _gen_init_fun(
-                namespace["obj_name"],
-                namespace["cls_name"],
-                supercls is _MyriadObjectBase)
+        namespace["init_fun"] = _gen_init_fun(namespace, supercls)
 
         # Write templates now that we have full information
         LOG.debug("Creating templates for class %s", name)
@@ -870,6 +889,40 @@ class MyriadObject(_MyriadObjectBase, metaclass=MyriadMetaclass):
             LOG.debug("Rendering PYC File for %s", cls.__name__)
             getattr(cls, "pyc_file_template").render_to_file()
 
+    @classmethod
+    def _fill_in_base_methods(cls,
+                              child_namespace: OrderedDict,
+                              myriad_methods: OrderedDict):
+        """
+        Fills in missing base methods (e.g. ctor/etc) in child's namespace.
+
+        # TODO: Consider whether dtor/cudafy/etc. should be filled in
+        """
+        # Fill in ctor if it's missing
+        if "ctor" not in myriad_methods:
+            template = MakoTemplate(CTOR_TEMPLATE_TEMPLATE, child_namespace)
+            LOG.debug("Rendering ctor template for %s",
+                      child_namespace["obj_name"])
+            template.render()
+            myriad_methods["ctor"] = MyriadFunction.from_myriad_func(
+                getattr(cls, "myriad_methods")["ctor"],
+                fun_def=template.buffer)
+        if "cls_cudafy" not in myriad_methods:
+            template = MakoTemplate(CLS_CUDAFY_TEMPLATE, child_namespace)
+            LOG.debug("Rendering cls_cudafy template for %s",
+                      child_namespace["obj_name"])
+            template.render()
+            myriad_methods["cls_cudafy"] = MyriadFunction.from_myriad_func(
+                getattr(cls, "myriad_methods")["cls_cudafy"],
+                fun_def=template.buffer)
+        if "cls_ctor" not in myriad_methods:
+            template = MakoTemplate(CLS_CTOR_TEMPLATE, child_namespace)
+            LOG.debug("Rendering cls_ctor template for %s",
+                      child_namespace["obj_name"])
+            template.render()
+            myriad_methods["cls_ctor"] = MyriadFunction.from_myriad_func(
+                getattr(cls, "myriad_methods")["cls_ctor"],
+                fun_def=template.buffer)
 
 if __name__ == "__main__":
     LOG.addHandler(logging.StreamHandler())

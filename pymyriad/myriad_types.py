@@ -114,7 +114,10 @@ def _ctype_call(self):
 
 MyriadCType = type("MyriadCType",
                    (object,),
-                   {"mtype": None, "__call__": _ctype_call})
+                   {
+                       "mtype": None,
+                       "__call__": _ctype_call,
+                   })
 
 MFloat = type("MFloat",
               (MyriadCType,),
@@ -255,6 +258,9 @@ class MyriadScalar(_MyriadBase):
             return other.base_type is self.base_type
         else:  # TODO: Figure out what to do when given non-scalar type
             pass
+
+    def __repr__(self) -> str:
+        return self.stringify_decl()
 
 
 class MyriadStructType(_MyriadBase):
@@ -601,6 +607,9 @@ class MyriadFunction(_MyriadBase):
 
     def __str__(self) -> str:
         return self.stringify_def()
+
+    def __repr__(self) -> str:
+        return self.stringify_decl()
 
 
 def cast_to_parent(struct: MyriadStructType,

@@ -81,7 +81,8 @@ class TestMyriadMethod(MyriadTestCase):
         self.assertTrimStrEquals(str(result_fxn), expected_result)
 
 
-@set_external_loggers("TestMyriadMetaclass", myriad_metaclass.LOG)
+@set_external_loggers("TestMyriadMetaclass", myriad_metaclass.LOG,
+                      log_filename="myriad.log")
 class TestMyriadMetaclass(MyriadTestCase):
     """
     Tests MyriadMetaclass functionality 'standalone'
@@ -110,14 +111,14 @@ class TestMyriadMetaclass(MyriadTestCase):
         """ Testing if creating a variable-only metaclass works """
         class VarOnlyObj(myriad_metaclass.MyriadObject):
             capacitance = MDouble
-            vm = MyriadScalar("vm", MDouble, ptr=True)
+            vm = MyriadTimeseriesVector
         result_str = VarOnlyObj.__dict__["obj_struct"].stringify_decl()
         expected_result = """
         struct VarOnlyObj
         {
             const struct MyriadObject _;
             double capacitance;
-            double *vm;
+            double vm[SIMUL_LEN];
         }
         """
         self.assertTrimStrEquals(result_str, expected_result)

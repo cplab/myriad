@@ -40,6 +40,7 @@ ${mtd.stringify_decl()}
 {
 ${mtd.stringify_def()}
 }
+
 % endfor
 
 ## Method delegators

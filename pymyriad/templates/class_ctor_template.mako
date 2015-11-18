@@ -1,19 +1,19 @@
-struct ${cls_name}* self = (struct ${cls_name}*) super_ctor(${cls_name}, _self, app);
+    struct ${cls_name}* self = (struct ${cls_name}*) super_ctor(${cls_name}, _self, app);
 
-voidf selector = NULL; selector = va_arg(*app, voidf);
+    voidf selector = NULL; selector = va_arg(*app, voidf);
 
-while (selector)
-{
-    const voidf method = va_arg(*app, voidf);
-
-    % for mtd in [m for m in methods.values() if not m.inherited]:
-    if (selector == (voidf) ${mtd.delegator.ident})
+    while (selector)
     {
-        *(voidf *) &self->${"my_" + mtd.delegator.fun_typedef.name} = method;
+        const voidf method = va_arg(*app, voidf);
+
+% for mtd in own_methods:
+        if (selector == (voidf) ${mtd.ident})
+        {
+            *(voidf *) &self->${"my_" + mtd.stringify_typedef()} = method;
+        }
+% endfor
+
+        selector = va_arg(*app, voidf);
     }
-    % endfor
 
-    selector = va_arg(*app, voidf);
-}
-
-return self;
+    return self;
