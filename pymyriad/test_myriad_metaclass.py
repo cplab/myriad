@@ -7,14 +7,12 @@
 """
 
 import unittest
-import os
 
 from collections import OrderedDict
 
 from myriad_testing import set_external_loggers, MyriadTestCase
 
-from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt, MDouble
-from myriad_types import MyriadTimeseriesVector
+from myriad_types import MyriadFunction, MyriadScalar, MVoid, MInt
 
 import myriad_metaclass
 
@@ -79,115 +77,6 @@ class TestMyriadMethod(MyriadTestCase):
         }
         """
         self.assertTrimStrEquals(str(result_fxn), expected_result)
-
-
-@set_external_loggers("TestMyriadMetaclass", myriad_metaclass.LOG,
-                      log_filename="myriad.log")
-class TestMyriadMetaclass(MyriadTestCase):
-    """
-    Tests MyriadMetaclass functionality 'standalone'
-    """
-
-    # Current error/failure count
-    curr_errors = 0
-    curr_failures = 0
-
-    def test_create_blank_class(self):
-        """ Testing if creating a blank metaclass works """
-        class BlankObj(myriad_metaclass.MyriadObject):
-            """ Blank test class """
-            pass
-        # Test for the existence expected members
-        self.assertTrue("obj_struct" in BlankObj.__dict__)
-        self.assertTrue("myriad_obj_vars" in BlankObj.__dict__)
-        # TODO: Add more checks for other members
-        # Check if names are as we expect them
-        self.assertTrue("obj_name" in BlankObj.__dict__)
-        self.assertEqual(BlankObj.__dict__["obj_name"], "BlankObj")
-        self.assertTrue("cls_name" in BlankObj.__dict__)
-        self.assertEqual(BlankObj.__dict__["cls_name"], "BlankObjClass")
-
-    def test_create_variable_only_class(self):
-        """ Testing if creating a variable-only metaclass works """
-        class VarOnlyObj(myriad_metaclass.MyriadObject):
-            capacitance = MDouble
-            vm = MyriadTimeseriesVector
-        result_str = VarOnlyObj.__dict__["obj_struct"].stringify_decl()
-        expected_result = """
-        struct VarOnlyObj
-        {
-            const struct MyriadObject _;
-            double capacitance;
-            double vm[SIMUL_LEN];
-        }
-        """
-        self.assertTrimStrEquals(result_str, expected_result)
-
-    def test_create_methods_class(self):
-        """ Testing if creating Myriad classes with methods works """
-        class MethodsObj(myriad_metaclass.MyriadObject):
-            @myriad_metaclass.myriad_method
-            def do_stuff(self):
-                return 0
-        # Test whether a function pointer scalar is created
-        self.assertIn("myriad_cls_vars", MethodsObj.__dict__)
-        self.assertIn("my_do_stuff_t", MethodsObj.__dict__["myriad_cls_vars"])
-        # Test whether a myriad method was created
-        self.assertIn("myriad_methods", MethodsObj.__dict__)
-        self.assertIn("do_stuff", MethodsObj.__dict__["myriad_methods"])
-
-    def test_verbatim_methods(self):
-        """ Testing if creating Myriad classes with verbatim methods work"""
-        class VerbatimObj(myriad_metaclass.MyriadObject):
-            @myriad_metaclass.myriad_method_verbatim
-            def do_verbatim_stuff(self):
-                """return;"""
-        self.assertIn("myriad_cls_vars", VerbatimObj.__dict__)
-        self.assertIn("my_do_verbatim_stuff_t",
-                      VerbatimObj.__dict__["myriad_cls_vars"])
-        self.assertIsNotNone(
-            VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"])
-
-
-@set_external_loggers("TestMyriadRendering", myriad_metaclass.LOG)
-class TestMyriadRendering(MyriadTestCase):
-    """
-    Tests MyriadMetaclass rendering of objects
-    """
-
-    def assertFilesExist(self, base_cls):
-        """ Raises AssertionError if template files do not exist """
-        base_name = base_cls.__name__
-        file_list = [base_name + ".c",
-                     base_name + ".h",
-                     base_name + ".cuh",
-                     "py_" + base_name + ".c"]
-        for filename in file_list:
-            if not os.path.isfile(filename):
-                raise AssertionError("Template file not found: " + filename)
-
-    def test_template_instantiation(self):
-        """ Testing if template rendering produces files """
-        class RenderObj(myriad_metaclass.MyriadObject):
-            pass
-        RenderObj.render_templates()
-        self.assertFilesExist(RenderObj)
-
-    def test_render_variable_only_class(self):
-        """ Testing if rendering a variable-only class works """
-        class VarOnlyObj(myriad_metaclass.MyriadObject):
-            capacitance = MDouble
-        VarOnlyObj.render_templates()
-        self.assertFilesExist(VarOnlyObj)
-
-    def test_render_timeseries_class(self):
-        """ Testing if rendering a timeseries-containing class works"""
-        class TimeseriesObj(myriad_metaclass.MyriadObject):
-            capacitance = MDouble
-            vm = MyriadTimeseriesVector
-        TimeseriesObj.render_templates()
-        self.assertFilesExist(TimeseriesObj)
-
 
 if __name__ == '__main__':
     unittest.main()

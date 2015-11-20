@@ -6,13 +6,14 @@ from myriad_utils import enforce_annotations
 from mako.template import Template
 from mako.runtime import Context
 from io import StringIO
+import os
 
 
 class MakoTemplate(object):
     """ Wraps a mako template, context, and I/O Buffer. """
 
     @enforce_annotations
-    def __init__(self, template, context: dict=None, buf: StringIO=None):
+    def __init__(self, template, context=None, buf: StringIO=None):
         """ Initializes a template relevant data """
         # Sets template
         self._template = None
@@ -65,7 +66,7 @@ class MakoFileTemplate(MakoTemplate):
     def __init__(self,
                  filename: str,
                  template,
-                 context: dict=None,
+                 context=None,
                  buf: StringIO=None):
         """ Initializes a template relevant data """
 
@@ -76,13 +77,15 @@ class MakoFileTemplate(MakoTemplate):
         super().__init__(template, context, buf)
 
     @enforce_annotations
-    def render_to_file(self, filename: str=None):
+    def render_to_file(self, filename: str=None, overwrite: bool=True):
         """
         Renders the template to a file with the given filename
         """
         if filename is None:
             filename = self.filename
         self.render()
+        if not overwrite and os.path.isfile(filename):
+            return
         with open(filename, 'wb') as filep:
             filep.write(bytes(self._buffer.getvalue(), "UTF-8"))
 
