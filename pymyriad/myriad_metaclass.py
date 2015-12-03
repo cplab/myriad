@@ -359,7 +359,9 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
 
 def _generate_includes_helper(superclass, features: set=None) -> (set, set):
     """ Generates local and lib includes based on superclass and features """
-    lcl_inc = [] if superclass is _MyriadObjectBase else [superclass.__name__]
+    lcl_inc = []
+    if superclass is not _MyriadObjectBase:
+        lcl_inc = [superclass.__name__ + ".h"]
     # TODO: Better detection of system/library headers
     lib_inc = copy(DEFAULT_LIB_INCLUDES)
     # TODO: Add CUDA includes on-demand

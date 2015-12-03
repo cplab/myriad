@@ -9,7 +9,7 @@
 % for mtd in own_methods:
         if (selector == (voidf) ${mtd.ident})
         {
-            *(voidf *) &self->${"my_" + mtd.stringify_typedef()} = method;
+            *(voidf *) &self->${"my_" + mtd.typedef_name} = method;
         }
 % endfor
 

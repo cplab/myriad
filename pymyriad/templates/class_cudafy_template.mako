@@ -5,7 +5,7 @@
     struct MyriadClass* copy_class_class = (struct MyriadClass*) &copy_class;
 
 % for method in own_methods:
-    ${method.stringify_typedef()} my_${method.ident}_fun = NULL;
+    ${method.typedef_name} my_${method.ident}_fun = NULL;
     CUDA_CHECK_RETURN(
         cudaMemcpyFromSymbol(
             (void**) &my_${method.ident}_fun,
@@ -15,7 +15,7 @@
             cudaMemcpyDeviceToHost
         )
     );
-    copy_class.my_${method.stringify_typedef()} = my_${method.ident}_fun;
+    copy_class.my_${method.typedef_name} = my_${method.ident}_fun;
 % endfor
 
     if (clobber)

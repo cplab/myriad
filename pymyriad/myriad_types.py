@@ -248,6 +248,20 @@ class MyriadScalar(_MyriadBase):
                              init=None,
                              bitsize=None)
 
+    @classmethod
+    def void_ptr_ptr(cls, ident: str):
+        """ Special method for generating a void** (corner case)"""
+        obj = cls(ident, MVoid, True)
+        obj.ptr_decl = PtrDecl(quals=[], type=obj.ptr_decl)
+        obj.decl = Decl(name=obj.ident,
+                        quals=obj.quals,
+                        storage=obj.storage,
+                        funcspec=[],
+                        type=obj.ptr_decl,
+                        init=obj.init,
+                        bitsize=None)
+        return obj
+
     def typematch(self, other) -> bool:
         """ Checks if other is of an equivalent C type. """
 
@@ -484,6 +498,8 @@ class MyriadFunction(_MyriadBase):
 
         #: C AST typedef, must be generated using gen_typedef.
         self.fun_typedef = None
+        #: Typedef name defaults to ident + "_t"
+        self.typedef_name = self.ident + "_t"
         #: Underlying MyriadCType for this function (based on typedef).
         self.base_type = None
 
@@ -556,16 +572,12 @@ class MyriadFunction(_MyriadBase):
             ret_var = None
         return cls(ident, fxn_param_odict, ret_var, fun_def=fun_body)
 
-    def gen_typedef(self, typedef_name: str=None):
+    def gen_typedef(self):
         """
         Generates an internal typedef definition for this function.
 
         :param typedef_name: Overrides automatic type name generation w/ value.
         """
-        # Use the convention of appending _t to a type name (e.g. int64_t)
-        if typedef_name is None:
-            typedef_name = self.ident + "_t"
-
         _tmp, tmp = None, None
 
         # Fix for an insiduous bug with string identifiers (e.g. int64_t)
@@ -576,19 +588,19 @@ class MyriadFunction(_MyriadBase):
 
         # Use TypeDecl/PtrDecl depending on whether return value is a pointer
         if self.ret_var.ptr:
-            tmp = PtrDecl([], TypeDecl(typedef_name, [], _tmp))
+            tmp = PtrDecl([], TypeDecl(self.typedef_name, [], _tmp))
         else:
-            tmp = TypeDecl(typedef_name, [], _tmp)
+            tmp = TypeDecl(self.typedef_name, [], _tmp)
 
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
 
         # Update base type so its registered a MyriadCType subclass
-        self.base_type = type(typedef_name,
+        self.base_type = type(self.typedef_name,
                               (MyriadCType,),
-                              {'mtype': IdentifierType([typedef_name])})()
+                              {'mtype': IdentifierType([self.typedef_name])})()
 
         # Create typedef so its registered by the pycparser AST
-        self.fun_typedef = Typedef(name=typedef_name,
+        self.fun_typedef = Typedef(name=self.typedef_name,
                                    quals=[],
                                    storage=['typedef'],
                                    type=_tmp_fdecl,
