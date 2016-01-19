@@ -2,6 +2,15 @@
 Myriad Simulation Object
 """
 
+import logging
+
+#######
+# Log #
+#######
+
+LOG = logging.getLogger(__name__)
+LOG.addHandler(logging.NullHandler())
+
 
 class _MyriadSimulParent(object):
     """ Empty object used for type-checking. """
@@ -18,7 +27,8 @@ class _MyriadSimulMeta(type):
             raise NotImplementedError("Multiple inheritance is not supported.")
         supercls = bases[0]
         if supercls is not _MyriadSimulParent:
-            print(kwds, " modules imported")
+            for module in kwds['dependencies']:
+                LOG.debug(str(module) + "module imported")
         return super().__new__(mcs, name, bases, namespace)
 
     @classmethod
@@ -37,10 +47,3 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
 
     def __init__(self):
         pass
-
-
-class TestClass(MyriadSimul, dependencies=["MyriadObject"]):
-    pass
-
-
-
