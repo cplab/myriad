@@ -10,11 +10,14 @@ import unittest
 
 from myriad_testing import set_external_loggers, MyriadTestCase
 
-from myriad_types import MInt, MDouble
+from myriad_types import MDouble
 from myriad_types import MyriadTimeseriesVector
 
+
+from myriad_metaclass import myriad_method, myriad_method_verbatim
+
 from myriad_object import LOG as MYRIAD_OBJECT_LOG
-from myriad_object import MyriadObject, myriad_method, myriad_method_verbatim
+from myriad_object import MyriadObject
 
 
 @set_external_loggers("TestMyriadMetaclass", MYRIAD_OBJECT_LOG)

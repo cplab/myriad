@@ -45,5 +45,13 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
     simulation process, including saving data.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, compartments=None):
+        self.compartments = compartments if compartments else []
+
+    def setup(self):
+        """ Creates and links Compartments and mechanisms """
+        raise NotImplementedError("Please override setup() in your class")
+
+    def run(self):
+        """ Runs the simulation and puts results back into Python objects """
+        raise NotImplementedError("IMPLEMENT ME!")

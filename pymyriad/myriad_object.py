@@ -14,7 +14,7 @@ from myriad_types import MVoid, MVarArgs, MInt
 import myriad_metaclass
 
 from myriad_metaclass import _myriadclass_method, _MyriadObjectBase
-from myriad_metaclass import myriad_method, myriad_method_verbatim
+from myriad_metaclass import myriad_method_verbatim
 
 #######
 # Log #

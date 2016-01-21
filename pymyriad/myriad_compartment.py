@@ -21,6 +21,7 @@ class Compartment(myriad_object.MyriadObject):
     """
     Compartment object specification.
     """
+    cid = MInt
 
     @myriad_method_verbatim
     def ctor(
@@ -30,7 +31,7 @@ class Compartment(myriad_object.MyriadObject):
         """
         struct Compartment* self =
             (struct Compartment*) super_ctor(Compartment, _self, app);
-        self->id = va_arg(*app, uint64_t);
+        self->cid = va_arg(*app, uint64_t);
         self->num_mechs = va_arg(*app, uint64_t);
         return self;
         """

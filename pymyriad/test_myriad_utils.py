@@ -9,8 +9,11 @@ __author__ = ["Pedro Rittner"]
 import unittest
 import inspect
 
+from collections import OrderedDict
+
 from myriad_utils import TypeEnforcer, OrderedSet
-from myriad_utils import indent_fix, remove_header_parens
+from myriad_utils import indent_fix, remove_header_parens, filter_odict_values
+
 
 class TestTypeEnforcer(unittest.TestCase):
     """ Test cases for TypeEnforcer """
@@ -182,6 +185,46 @@ class TestIndentFix(unittest.TestCase):
             else:
                 print("LOL")"""
         self.assertEqual(expected_str, indent_fix(test_str))
+
+
+class TestFilterODictValues(unittest.TestCase):
+    """ Tests filtering out values from an OrderedDict"""
+
+    def test_filter_empty_odict(self):
+        """ Testing filtering out values from an empty OrderedDict """
+        old_d = OrderedDict()
+        new_d = filter_odict_values(old_d)
+        self.assertTrue(len(new_d) == len(old_d))
+
+    def test_filter_empty_args(self):
+        """ Testing filtering out nothing from a non-empty OrderedDict """
+        old_d = OrderedDict({"a": 1, "b": 5.5, "c": "LOL"})
+        new_d = filter_odict_values(old_d)
+        self.assertTrue(len(new_d) == len(old_d))
+
+    def test_filter_single_type(self):
+        """ Testing filtering out a single type from non-empty OrderedDict """
+        old_d = OrderedDict({"a": 1, "b": 5.5, "c": "LOL"})
+        new_d = filter_odict_values(old_d, int)
+        self.assertTrue(len(new_d) == 2)
+
+    def test_filter_multiple_types(self):
+        """ Testing filtering out multiple types from non-empty OrderedDict """
+        old_d = OrderedDict({"a": 1, "b": 5.5, "c": "LOL"})
+        new_d = filter_odict_values(old_d, int, float)
+        self.assertTrue(len(new_d) == 1)
+
+    def test_filter_inherited_types(self):
+        """ Testing filtering out inherited types """
+        class Parent(object):
+            pass
+        class Child(Parent):
+            pass
+        old_d = OrderedDict({"a": 1, 45: Parent(), "c": Child()})
+        new_d = filter_odict_values(old_d, Parent)
+        self.assertTrue(len(new_d) == 1)
+        new_d = filter_odict_values(old_d, Child)
+        self.assertTrue(len(new_d) == 2)
 
 if __name__ == "__main__":
     unittest.main()

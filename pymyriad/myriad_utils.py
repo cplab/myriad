@@ -10,6 +10,7 @@ from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
 from copy import copy
+from collections import OrderedDict
 
 
 def assert_list_type(m_list: list, m_type: type):
@@ -330,3 +331,28 @@ def indent_fix_lines(source_lines: list) -> list:
     # Join list to pass to indent_fix
     result_str = indent_fix("".join(source_lines))
     return result_str
+
+
+def filter_odict_values(to_filter: OrderedDict, *args) -> OrderedDict:
+    """ Filters out values of type *args from dictionary """
+    new_dict = OrderedDict()
+    for key, value in to_filter.items():
+        if value:
+            accept = True
+            for v_class in args:
+                accept = not issubclass(value.__class__, v_class)
+                if accept is False:
+                    break
+            if accept:
+                new_dict[key] = value
+    return new_dict
+
+
+def filter_odict_values_by_attr(to_filter: OrderedDict,
+                                attribute: str) -> OrderedDict:
+    """ Filters out values by attribute """
+    new_dict = OrderedDict()
+    for key, value in to_filter.items():
+        if value and not hasattr(value, attribute):
+            new_dict[key] = value
+    return new_dict

@@ -18,7 +18,7 @@ from pycparser.c_ast import ID, TypeDecl, Struct, PtrDecl, Decl
 
 from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
-from myriad_utils import OrderedSet
+from myriad_utils import OrderedSet, filter_odict_values_by_attr
 
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
@@ -523,8 +523,20 @@ class MyriadMetaclass(type):
     @staticmethod
     def myriad_init(self, **kwargs):
         # TODO: Check if all kwargs (including parents) are set
+        def get_obj_vars(obj):
+            """ Accrues all object variables up the object inheritance tree """
+            if not hasattr(obj, "myriad_obj_vars"):
+                return {}
+            obj_vars = copy(getattr(obj, "myriad_obj_vars"))
+            if obj.__class__.__bases__:
+                obj_vars.update(get_obj_vars(obj.__class__.__bases__[0]))
+            return obj_vars
+        obj_vars = get_obj_vars(self)
+        # Filter out obj_vars for non-desirable struct types
+        obj_vars = filter_odict_values_by_attr(obj_vars, "struct_type_info")
+        print(obj_vars)
         for argname, argval in kwargs.items():
-            self.__setattr__(argname, argval)
+            setattr(self, argname, argval)
 
     @staticmethod
     def myriad_set_attr(self, **kwargs):
