@@ -45,8 +45,18 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
     simulation process, including saving data.
     """
 
-    def __init__(self, compartments=None):
+    def __init__(self, compartments: list=None, mechanisms: list=None):
         self.compartments = compartments if compartments else []
+        self.mechanisms = mechanisms if mechanisms else []
+
+    def add_mechanism(self, comp, mech):
+        """ 'Adds' the mechanism to the compartment """
+        if comp is None:
+            raise ValueError("Cannot add a mechanism to a null Compartment")
+        elif mech is None:
+            raise ValueError("Cannot add a null mechanism to a Compartment")
+        # TODO: Do additional overhead work to 'link' mechanism to compartment
+        self.mechanisms.append(mech)
 
     def setup(self):
         """ Creates and links Compartments and mechanisms """

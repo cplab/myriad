@@ -22,6 +22,7 @@ class Mechanism(myriad_object.MyriadObject):
     """
     Mechanism object specification.
     """
+    source_id = MInt
 
     @myriad_method_verbatim
     def ctor(
