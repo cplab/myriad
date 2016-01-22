@@ -92,7 +92,7 @@ _C_DECL_MAPPING = {
 
 
 def c_decl_to_pybuildarg(c_decl: Decl):
-    """Returns the Py_BuildValue character associated with the declaration."""
+    """ Returns the Py_BuildValue character associated with the declaration """
     if c_decl is None:
         raise TypeError("Argument cannot be None")
     return _C_DECL_MAPPING.get(c_decl.type.type.names[0])
@@ -648,3 +648,13 @@ def cast_to_parent(struct: MyriadStructType,
                               field)
     else:
         raise Exception("Field not found in struct type")
+
+
+def filter_inconvertible_types(to_filter: OrderedDict) -> OrderedDict:
+    """ Filters out incompatible types from ordered dictionary """
+    new_dict = OrderedDict()
+    for key, value in to_filter.items():
+        if value and not hasattr(value, "struct_type_info") and (
+                hasattr(value, "ptr") and not getattr(value, "ptr")):
+            new_dict[key] = value
+    return new_dict

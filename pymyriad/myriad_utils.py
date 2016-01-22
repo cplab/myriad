@@ -346,13 +346,3 @@ def filter_odict_values(to_filter: OrderedDict, *args) -> OrderedDict:
             if accept:
                 new_dict[key] = value
     return new_dict
-
-
-def filter_odict_values_by_attr(to_filter: OrderedDict,
-                                attribute: str) -> OrderedDict:
-    """ Filters out values by attribute """
-    new_dict = OrderedDict()
-    for key, value in to_filter.items():
-        if value and not hasattr(value, attribute):
-            new_dict[key] = value
-    return new_dict

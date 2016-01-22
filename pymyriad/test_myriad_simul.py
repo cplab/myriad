@@ -35,7 +35,8 @@ class TestMyriadSimulObject(MyriadTestCase):
         class TestSimulSetup(myriad_simul.MyriadSimul,
                              dependencies=[myriad_object.MyriadObject]):
             def setup(self):
-                self.compartments.append(myriad_compartment.Compartment())
+                comp = myriad_compartment.Compartment(cid=12)
+                self.compartments.append(comp)
         obj = TestSimulSetup()
         obj.setup()
 

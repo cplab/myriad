@@ -18,11 +18,11 @@ from pycparser.c_ast import ID, TypeDecl, Struct, PtrDecl, Decl
 
 from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
-from myriad_utils import OrderedSet, filter_odict_values_by_attr
+from myriad_utils import OrderedSet
 
 from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
-from myriad_types import MDouble, MVoid, MSizeT
+from myriad_types import MDouble, MVoid, MSizeT, filter_inconvertible_types
 
 from ast_function_assembler import pyfun_to_cfun
 
@@ -522,28 +522,39 @@ class MyriadMetaclass(type):
 
     @staticmethod
     def myriad_init(self, **kwargs):
-        # TODO: Check if all kwargs (including parents) are set
-        def get_obj_vars(obj):
+        """ Initializes the Myriad Object """
+        def _get_obj_vars(obj):
             """ Accrues all object variables up the object inheritance tree """
             if not hasattr(obj, "myriad_obj_vars"):
                 return {}
-            obj_vars = copy(getattr(obj, "myriad_obj_vars"))
+            obj_vars = OrderedDict()
             if obj.__class__.__bases__:
-                obj_vars.update(get_obj_vars(obj.__class__.__bases__[0]))
+                obj_vars.update(_get_obj_vars(obj.__class__.__bases__[0]))
+            obj_vars.update(getattr(obj, "myriad_obj_vars"))
             return obj_vars
-        obj_vars = get_obj_vars(self)
         # Filter out obj_vars for non-desirable struct types
-        obj_vars = filter_odict_values_by_attr(obj_vars, "struct_type_info")
-        print(obj_vars)
+        expected_obj_vars = filter_inconvertible_types(_get_obj_vars(self))
+        LOG.debug("obj_vars: %s", expected_obj_vars)
+        # If values are missing, error out
+        set_diff = set(expected_obj_vars.keys()) ^ set(kwargs.keys())
+        if set_diff:
+            slen = len(expected_obj_vars.keys()) - len(kwargs.keys())
+            msg = "Too {0} arguments for {1} __init__: {2} {3}"
+            raise ValueError(msg.format("few" if slen > 0 else "many",
+                                        self.__class__,
+                                        "missing" if slen > 0 else "extra",
+                                        set_diff))
+        # Assign all valid values
         for argname, argval in kwargs.items():
             setattr(self, argname, argval)
 
     @staticmethod
-    def myriad_set_attr(self, **kwargs):
+    def myriad_set_attr(self, argname, argval):
         """
         Prevent users from accessing objects except through py_x interfaces
         """
-        raise NotImplementedError("Cannot set object attributes (yet).")
+        LOG.warning("Myriad Object attributes not fully suppported!")
+        self.__dict__[argname] = argval
 
     def __new__(mcs, name, bases, namespace, **kwds):
         if len(bases) > 1:
