@@ -132,5 +132,8 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         """ Runs the simulation and puts results back into Python objects """
         if len(self._compartments) == 0:
             raise RuntimeError("No compartments found!")
+        # Render templates for dependencies
+        for dependency in getattr(self, "dependencies"):
+            dependency.render_templates()
         self._makefile_template.render_to_file()
         self._setuppy_template.render_to_file()
