@@ -19,7 +19,7 @@ class TestMyriadSimulObject(MyriadTestCase):
     def test_simul_obj_init(self):
         """ Tests if creating a simulation object works """
         class TestClass(myriad_simul.MyriadSimul,
-                        dependencies=["MyriadObject"]):
+                        dependencies=[myriad_object.MyriadObject]):
             pass
         obj = TestClass()
         self.assertIsNotNone(obj)
@@ -35,10 +35,21 @@ class TestMyriadSimulObject(MyriadTestCase):
         class TestSimulSetup(myriad_simul.MyriadSimul,
                              dependencies=[myriad_object.MyriadObject]):
             def setup(self):
-                comp = myriad_compartment.Compartment(cid=12)
-                self.compartments.append(comp)
+                comp = myriad_compartment.Compartment(cid=0)
+                self.add_compartment(comp)
         obj = TestSimulSetup()
         obj.setup()
+
+    def test_simul_run(self):
+        """ Tests running a simulation object """
+        class TestSimul(myriad_simul.MyriadSimul,
+                        dependencies=[myriad_object.MyriadObject]):
+            def setup(self):
+                comp = myriad_compartment.Compartment(cid=0)
+                self.add_compartment(comp)
+        obj = TestSimul()
+        obj.setup()
+        obj.run()
 
 
 def main():

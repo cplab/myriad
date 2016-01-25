@@ -31,10 +31,8 @@ COMMON_CFLAGS += -Og -g -DDEBUG=$(DEBUG)
 COMMON_CFLAGS += -O2 -march=native
 % endif
 
-## Link-time optimization (expensive, but huge performance boost)
-% if FLTO:
+## Link-time optimization
 COMMON_CFLAGS += -flto
-% endif
 
 ## To Consider:
 ## -ffinite-math-only : Assume no -Inf/+Inf/NaN
@@ -57,7 +55,7 @@ GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 
 ## CPU Myriad Objects
-MYRIAD_OBJS 	:= myriad_alloc.c.o ddtable.c.o mmq.c.o ${myriad_lib_objs}
+MYRIAD_OBJS 	:= myriad_alloc.o ddtable.o mmq.o ${myriad_lib_objs}
 
 ################################
 ##      Linker (LD) Flags     ##
@@ -120,7 +118,7 @@ clean:
 
 ## ------- CPU Myriad Objects -------
 
-$(MYRIAD_OBJS): %.c.o : %.c
+$(MYRIAD_OBJS): %.o : %.c
 	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
 
 ## ------- CUDA Myriad Library -------
@@ -128,7 +126,7 @@ $(MYRIAD_OBJS): %.c.o : %.c
 $(CUDA_MYRIAD_LIB): $(CUDA_MYRIAD_LIB_OBJS)
 	$(NVCC) -lib $^ -o $(CUDA_MYRIAD_LIB)
 
-$(CUDA_MYRIAD_LIB_OBJS): %.cu.o : %.cu
+$(CUDA_MYRIAD_LIB_OBJS): %.o : %.cu
 	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
 	$(CUDA_INCLUDES) $(CUDA_DEFINES) -o $@ -dc $<
 
@@ -150,11 +148,9 @@ $(SIMUL_MAIN_OBJ): %.o : %.cu
 ## ------- Host Linker Generated Binary -------
 
 $(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_OBJS) $(CUDA_MYRIAD_LIB)
-% ifdef CUDA:
+% if CUDA:
 	$(CC) -o $@ $+ $(CUDA_BIN_LDFLAGS)
-% elif FLTO:
-	$(CC) -flto -o $@ $+ $(LD_FLAGS)
 % else:
-	$(CC) -o $@ $+ $(LD_FLAGS)
+	$(CC) -flto -o $@ $+ $(LD_FLAGS)
 % endif
 

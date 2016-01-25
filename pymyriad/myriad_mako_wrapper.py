@@ -50,7 +50,7 @@ class MakoTemplate(object):
 
     @context.setter
     def context(self, new_context: dict):
-        """ Replaces current context with new context & refreshes buffer."""
+        """ Replaces current context with new context and refreshes buffer """
         self._buffer = StringIO()
         self._context = Context(self._buffer, **new_context)
 
