@@ -5,14 +5,23 @@ Myriad Simulation Object
 import os
 import sys
 import logging
+import subprocess
 
 from pkg_resources import resource_string
 
 from myriad_mako_wrapper import MakoFileTemplate
 
-# Template for makefile (used for building C backend)
+#############
+# Templates #
+#############
+
+#: Template for makefile (used for building C backend)
 MAKEFILE_TEMPLATE = resource_string(__name__,
                                     "templates/Makefile.mako").decode("UTF-8")
+
+#: Template for setup.py (used for building CPython extension modules)
+SETUPPY_TEMPLATE = resource_string(__name__,
+                                   "templates/setup.py.mako").decode("UTF-8")
 
 #######
 # Log #
@@ -96,6 +105,11 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self._makefile_template = MakoFileTemplate("Makefile",
                                                    MAKEFILE_TEMPLATE,
                                                    self.simul_params)
+        #: Template for setup.py, used for building CPython extensions
+        self._setuppy_template = MakoFileTemplate(
+            "setup.py",
+            SETUPPY_TEMPLATE,
+            {"dependencies": getattr(self, "dependencies")})
 
     def add_mechanism(self, comp, mech):
         """ 'Adds' the mechanism to the compartment """
@@ -119,3 +133,4 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         if len(self._compartments) == 0:
             raise RuntimeError("No compartments found!")
         self._makefile_template.render_to_file()
+        self._setuppy_template.render_to_file()
