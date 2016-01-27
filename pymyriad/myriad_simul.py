@@ -27,6 +27,10 @@ SETUPPY_TEMPLATE = resource_string(__name__,
 MAIN_TEMPLATE = resource_string(__name__,
                                 "templates/main.c.mako").decode("UTF-8")
 
+#: Template for myriad.h (main parameter/macro file)
+MYRIAD_H_TEMPLATE = resource_string(__name__,
+                                    "templates/myriad.h.mako").decode("UTF-8")
+
 #######
 # Log #
 #######
@@ -104,11 +108,23 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
     simulation process, including saving data.
     """
 
-    def __init__(self, compartments: set=None, mechanisms: set=None, **kwargs):
+    def __init__(self,
+                 compartments: set=None,
+                 mechanisms: set=None,
+                 dt: float=0.01,
+                 simul_len: int=1000,
+                 **kwargs):
         #: Internal global compartment list
         self._compartments = compartments if compartments else set()
+        kwargs["NUM_CELLS"] = len(self._compartments)
         #: Internal global mechanism list
         self._mechanisms = mechanisms if mechanisms else set()
+        # TODO: More intelligently calculate MAX_NUM_MECHS
+        kwargs["MAX_NUM_MECHS"] = 32
+        # TODO: Change DT to Units
+        kwargs["DT"] = dt
+        # TODO: Change SIMUL_LEN to Units
+        kwargs["SIMUL_LEN"] = simul_len
         #: Simulation parameters as a dictionary, automatically-filled
         self.simul_params = _setup_simul_params(kwargs,
                                                 getattr(self, "dependencies"))
@@ -124,6 +140,9 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self._main_template = MakoFileTemplate("main.c",
                                                MAIN_TEMPLATE,
                                                self.simul_params)
+        self._myriad_h_template = MakoFileTemplate("myriad.h",
+                                                   MYRIAD_H_TEMPLATE,
+                                                   self.simul_params)
 
     def add_mechanism(self, comp, mech):
         """ 'Adds' the mechanism to the compartment """
@@ -142,6 +161,7 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         """ Creates and links Compartments and mechanisms """
         raise NotImplementedError("Please override setup() in your class")
 
+    # TODO: Create temporary directory to put all this crap in
     def run(self):
         """ Runs the simulation and puts results back into Python objects """
         if len(self._compartments) == 0:
@@ -149,8 +169,10 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         # Render templates for dependencies
         for dependency in getattr(self, "dependencies"):
             dependency.render_templates()
+        # Render templates for simulation-specific files
         self._makefile_template.render_to_file()
         self._setuppy_template.render_to_file()
         self._main_template.render_to_file()
+        self._myriad_h_template.render_to_file()
         # Once templates are rendered, perform compilation
         subprocess.check_call(["make", "all"])

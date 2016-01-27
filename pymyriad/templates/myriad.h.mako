@@ -32,21 +32,13 @@
 #include <stdarg.h>
 
 ## Use myriad's own private allocator scheme
-#ifdef MYRIAD_ALLOCATOR
 #include "myriad_alloc.h"
 #define _my_malloc(size) myriad_malloc(size, true)
 #define _my_calloc(num, size) myriad_calloc(num, size, true)
 #define _my_free(loc) myriad_free(loc)
 
-#else
-
-#define _my_malloc(size) malloc(size)
-#define _my_calloc(num, size) calloc(num, size)
-#define _my_free(loc) free(loc)
-#endif
-
 ## Fast exponential function, as per Schraudolph 1999
-#ifdef FAST_EXP
+% if FAST_EXP:
 union _eco
 {
     double d;
@@ -59,38 +51,15 @@ extern __thread union _eco _eco;  ## Must be thread-local due to side-effects.
 #define EXP_A 1512775
 #define EXP_C 60801
 
-## Have to define a function in case of DDTABLE, since it uses a fxn ptr.
-#ifdef USE_DDTABLE
-extern double _exp(const double x);
-#else
-#define _exp(y) (_eco.n.i = EXP_A*(y) + (1072693248 - EXP_C), _eco.d)
-#endif /* USE_DDTABLE */
-
-#else
+% else:
 
 ## If not using fast exponential, just alias math.h exponential function
 #define _exp_helper exp
 #define _exp _exp_helper
 
-#endif /* FAST_EXP */
-
-
-## Use hash table for exponential function lookups, with default number of keys
-#ifdef USE_DDTABLE
-
-#ifndef DDTABLE_NUM_KEYS
-#define DDTABLE_NUM_KEYS 67108864
-#endif  /* DDTABLE_NUM_KEYS*/
-
-#include "ddtable.h"
-extern ddtable_t exp_table;
-#define EXP(x) ddtable_check_get_set(exp_table, x, &_exp)
-
-#else
+% endif
 
 #define EXP(x) _exp(x)
-
-#endif /* USE_DDTABLE */
 
 
 ## Simulation parameters
@@ -103,12 +72,12 @@ extern ddtable_t exp_table;
 
 
 ## CUDA includes (note: this has only been tested up to 6.5)
-#ifdef CUDA
+% if CUDA:
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
-//! Checks the return value of a CUDA library call for errors, exits if error
+## Checks the return value of a CUDA library call for errors, exits if error
 #define CUDA_CHECK_RETURN(value) {                                          \
     cudaError_t _m_cudaStat = value;                                        \
     if (_m_cudaStat != cudaSuccess) {                                       \
@@ -117,16 +86,16 @@ extern ddtable_t exp_table;
         exit(EXIT_FAILURE);                                                 \
     } }
 
-#endif
+% endif
 
 ## Extra debug macros
-#ifdef DEBUG
-	//! Prints debug information string to stdout with file and line info.
-    #define DEBUG_PRINTF(str, ...) do {  \
-        fprintf(stdout, "DEBUG @ " __FILE__ ":" __LINE__ ": "#str, __VA_ARGS__); \
-	} while(0)
-#else
-    #define DEBUG_PRINTF(...) do {} while (0)
-#endif
+% if DEBUG:
+//! Prints debug information string to stdout with file and line info.
+#define DEBUG_PRINTF(str, ...) do {  \
+    fprintf(stdout, "DEBUG @ " __FILE__ ":" __LINE__ ": "#str, __VA_ARGS__); \
+} while(0)
+% else:
+#define DEBUG_PRINTF(...) do {} while (0)
+% endif
 
 #endif  // MYRIAD_H

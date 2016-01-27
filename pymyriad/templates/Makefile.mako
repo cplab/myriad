@@ -137,7 +137,7 @@ $(CUDA_LINK_OBJ): $(SIMUL_MAIN_OBJ) $(CUDA_MYRIAD_LIB_OBJS)
 
 ## ------- Main binary object -------
 
-$(SIMUL_MAIN_OBJ): %.o : %.cu
+$(SIMUL_MAIN_OBJ): %.o : %.c
 % if CUDA:
 	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
 	$(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
