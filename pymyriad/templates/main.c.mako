@@ -15,86 +15,50 @@
 #include <cuda_runtime_api.h>
 #endif
 
-// Myriad C API Headers
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// Common included header
 #include "myriad.h"
 
-% for header in main_local_includes:
-#include "${header}.h"
+% for header in dependencies:
+#include "${header.__name__}.h"
 % endfor
 
 #include "mmq.h"
     
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef CUDA
-#include "MyriadObject.cuh"
-#include "Mechanism.cuh"
-#include "Compartment.cuh"
-#include "HHSomaCompartment.cuh"
-#include "HHLeakMechanism.cuh"
-#include "HHNaCurrMechanism.cuh"
-#include "HHKCurrMechanism.cuh"
-#include "HHSpikeGABAAMechanism.cuh"
-#include "DCCurrentMech.cuh"
-#endif
+% if CUDA:
+    % for header in dependencies:
+#include "${header.__name__}.cuh"
+    % endfor
+% endif
 
 ////////////////
 // DSAC Model //
 ////////////////
 
 // Fast exponential function structure/function
-#ifdef FAST_EXP
+% if FAST_EXP:
 __thread union _eco _eco;
-#ifdef USE_DDTABLE
-double _exp(double y)
-{
-    _eco.n.i = EXP_A * (y) + (1072693248 - EXP_C);
-    return _eco.d;
-}
-#endif
-#endif
+% endif
 
-#ifndef MYRIAD_ALLOCATOR
-static ssize_t calc_total_size(int* num_allocs) __attribute__((unused));
-#endif
 static ssize_t calc_total_size(int* num_allocs)
 {
     ssize_t total_size = 0;
     
     ## Class memory overhead calculation
-% for myriad_class in simul_classes:
+% for myriad_class in dependencies:
     total_size += sizeof(struct ${myriad_class.obj_name}) +
                   sizeof(struct ${myriad_class.cls_name});
 % endfor
 
-    *num_allocs = *num_allocs + (${len(simul_classes)} * 2);
+    *num_allocs = *num_allocs + (${len(dependencies)} * 2);
 
     ## TODO: Calculate mechanism and compartment contributions to memory overhead
     total_size += 0;
     *num_allocs = *num_allocs + 0;
 
-    // DDTABLE
-#ifdef USE_DDTABLE
-    *num_allocs = *num_allocs + 1;
-    total_size += sizeof(struct ddtable);
-    total_size += sizeof(int_fast8_t) * DDTABLE_NUM_KEYS;
-    total_size += 2 * sizeof(double) * DDTABLE_NUM_KEYS;
-#endif
-    
     return total_size;
 }
 
-#ifdef USE_DDTABLE
-ddtable_t exp_table = NULL;
-#endif /* USE_DDTABLE */
-
-#if NUM_THREADS > 1
+% if NUM_THREADS > 1:
 struct _pthread_vals
 {
     void** network;
@@ -139,7 +103,8 @@ static inline void* _thread_run(void* arg)
 
     return NULL;
 }
-#endif /* NUM_THREADS > 1 */
+/* NUM_THREADS > 1 */
+% endif 
 
 
 ///////////////////
@@ -148,24 +113,18 @@ static inline void* _thread_run(void* arg)
 
 int main(void)
 {
-#ifdef MYRIAD_ALLOCATOR
     int num_allocs = 0;
     const size_t total_mem_usage = calc_total_size(&num_allocs);
     assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
-#endif /* MYRIAD_ALLOCATOR */
 
-#ifdef USE_DDTABLE
-    exp_table = ddtable_new(DDTABLE_NUM_KEYS);
-#endif /* USE_DDTABLE */
-
-#ifdef CUDA
+% if CUDA:
     const bool use_cuda = true;
-#else
+% else:
     const bool use_cuda = false;
-#endif
+% endif
 
     ## Call init functions
-% for myriad_class in simul_classes:
+% for myriad_class in dependencies:
     init${myriad_class.obj_name}();
 % endfor
 
@@ -176,7 +135,7 @@ int main(void)
 
     ## TODO: Instantiate new cells with myriad_new(), add compartments, etc.
 
-#if NUM_THREADS > 1
+% if NUM_THREADS > 1:
     // Pthread parallelism
     pthread_t _threads[NUM_THREADS];
 
@@ -204,7 +163,7 @@ int main(void)
             return EXIT_FAILURE;
         }
     }
-#else
+% else:
     double current_time = DT;
     for (int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
@@ -215,12 +174,7 @@ int main(void)
         }
         current_time += DT;
     }
-#endif /* NUM_THREADS > 1 */
-
-    // Cleanup
-#ifdef USE_DDTABLE
-    ddtable_free(exp_table);
-#endif
+% endif
 
     // Do IPC with parent python process
     struct mmq_connector conn =
@@ -316,9 +270,7 @@ int main(void)
     
     puts("Exited message loop.");
     
-#ifdef MYRIAD_ALLOCATOR
     assert(myriad_finalize() == 0);
-#endif
     
     return 0;
 }

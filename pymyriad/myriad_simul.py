@@ -23,6 +23,10 @@ MAKEFILE_TEMPLATE = resource_string(__name__,
 SETUPPY_TEMPLATE = resource_string(__name__,
                                    "templates/setup.py.mako").decode("UTF-8")
 
+#: Template for main.c (main executable C file)
+MAIN_TEMPLATE = resource_string(__name__,
+                                "templates/main.c.mako").decode("UTF-8")
+
 #######
 # Log #
 #######
@@ -81,9 +85,16 @@ def _setup_simul_params(params, dependencies) -> dict:
         params["DEBUG"] = None
     if "CUDA" not in params:
         params["CUDA"] = False
+    if "FAST_EXP" not in params:
+        params["FAST_EXP"] = False
+    if "MYRIAD_ALLOCATOR" not in params:
+        params["MYRIAD_ALLOCATOR"] = False
+    if "NUM_THREADS" not in params:
+        params["NUM_THREADS"] = 1
     # TODO: More intelligently create dependency object string
     params["myriad_lib_objs"] =\
         " ".join([dep.__name__ + ".o" for dep in dependencies])
+    params["dependencies"] = dependencies
     return params
 
 
@@ -110,6 +121,9 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
             "setup.py",
             SETUPPY_TEMPLATE,
             {"dependencies": getattr(self, "dependencies")})
+        self._main_template = MakoFileTemplate("main.c",
+                                               MAIN_TEMPLATE,
+                                               self.simul_params)
 
     def add_mechanism(self, comp, mech):
         """ 'Adds' the mechanism to the compartment """
@@ -137,3 +151,6 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
             dependency.render_templates()
         self._makefile_template.render_to_file()
         self._setuppy_template.render_to_file()
+        self._main_template.render_to_file()
+        # Once templates are rendered, perform compilation
+        subprocess.check_call(["make", "all"])
