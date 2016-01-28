@@ -58,19 +58,18 @@ class Compartment(myriad_object.MyriadObject):
         if (self == NULL || mechanism == NULL)
         {
             fputs("Neither Mechanism nor Compartment can be NULL.", stderr);
-            return -1;
+            return;
         }
         struct Compartment* _self = (struct Compartment*) self;
         struct Mechanism* mech = (struct Mechanism*) mechanism;
 
-        if (self->num_mechs + 1 >= MAX_NUM_MECHS)
+        if (_self->num_mechs + 1 >= MAX_NUM_MECHS)
         {
             fputs("Cannot add mechanism to Compartment: out of room.", stderr);
-            return -1;
+            return;
         }
-        self->my_mechs[self->num_mechs] = mech;
-        self->num_mechs++;
-        return 0;
+        _self->my_mechs[_self->num_mechs] = mech;
+        _self->num_mechs++;
         """
 
 

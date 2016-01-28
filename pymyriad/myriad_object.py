@@ -62,7 +62,7 @@ class MyriadObject(_MyriadObjectBase,
     @myriad_method_verbatim
     def dtor(self) -> MInt:
         """
-    _my_free(_self);
+    _my_free(self);
     return 0;
         """
 
@@ -70,11 +70,11 @@ class MyriadObject(_MyriadObjectBase,
     def cudafy(self, clobber: MInt) -> MyriadScalar('', MVoid, ptr=True):
         """
     #ifdef CUDA
-    struct MyriadObject* _self = (struct MyriadObject*) self;
+    struct MyriadObjectClass* _self = (struct MyriadObjectClass*) self;
     void* n_dev_obj = NULL;
     size_t my_size = myriad_size_of(self);
 
-    const struct MyriadClass* tmp = _self->m_class;
+    const struct MyriadObjectClass* tmp = _self->m_class;
     _self->m_class = _self->m_class->device_class;
 
     CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
@@ -105,10 +105,10 @@ class MyriadObject(_MyriadObjectBase,
                  app: MyriadScalar("app", MVarArgs, ptr=True)
                  ) -> MyriadScalar('', MVoid, ptr=True):
         """
-    struct MyriadClass* _self = (struct MyriadClass*) self;
-    const size_t offset = offsetof(struct MyriadClass, my_ctor);
+    struct MyriadObjectClass* _self = (struct MyriadObjectClass*) self;
+    const size_t offset = offsetof(struct MyriadObjectClass, my_ctor_t);
 
-    _self->super = va_arg(*app, struct MyriadClass*);
+    _self->super = va_arg(*app, struct MyriadObjectClass*);
     _self->size = va_arg(*app, size_t);
 
     assert(_self->super);
@@ -127,13 +127,13 @@ class MyriadObject(_MyriadObjectBase,
         const voidf curr_method = va_arg(ap, voidf);
         if (selector == (voidf) myriad_ctor)
         {
-            *(voidf *) &_self->my_ctor = curr_method;
+            *(voidf *) &_self->my_ctor_t = curr_method;
         } else if (selector == (voidf) myriad_cudafy) {
-            *(voidf *) &_self->my_cudafy = curr_method;
+            *(voidf *) &_self->my_cudafy_t = curr_method;
         } else if (selector == (voidf) myriad_dtor) {
-            *(voidf *) &_self->my_dtor = curr_method;
+            *(voidf *) &_self->my_dtor_t = curr_method;
         } else if (selector == (voidf) myriad_decudafy) {
-            *(voidf *) &_self->my_decudafy = curr_method;
+            *(voidf *) &_self->my_decudafy_t = curr_method;
         }
         selector = va_arg(ap, voidf);
     }
@@ -177,19 +177,19 @@ class MyriadObject(_MyriadObjectBase,
      *    to be the visible SuperClass->device_class.
      */
     #ifdef CUDA
-    struct MyriadClass* _self = (struct MyriadClass*) self;
+    struct MyriadObjectClass* _self = (struct MyriadObjectClass*) self;
 
-    const struct MyriadClass* dev_class = NULL;
+    const struct MyriadObjectClass* dev_class = NULL;
 
-    // DO NOT USE sizeof(struct MyriadClass)!
+    // DO NOT USE sizeof(struct MyriadObjectClass)!
     const size_t class_size = myriad_size_of(_self);
 
     // Allocate space for new class on the card
     CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
 
     // Memcpy the entirety of the old class onto a new CPU heap pointer
-    const struct MyriadClass* class_cpy =
-        (const struct MyriadClass*) calloc(1, class_size);
+    const struct MyriadObjectClass* class_cpy =
+        (const struct MyriadObjectClass*) calloc(1, class_size);
     memcpy((void*)class_cpy, self, class_size);
 
     // Embedded object's class set to our GPU class; this ignores $clobber

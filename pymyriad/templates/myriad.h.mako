@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+typedef void (* voidf) (void);
+
 ## Use myriad's own private allocator scheme
 #include "myriad_alloc.h"
 #define _my_malloc(size) myriad_malloc(size, true)
