@@ -22,6 +22,11 @@ class Compartment(myriad_object.MyriadObject):
     Compartment object specification.
     """
     cid = MInt
+    num_mechs = MInt
+    my_mechs = MyriadScalar(ident="my_mechs",
+                            base_type=MVoid,
+                            ptr=True,
+                            arr_id="MAX_NUM_MECHS")
 
     @myriad_method_verbatim
     def ctor(
@@ -29,11 +34,11 @@ class Compartment(myriad_object.MyriadObject):
             app: MyriadScalar("app", MVarArgs, ptr=True)
     ) -> MyriadScalar('', MVoid, ptr=True):
         """
-        struct Compartment* self =
-            (struct Compartment*) super_ctor(Compartment, _self, app);
-        self->cid = va_arg(*app, uint64_t);
-        self->num_mechs = va_arg(*app, uint64_t);
-        return self;
+        struct Compartment* _self =
+            (struct Compartment*) super_ctor(Compartment, self, app);
+        _self->cid = va_arg(*app, uint64_t);
+        _self->num_mechs = va_arg(*app, uint64_t);
+        return _self;
         """
 
     @myriad_method_verbatim
@@ -50,12 +55,12 @@ class Compartment(myriad_object.MyriadObject):
     @myriad_method_verbatim
     def add_mechanism(self, mechanism: MyriadScalar("mechanism", MVoid, True)):
         """
-        if (_self == NULL || mechanism == NULL)
+        if (self == NULL || mechanism == NULL)
         {
             fputs("Neither Mechanism nor Compartment can be NULL.", stderr);
             return -1;
         }
-        struct Compartment* self = (struct Compartment*) _self;
+        struct Compartment* _self = (struct Compartment*) self;
         struct Mechanism* mech = (struct Mechanism*) mechanism;
 
         if (self->num_mechs + 1 >= MAX_NUM_MECHS)

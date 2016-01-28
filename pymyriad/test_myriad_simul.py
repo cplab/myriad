@@ -9,8 +9,8 @@ from myriad_testing import set_external_loggers, MyriadTestCase
 import myriad_simul
 
 import myriad_object
-
 import myriad_compartment
+import myriad_mechanism
 
 
 @set_external_loggers("TestMyriadSimulObject", myriad_simul.LOG)
@@ -35,7 +35,7 @@ class TestMyriadSimulObject(MyriadTestCase):
         class TestSimulSetup(myriad_simul.MyriadSimul,
                              dependencies=[myriad_object.MyriadObject]):
             def setup(self):
-                comp = myriad_compartment.Compartment(cid=0)
+                comp = myriad_compartment.Compartment(cid=0, num_mechs=0)
                 self.add_compartment(comp)
         obj = TestSimulSetup()
         obj.setup()
@@ -43,9 +43,11 @@ class TestMyriadSimulObject(MyriadTestCase):
     def test_simul_run(self):
         """ Tests running a simulation object """
         class TestSimul(myriad_simul.MyriadSimul,
-                        dependencies=[myriad_object.MyriadObject]):
+                        dependencies=[myriad_object.MyriadObject,
+                                      myriad_compartment.Compartment,
+                                      myriad_mechanism.Mechanism]):
             def setup(self):
-                comp = myriad_compartment.Compartment(cid=0)
+                comp = myriad_compartment.Compartment(cid=0, num_mechs=0)
                 self.add_compartment(comp)
         obj = TestSimul()
         obj.setup()
