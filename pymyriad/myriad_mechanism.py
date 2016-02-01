@@ -30,9 +30,9 @@ class Mechanism(myriad_object.MyriadObject):
             app: MyriadScalar("app", MVarArgs, ptr=True)
     ) -> MyriadScalar('', MVoid, ptr=True):
         """
-        struct Mechanism* self =
-            (struct Mechanism*) super_ctor(Mechanism, _self, app);
-        self->source_id = va_arg(*app, uint64_t);
+        struct Mechanism* _self =
+            (struct Mechanism*) super_ctor(Mechanism, self, app);
+        _self->source_id = va_arg(*app, uint64_t);
         return _self;
         """
 

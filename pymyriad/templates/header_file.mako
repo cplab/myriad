@@ -22,7 +22,10 @@
 
 ## Declare typedefs for own methods ONLY
 % for delg in [create_delegator(m, cls_name) for m in own_methods]:
+#ifndef ${delg.typedef_name.upper()}
+#define ${delg.typedef_name.upper()}
 ${delg.stringify_typedef()};
+#endif
 % endfor
 
 ## Struct forward declarations

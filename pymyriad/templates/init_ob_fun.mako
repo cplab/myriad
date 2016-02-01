@@ -14,7 +14,7 @@ void init${obj_name}(void)
 				   0
 			);
 		struct MyriadObject* class_obj = (struct MyriadObject*) ${cls_name};
-		memcpy((void**) &class_obj->m_class, &${cls_name}, sizeof(void*));
+		memcpy((void**) &class_obj->mclass, &${cls_name}, sizeof(void*));
 
 #ifdef CUDA
 	   	void* tmp_c = myriad_cudafy((void*)${cls_name}, 1);

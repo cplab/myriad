@@ -125,14 +125,14 @@ class MyriadObject(_MyriadObjectBase,
     while (selector)
     {
         const voidf curr_method = va_arg(ap, voidf);
-        if (selector == (voidf) myriad_ctor)
+        if (selector == (voidf) ctor)
         {
             *(voidf *) &_self->my_ctor_t = curr_method;
-        } else if (selector == (voidf) myriad_cudafy) {
+        } else if (selector == (voidf) cudafy) {
             *(voidf *) &_self->my_cudafy_t = curr_method;
-        } else if (selector == (voidf) myriad_dtor) {
+        } else if (selector == (voidf) dtor) {
             *(voidf *) &_self->my_dtor_t = curr_method;
-        } else if (selector == (voidf) myriad_decudafy) {
+        } else if (selector == (voidf) decudafy) {
             *(voidf *) &_self->my_decudafy_t = curr_method;
         }
         selector = va_arg(ap, voidf);
@@ -228,26 +228,26 @@ class MyriadObject(_MyriadObjectBase,
             cls.__bases__[0].render_templates()
         # Render templates for the current class
         LOG.debug("Rendering H File for %s", cls.__name__)
-        getattr(cls, "header_file_template").render_to_file()
+        getattr(cls, "header_file_template").render_to_file(overwrite=False)
         LOG.debug("Rendering C File for %s", cls.__name__)
-        getattr(cls, "c_file_template").render_to_file()
+        getattr(cls, "c_file_template").render_to_file(overwrite=False)
         LOG.debug("Rendering CUH File for %s", cls.__name__)
-        getattr(cls, "cuh_file_template").render_to_file()
+        getattr(cls, "cuh_file_template").render_to_file(overwrite=False)
         # MyriadObject has its own special pyc/pyh files
         if cls is MyriadObject:
             LOG.debug("Rendering PYC File for MyriadObject")
             c_template = MakoFileTemplate("pyMyriadObject.c",
                                           MYRIADOBJECT_PYC_FILE_TEMPLATE,
                                           cls.__dict__)
-            c_template.render_to_file()
+            c_template.render_to_file(overwrite=False)
             LOG.debug("Rendering PYH File for MyriadObject")
             h_template = MakoFileTemplate("pyMyriadObject.h",
                                           MYRIADOBJECT_PYH_FILE_TEMPLATE,
                                           cls.__dict__)
-            h_template.render_to_file()
+            h_template.render_to_file(overwrite=False)
         else:
             LOG.debug("Rendering PYC File for %s", cls.__name__)
-            getattr(cls, "pyc_file_template").render_to_file()
+            getattr(cls, "pyc_file_template").render_to_file(overwrite=False)
 
     @classmethod
     def _fill_in_base_methods(cls,

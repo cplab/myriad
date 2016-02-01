@@ -69,8 +69,5 @@
             cudaMemcpyHostToDevice
             )
         );
-
-    return 0;
-#else
-    return -1;
 #endif
+    return;

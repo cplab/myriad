@@ -18,10 +18,12 @@ ${delegator.stringify_decl()}
 
     assert(m_class->my_${delegator.fun_typedef.name});
 
-    % if ret_var.base_type is MVoid and ret_var.ptr is not True:
-    m_class->my_${delegator.fun_typedef.name}(${fun_args});
+% if ret_var.base_type is MVoid and ret_var.ptr is not True:
+    m_class->my_${delegator.fun_typedef.name}(self, ${fun_args});
     return;
-    % else:
-    return m_class->my_${delegator.fun_typedef.name}(${fun_args});
-    % endif
+% elif fun_args:
+    return m_class->my_${delegator.fun_typedef.name}(self, ${fun_args});
+% else:
+    return m_class->my_${delegator.fun_typedef.name}(self);
+% endif
 }

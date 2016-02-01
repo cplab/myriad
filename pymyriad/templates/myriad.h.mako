@@ -33,6 +33,11 @@
 
 typedef void (* voidf) (void);
 
+## Utility macros
+#define myriad_class_of(x) ((struct MyriadObject*) x)->mclass
+#define myriad_size_of(x) ((struct MyriadObject*) x)->mclass->size
+#define myriad_super(x) ((struct MyriadObject*) x)->mclass->super
+
 ## Use myriad's own private allocator scheme
 #include "myriad_alloc.h"
 #define _my_malloc(size) myriad_malloc(size, true)

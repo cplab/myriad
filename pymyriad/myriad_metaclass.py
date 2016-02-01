@@ -329,7 +329,6 @@ def _method_organizer_helper(supercls: _MyriadObjectBase,
 
     LOG.debug("_method_organizer_helper class variables selected: %r",
               myriad_cls_vars)
-
     return own_methods
 
 
@@ -471,14 +470,14 @@ def _initialize_obj_cls_structs(supercls: _MyriadObjectBase,
 
 
 def _gen_mclass_ptr_scalar(ident: str):
-    """ Quick and dirty way of hard-coding MyriadClass struct pointers """
+    """ Quick & dirty way of hard-coding MyriadObjectClass struct pointers """
     tmp = MyriadScalar(ident,
                        MVoid,
                        True,
                        quals=["const"])
     tmp.type_decl = TypeDecl(declname=ident,
                              quals=[],
-                             type=Struct("MyriadClass", None))
+                             type=Struct("MyriadObjectClass", None))
     tmp.ptr_decl = PtrDecl(quals=[],
                            type=tmp.type_decl)
     tmp.decl = Decl(name=ident,

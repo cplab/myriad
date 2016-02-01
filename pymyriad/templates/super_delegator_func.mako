@@ -18,10 +18,10 @@ ${super_delegator.stringify_decl()}
         myriad_super(${class_arg});
 
     ## Make sure that we return only for non-pointer void
-    % if ret_type is MVoid and ret_type.ptr is False:
+% if ret_type is MVoid and ret_type.ptr is False:
     superclass->my_${delegator.fun_typedef.name}(${fun_args});
     return;
-    % else:
+% else:
     return superclass->my_${delegator.fun_typedef.name}(${fun_args});
-    % endif
+% endif
 }

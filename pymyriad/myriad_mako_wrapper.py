@@ -83,11 +83,11 @@ class MakoFileTemplate(MakoTemplate):
         """
         if filename is None:
             filename = self.filename
-        self.render()
         if not overwrite and os.path.isfile(filename):
             return
-        with open(filename, 'wb') as filep:
-            filep.write(bytes(self._buffer.getvalue(), "UTF-8"))
+        self.render()
+        with open(filename, 'w') as filep:
+            filep.write(self._buffer.getvalue())
 
 
 def main():
