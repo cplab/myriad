@@ -35,6 +35,10 @@ struct ${obj_name};
 ## Top-level init function
 extern void init${obj_name}(void);
 
+## Top-level pointers for myriad_new purposes
+extern const void* ${obj_name};
+extern const void* ${cls_name};
+
 ## Method delegators
 % for method in own_methods:
 <%

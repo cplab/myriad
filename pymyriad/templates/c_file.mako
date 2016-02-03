@@ -55,7 +55,4 @@ ${super_delg.stringify_def()}
 % endfor
 
 ## Top-level init function
-void init${obj_name}(void)
-{
-    ${init_fun}
-}
+${init_fun}
