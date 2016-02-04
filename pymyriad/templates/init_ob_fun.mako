@@ -8,8 +8,11 @@ void init${obj_name}(void)
 				   ${super_cls},
 				   sizeof(struct ${cls_name}),
 ## Overwrite methods here
+## FIXME: Get rid of this dirty hack for cls_* methods to work
 % for method in myriad_methods.values():
-                   ${method.ident}, ${obj_name}_${method.ident},
+    % if method.ident.startswith("cls_"):
+                   ${method.ident[4:]}, ${obj_name}_${method.ident},
+    % endif
 % endfor
 				   0
 			);
@@ -38,8 +41,11 @@ void init${obj_name}(void)
 				   ${cls_name},
 				   ${super_obj},
 				   sizeof(struct ${obj_name}),
+## FIXME: Get rid of this dirty hack for cls_* methods to work
 % for method in myriad_methods.values():
+      % if not method.ident.startswith("cls_"):
                    ${method.ident}, ${obj_name}_${method.ident},
+      % endif
 % endfor
 ## Add new functions here (own_methods)
 % for method in own_methods:
