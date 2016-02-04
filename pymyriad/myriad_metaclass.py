@@ -313,13 +313,14 @@ def _method_organizer_helper(supercls: _MyriadObjectBase,
         else:
             return cls.own_methods.union(get_parent_methods(cls.__bases__[0]))
 
-    parent_methods = get_parent_methods(supercls)
+    # Get parent method IDENTIFIERS - easier to check for existence
+    parent_methods = set([v.ident for v in get_parent_methods(supercls)])
     LOG.debug("_method_organizer_helper parent methods: %r", parent_methods)
 
     # 'Own methods' are methods we've created (1); everything else is (2)
     own_methods = OrderedSet()
-    for mtd in myriad_methods.values():
-        if mtd in parent_methods or hasattr(mtd, "is_myriadclass_method"):
+    for m_ident, mtd in myriad_methods.items():
+        if m_ident in parent_methods or hasattr(mtd, "is_myriadclass_method"):
             continue
         # For methods we've created, generate class variables for class struct
         own_methods.add(mtd)
