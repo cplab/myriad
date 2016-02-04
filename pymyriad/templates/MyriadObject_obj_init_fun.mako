@@ -1,3 +1,5 @@
+void initMyriadObject(void)
+{
 #ifdef CUDA
     const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
     const size_t obj_size = sizeof(struct MyriadObject);
@@ -71,3 +73,4 @@
         );
 #endif
     return;
+}

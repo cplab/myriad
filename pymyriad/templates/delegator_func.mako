@@ -4,6 +4,7 @@
     classname - Name of the class this is implemented for as a string
 </%doc>
 <%
+    from myriad_types import MVoid
     ## Get the function arguments as a comma-seperated list
     fun_args = ','.join([arg.ident for arg in delegator.args_list.values()][1:])
     ## Get the 'class' argument (usually '_class')
@@ -18,7 +19,7 @@ ${delegator.stringify_decl()}
 
     assert(m_class->my_${delegator.fun_typedef.name});
 
-% if ret_var.base_type is MVoid and ret_var.ptr is not True:
+% if ret_var.base_type is MVoid and not ret_var.ptr:
     m_class->my_${delegator.fun_typedef.name}(self, ${fun_args});
     return;
 % elif fun_args:

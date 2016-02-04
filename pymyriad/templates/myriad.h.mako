@@ -38,6 +38,9 @@ typedef void (* voidf) (void);
 #define myriad_size_of(x) ((struct MyriadObject*) x)->mclass->size
 #define myriad_super(x) ((struct MyriadObject*) x)->mclass->super
 
+## Forward declaration of utility functions
+extern void* myriad_new(const void* _class, ...);
+
 ## Use myriad's own private allocator scheme
 #include "myriad_alloc.h"
 #define _my_malloc(size) myriad_malloc(size, true)
@@ -74,7 +77,7 @@ extern __thread union _eco _eco;  ## Must be thread-local due to side-effects.
 #define NUM_THREADS ${NUM_THREADS}
 #define SIMUL_LEN ${SIMUL_LEN}
 #define DT ${DT}
-#define NUM_CELLS ${NUM_CELLS}
+#define NUM_CELLS ${NUM_COMPARTMENTS}
 #define MAX_NUM_MECHS ${MAX_NUM_MECHS}
 
 

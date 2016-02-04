@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -30,11 +31,28 @@
     % endfor
 % endif
 
-////////////////
-// DSAC Model //
-////////////////
+## Myriad new definition
+void* myriad_new(const void* _class, ...)
+{
+    const struct MyriadObjectClass* prototype_class = (const struct MyriadObjectClass*) _class;
+    struct MyriadObject* curr_obj;
+    va_list ap;
 
-// Fast exponential function structure/function
+    assert(prototype_class && prototype_class->size);
+    
+    curr_obj = (struct MyriadObject*) _my_calloc(1, prototype_class->size);
+    assert(curr_obj);
+
+    curr_obj->mclass = (struct MyriadObjectClass*)prototype_class;
+
+    va_start(ap, _class);
+    curr_obj = (struct MyriadObject*) ctor(curr_obj, &ap);
+    va_end(ap);
+    
+    return curr_obj;
+}
+
+## Fast exponential function structure/function
 % if FAST_EXP:
 __thread union _eco _eco;
 % endif
@@ -117,21 +135,12 @@ int main(void)
     const size_t total_mem_usage = calc_total_size(&num_allocs);
     assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
 
-% if CUDA:
-    const bool use_cuda = true;
-% else:
-    const bool use_cuda = false;
-% endif
-
     ## Call init functions
 % for myriad_class in dependencies:
     init${myriad_class.obj_name}();
 % endfor
 
 	void* network[NUM_CELLS];
-    
-    const unsigned int num_connxs = NUM_CELLS;
-    int64_t to_connect[num_connxs];
 
     ## TODO: Instantiate new cells with myriad_new(), add compartments, etc.
 

@@ -23,7 +23,7 @@ OS_SIZE = ${OS_SIZE}
 OS_ARCH = ${OS_ARCH}
 
 ## CC & related flags, with debug switch
-COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter 
+COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-format -Wno-unknown-pragmas
 
 % if DEBUG:
 COMMON_CFLAGS += -Og -g -DDEBUG=$(DEBUG)

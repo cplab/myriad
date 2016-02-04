@@ -116,7 +116,6 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
                  **kwargs):
         #: Internal global compartment list
         self._compartments = compartments if compartments else set()
-        kwargs["NUM_CELLS"] = len(self._compartments)
         #: Internal global mechanism list
         self._mechanisms = mechanisms if mechanisms else set()
         # TODO: More intelligently calculate MAX_NUM_MECHS
@@ -129,20 +128,13 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self.simul_params = _setup_simul_params(kwargs,
                                                 getattr(self, "dependencies"))
         #: Template for Makefile, used for building C executable
-        self._makefile_template = MakoFileTemplate("Makefile",
-                                                   MAKEFILE_TEMPLATE,
-                                                   self.simul_params)
+        self._makefile_template = None
         #: Template for setup.py, used for building CPython extensions
-        self._setuppy_template = MakoFileTemplate(
-            "setup.py",
-            SETUPPY_TEMPLATE,
-            {"dependencies": getattr(self, "dependencies")})
-        self._main_template = MakoFileTemplate("main.c",
-                                               MAIN_TEMPLATE,
-                                               self.simul_params)
-        self._myriad_h_template = MakoFileTemplate("myriad.h",
-                                                   MYRIAD_H_TEMPLATE,
-                                                   self.simul_params)
+        self._setuppy_template = None
+        #: Template for main.c main simulation file
+        self._main_template = None
+        #: Template for myriad.h parameter and macro file
+        self._myriad_h_template = None
 
     def add_mechanism(self, comp, mech):
         """ 'Adds' the mechanism to the compartment """
@@ -164,15 +156,30 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
     # TODO: Create temporary directory to put all this crap in
     def run(self):
         """ Runs the simulation and puts results back into Python objects """
+        # Calculate the number of compartments
         if len(self._compartments) == 0:
             raise RuntimeError("No compartments found!")
+        self.simul_params["NUM_COMPARTMENTS"] = len(self._compartments)
         # Render templates for dependencies
         for dependency in getattr(self, "dependencies"):
             dependency.render_templates()
-        # Render templates for simulation-specific files
+        # Create & render templates for simulation-specific files
+        self._makefile_template = MakoFileTemplate("Makefile",
+                                                   MAKEFILE_TEMPLATE,
+                                                   self.simul_params)
+        self._setuppy_template = MakoFileTemplate(
+            "setup.py",
+            SETUPPY_TEMPLATE,
+            {"dependencies": getattr(self, "dependencies")})
+        self._main_template = MakoFileTemplate("main.c",
+                                               MAIN_TEMPLATE,
+                                               self.simul_params)
+        self._myriad_h_template = MakoFileTemplate("myriad.h",
+                                                   MYRIAD_H_TEMPLATE,
+                                                   self.simul_params)
         self._makefile_template.render_to_file()
         self._setuppy_template.render_to_file()
         self._main_template.render_to_file()
         self._myriad_h_template.render_to_file()
         # Once templates are rendered, perform compilation
-        subprocess.check_call(["make", "all"])
+        subprocess.check_call(["make", "-j4", "all"])
