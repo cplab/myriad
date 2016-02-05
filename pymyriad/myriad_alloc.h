@@ -62,7 +62,7 @@ extern int myriad_alloc_init(const size_t heap_size, const size_t num_allocs)
  *
  * @returns 0 if successful, -1 otherwise.
  */
-extern int myriad_finalize() __attribute__((cold));
+extern int myriad_finalize(void) __attribute__((cold));
 
 /**
  * @brief Allocates a region of memory, locking it if possible

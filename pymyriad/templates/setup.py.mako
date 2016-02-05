@@ -30,7 +30,7 @@ ${module.__name__.upper()} = Extension("${module.__name__.lower()}",
                   include_dirs=["/usr/include", np_includes()],
                   library_dirs=["/usr/lib/"],
                   libraries=["rt", "pthread"],
-                  sources=["py${module.__name__ + '.c'}"])
+                  sources=["py${module.__name__.lower() + '.c'}"])
 % endfor
 
 setup(name="pymyriad",

@@ -21,10 +21,6 @@
 
 // TODO: REMOVE
 #include "Mechanism.h"
-#include "HHLeakMechanism.h"
-#include "HHGradedGABAAMechanism.h"
-#include "HHKCurrMechanism.h"
-#include "HHNaCurrMechanism.h"
 
 //! Module-level variable for connector
 static bool _my_q_init = false;
@@ -150,7 +146,7 @@ static PyObject* retrieve_obj(PyObject* self __attribute__((unused)),
            ((struct Compartment*)new_comp)->num_mechs);
 
     // Get all the mechanisms
-    for (uint64_t i = 0; i < new_comp->num_mechs; i++)
+    for (int64_t i = 0; i < new_comp->num_mechs; i++)
     {
         // Clear
         new_comp->my_mechs[i] = NULL;

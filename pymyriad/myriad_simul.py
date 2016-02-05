@@ -31,6 +31,11 @@ MAIN_TEMPLATE = resource_string(__name__,
 MYRIAD_H_TEMPLATE = resource_string(__name__,
                                     "templates/myriad.h.mako").decode("UTF-8")
 
+#: Template for pymyriad.h (main CPython interface file)
+PYMYRIAD_H_TEMPLATE = resource_string(
+    __name__,
+    "templates/pymyriad.h.mako").decode("UTF-8")
+
 #######
 # Log #
 #######
@@ -135,6 +140,8 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self._main_template = None
         #: Template for myriad.h parameter and macro file
         self._myriad_h_template = None
+        #: Template for pymyriad.h CPython interface header
+        self._pymyriad_h_template = None
 
     def add_mechanism(self, comp, mech):
         """ 'Adds' the mechanism to the compartment """
@@ -177,9 +184,14 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self._myriad_h_template = MakoFileTemplate("myriad.h",
                                                    MYRIAD_H_TEMPLATE,
                                                    self.simul_params)
+        self._pymyriad_h_template = MakoFileTemplate("pymyriad.h",
+                                                     PYMYRIAD_H_TEMPLATE,
+                                                     self.simul_params)
         self._makefile_template.render_to_file()
         self._setuppy_template.render_to_file()
         self._main_template.render_to_file()
         self._myriad_h_template.render_to_file()
+        self._pymyriad_h_template.render_to_file()
         # Once templates are rendered, perform compilation
         subprocess.check_call(["make", "-j4", "all"])
+        subprocess.check_call(["python", "setup.py", "build"])

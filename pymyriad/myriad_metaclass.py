@@ -351,7 +351,7 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
         namespace)
     # TODO: CU file template
     namespace["pyc_file_template"] = MakoFileTemplate(
-        "py_" + namespace["obj_name"] + ".c",
+        "py" + namespace["obj_name"].lower() + ".c",
         PYC_COMP_FILE_TEMPLATE,
         namespace)
     return namespace

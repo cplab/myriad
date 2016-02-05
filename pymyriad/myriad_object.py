@@ -236,12 +236,12 @@ class MyriadObject(_MyriadObjectBase,
         # MyriadObject has its own special pyc/pyh files
         if cls is MyriadObject:
             LOG.debug("Rendering PYC File for MyriadObject")
-            c_template = MakoFileTemplate("pyMyriadObject.c",
+            c_template = MakoFileTemplate("pymyriadobject.c",
                                           MYRIADOBJECT_PYC_FILE_TEMPLATE,
                                           cls.__dict__)
             c_template.render_to_file(overwrite=False)
             LOG.debug("Rendering PYH File for MyriadObject")
-            h_template = MakoFileTemplate("pyMyriadObject.h",
+            h_template = MakoFileTemplate("pymyriadobject.h",
                                           MYRIADOBJECT_PYH_FILE_TEMPLATE,
                                           cls.__dict__)
             h_template.render_to_file(overwrite=False)
