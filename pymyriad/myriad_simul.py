@@ -6,6 +6,7 @@ import os
 import sys
 import logging
 import subprocess
+import importlib
 
 from pkg_resources import resource_string
 
@@ -195,3 +196,10 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         # Once templates are rendered, perform compilation
         subprocess.check_call(["make", "-j4", "all"])
         subprocess.check_call(["python", "setup.py", "build"])
+        # Invalidate cache and load dynamic extensions
+        sys.path.append("build/lib.linux-x86_64-3.4/")
+        importlib.invalidate_caches()
+        importlib.import_module("mmqpy")
+        for dependency in getattr(self, "dependencies"):
+            if dependency.__name__ != "MyriadObject":
+                importlib.import_module(dependency.__name__.lower())

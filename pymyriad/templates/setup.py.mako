@@ -23,7 +23,16 @@ MMQPY = Extension("mmqpy",
                   libraries=["rt", "pthread"],
                   sources=["mmqpy.c", "mmq.c"])
 
+PYMYRIAD = Extension("pymyriad",
+                     define_macros=MYRIAD_CPYTHON_DEFS,
+                     extra_compile_args=["-std=gnu99"],
+                     include_dirs=["/usr/include", np_includes()],
+                     library_dirs=["/usr/lib/"],
+                     libraries=["rt", "pthread"],
+                     sources=["pymyriad.c", "pymyriadobject.c"])
+
 % for module in dependencies:
+    % if module.__name__ != "MyriadObject":
 ${module.__name__.upper()} = Extension("${module.__name__.lower()}",
                   define_macros=MYRIAD_CPYTHON_DEFS,
                   extra_compile_args=["-std=gnu99"],
@@ -31,6 +40,7 @@ ${module.__name__.upper()} = Extension("${module.__name__.lower()}",
                   library_dirs=["/usr/lib/"],
                   libraries=["rt", "pthread"],
                   sources=["py${module.__name__.lower() + '.c'}"])
+    % endif
 % endfor
 
 setup(name="pymyriad",
@@ -38,7 +48,10 @@ setup(name="pymyriad",
       description="Myriad CPython package",
       ext_modules=[
               MMQPY,
+              PYMYRIAD,
 % for module in dependencies:
+    % if module.__name__ != "MyriadObject":
               ${module.__name__.upper()},
+    % endif
 % endfor
       ])

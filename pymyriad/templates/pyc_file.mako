@@ -60,7 +60,7 @@ static PyModuleDef py${obj_name.lower()}_module = {
     NULL, NULL, NULL, NULL
 };
 
-PyMODINIT_FUNC PyInit_py${obj_name.lower()}(void)
+PyMODINIT_FUNC PyInit_${obj_name.lower()}(void)
 {
     _import_array();  // Necessary for numpy support
 

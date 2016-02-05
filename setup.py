@@ -47,28 +47,10 @@ PYMECHANISM = Extension("pymechanism",
                         libraries=["rt", "pthread"],
                         sources=["pymechanism.c"])
 
-PYHHSOMACOMPARTMENT = Extension("pyhhsomacompartment",
-                                define_macros=MYRIAD_CPYTHON_DEFS,
-                                extra_compile_args=["-std=gnu99"],
-                                include_dirs=["/usr/include", np_includes()],
-                                library_dirs=["/usr/lib/"],
-                                libraries=["rt", "pthread"],
-                                sources=["pyhhsomacompartment.c"])
-
-PYHHNACURRMECHANISM = Extension("pyhhnacurrmechanism",
-                                define_macros=MYRIAD_CPYTHON_DEFS,
-                                extra_compile_args=["-std=gnu99"],
-                                include_dirs=["/usr/include", np_includes()],
-                                library_dirs=["/usr/lib/"],
-                                libraries=["rt", "pthread"],
-                                sources=["pyhhnacurrmechanism.c"])
-
 setup(name="pymyriad",
       version="1.0",
       description="Myriad CPython package",
       ext_modules=[MMQPY,
                    PYMYRIAD,
-                   PYHHSOMACOMPARTMENT,
                    PYMECHANISM,
-                   PYHHNACURRMECHANISM,
                    PYCOMPARTMENT])
