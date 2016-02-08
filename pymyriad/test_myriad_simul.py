@@ -49,7 +49,7 @@ class TestMyriadSimulObject(MyriadTestCase):
             def setup(self):
                 comp = myriad_compartment.Compartment(cid=0, num_mechs=0)
                 self.add_compartment(comp)
-        obj = TestSimul()
+        obj = TestSimul(DEBUG=True)
         obj.setup()
         obj.run()
 

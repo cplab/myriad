@@ -142,7 +142,16 @@ int main(void)
 
 	void* network[NUM_CELLS];
 
-    ## TODO: Instantiate new cells with myriad_new(), add compartments, etc.
+    ## TODO: Instantiate new cells with myriad_new(), add mechanisms, etc.
+    int_fast32_t c_count = 0;
+% for comp in compartments:
+    network[c_count] = myriad_new(${comp.__class__.__name__}
+    % for param in getattr(comp, "myriad_new_params").keys():
+                 ,${str(getattr(comp, param))}
+    % endfor
+    );
+    c_count++;
+% endfor
 
 % if NUM_THREADS > 1:
     // Pthread parallelism

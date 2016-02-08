@@ -26,9 +26,9 @@ OS_ARCH = ${OS_ARCH}
 COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-format -Wno-unknown-pragmas
 
 % if DEBUG:
-COMMON_CFLAGS += -Og -g -DDEBUG=$(DEBUG)
+COMMON_CFLAGS += -O0 -g3 -DDEBUG=1$(DEBUG)
 % else:
-COMMON_CFLAGS += -O2 -march=native
+COMMON_CFLAGS += -DNDEBUG -O2 -march=native
 % endif
 
 ## Link-time optimization
@@ -151,6 +151,10 @@ $(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_OBJS) $(CUDA_MYRI
 % if CUDA:
 	$(CC) -o $@ $+ $(CUDA_BIN_LDFLAGS)
 % else:
-	$(CC) -flto -o $@ $+ $(LD_FLAGS)
+    % if DEBUG:
+	$(CC) -Og -g -flto -o $@ $+ $(LD_FLAGS)
+    % else:
+    $(CC) -O2 -flto -o $@ $+ $(LD_FLAGS)
+    % endif
 % endif
 

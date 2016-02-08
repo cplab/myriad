@@ -547,6 +547,8 @@ class MyriadMetaclass(type):
         # Assign all valid values
         for argname, argval in kwargs.items():
             setattr(self, argname, argval)
+        # Store object vars in object to use for myriad_new
+        setattr(self, "myriad_new_params", expected_obj_vars)
 
     @staticmethod
     def myriad_set_attr(self, argname, argval):

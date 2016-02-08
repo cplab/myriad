@@ -121,9 +121,9 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
                  simul_len: int=1000,
                  **kwargs):
         #: Internal global compartment list
-        self._compartments = compartments if compartments else set()
-        #: Internal global mechanism list
-        self._mechanisms = mechanisms if mechanisms else set()
+        self._compartments = compartments if compartments else list()
+        #: Internal global mechanism list of lists
+        self._mechanisms = mechanisms if mechanisms else list([])
         # TODO: More intelligently calculate MAX_NUM_MECHS
         kwargs["MAX_NUM_MECHS"] = 32
         # TODO: Change DT to Units
@@ -150,12 +150,22 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
             raise ValueError("Cannot add a mechanism to a null Compartment")
         elif mech is None:
             raise ValueError("Cannot add a null mechanism to a Compartment")
-        # TODO: Do additional overhead work to 'link' mechanism to compartment
-        self._mechanisms.add(mech)
+        elif comp not in self._compartments:
+            self._compartments.append(comp)
+            self._mechanisms.append([])
+        # Mechanism is added based on what compartment its in
+        indx = self._compartments.index(comp)
+        if mech in self._mechanisms[indx]:
+            raise ValueError("Mechanism was already added to a Compartment")
+        self._mechanisms[indx].append(mech)
 
     def add_compartment(self, comp):
         """ 'Adds' the compartment to the global compartment list """
-        self._compartments.add(comp)
+        if comp is None:
+            raise ValueError("Cannot add a null Compartment")
+        elif comp in self._compartments:
+            raise ValueError("Compartment has already been added")
+        self._compartments.append(comp)
 
     def setup(self):
         """ Creates and links Compartments and mechanisms """
@@ -179,9 +189,12 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
             "setup.py",
             SETUPPY_TEMPLATE,
             {"dependencies": getattr(self, "dependencies")})
+        main_params = {"compartments": self._compartments,
+                       "mechanisms": self._mechanisms}
+        main_params.update(self.simul_params)
         self._main_template = MakoFileTemplate("main.c",
                                                MAIN_TEMPLATE,
-                                               self.simul_params)
+                                               main_params)
         self._myriad_h_template = MakoFileTemplate("myriad.h",
                                                    MYRIAD_H_TEMPLATE,
                                                    self.simul_params)
@@ -197,9 +210,11 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         subprocess.check_call(["make", "-j4", "all"])
         subprocess.check_call(["python", "setup.py", "build"])
         # Invalidate cache and load dynamic extensions
+        # TODO: Change this path to something platform-specific (autodetect)
         sys.path.append("build/lib.linux-x86_64-3.4/")
         importlib.invalidate_caches()
         importlib.import_module("mmqpy")
         for dependency in getattr(self, "dependencies"):
             if dependency.__name__ != "MyriadObject":
                 importlib.import_module(dependency.__name__.lower())
+        # TODO: Run simulation and get results back
