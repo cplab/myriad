@@ -1,3 +1,5 @@
+<% from inspect import getmro %>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -66,12 +68,15 @@ static ssize_t calc_total_size(int* num_allocs)
     total_size += sizeof(struct ${myriad_class.obj_name}) +
                   sizeof(struct ${myriad_class.cls_name});
 % endfor
-
     *num_allocs = *num_allocs + (${len(dependencies)} * 2);
 
-    ## TODO: Calculate mechanism and compartment contributions to memory overhead
-    total_size += 0;
-    *num_allocs = *num_allocs + 0;
+    ## Calculate mechanism and compartment contributions to memory overhead
+% for comp in compartments:
+    % for cls in getmro(comp.__class__)[0:2]:
+    total_size += sizeof(struct ${cls.__name__});
+    % endfor
+% endfor
+    *num_allocs = *num_allocs + ${len(mechanisms) + len(compartments)};
 
     return total_size;
 }

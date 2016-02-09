@@ -25,14 +25,12 @@ OS_ARCH = ${OS_ARCH}
 ## CC & related flags, with debug switch
 COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-format -Wno-unknown-pragmas
 
+## Link-time optimization only when not debugging
 % if DEBUG:
 COMMON_CFLAGS += -O0 -g3 -DDEBUG=1$(DEBUG)
 % else:
-COMMON_CFLAGS += -DNDEBUG -O2 -march=native
+COMMON_CFLAGS += -DNDEBUG -O2 -flto -march=native
 % endif
-
-## Link-time optimization
-COMMON_CFLAGS += -flto
 
 ## To Consider:
 ## -ffinite-math-only : Assume no -Inf/+Inf/NaN
@@ -152,7 +150,7 @@ $(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_OBJS) $(CUDA_MYRI
 	$(CC) -o $@ $+ $(CUDA_BIN_LDFLAGS)
 % else:
     % if DEBUG:
-	$(CC) -Og -g -flto -o $@ $+ $(LD_FLAGS)
+	$(CC) -O0 -g3 -o $@ $+ $(LD_FLAGS)
     % else:
     $(CC) -O2 -flto -o $@ $+ $(LD_FLAGS)
     % endif

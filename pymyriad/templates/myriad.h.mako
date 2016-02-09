@@ -36,7 +36,7 @@ typedef void (* voidf) (void);
 ## Utility macros
 #define myriad_class_of(x) ((struct MyriadObject*) x)->mclass
 #define myriad_size_of(x) ((struct MyriadObject*) x)->mclass->size
-#define myriad_super(x) ((struct MyriadObject*) x)->mclass->super
+#define myriad_super(x) ((struct MyriadObjectClass*) x)->super
 
 ## Forward declaration of utility functions
 extern void* myriad_new(const void* _class, ...);
