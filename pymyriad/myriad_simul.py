@@ -7,6 +7,7 @@ import sys
 import logging
 import subprocess
 import importlib
+import time
 
 from pkg_resources import resource_string
 
@@ -43,6 +44,61 @@ PYMYRIAD_H_TEMPLATE = resource_string(
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
+
+###########
+# Classes #
+###########
+
+
+class SubprocessCommunicator(object):
+    """
+    Communicator that manages the connection with the Myriad subprocess
+    """
+
+    def __init__(self, myriad_comm_mod, binary_rel_path: str="/main.bin"):
+        #: Child process
+        self.child_proc = None
+        #: Connection initialization status
+        self.connected = False
+        #: Myriad communicator dynamically-loaded module
+        self.myriad_comm_mod = myriad_comm_mod
+        if self.myriad_comm_mod is None:
+            raise ValueError("Myriad communicator module may not be None")
+        #: Myriad binary relative path
+        self.binary_rel_path = binary_rel_path
+
+    def spawn_child(self):
+        """ Spawns subprocess executable """
+        self.child_proc = subprocess.Popen(
+            [os.getcwd() + self.binary_rel_path],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE)
+
+    def setup_connection(self):
+        """ Waits for the subprocess to connect to the socket """
+        if self.child_proc is None:
+            raise RuntimeError("Child process is not yet running")
+        self.myriad_comm_mod.init()
+        self.connected = True
+
+    def request_data(self, obj_id: int) -> object:
+        """ Requests data from subprocess and returns a Compartment object """
+        if self.child_proc is None:
+            raise RuntimeError("Child process is not yet running")
+        elif self.connected is False:
+            raise RuntimeError("Not connected to child process")
+        elif obj_id < 0:
+            raise ValueError("Invalid obj_id value: value out of range")
+        return self.myriad_comm_mod.retrieve_obj(obj_id)
+
+    def close_connection(self):
+        """ Closes the connection to the subprocess """
+        # Ask child process to terminate
+        self.child_proc.poll()
+        if self.child_proc.returncode is None:
+            self.child_proc.terminate()
+        self.child_proc = None
+        self.connected = False
 
 
 class _MyriadSimulParent(object):
@@ -101,6 +157,8 @@ def _setup_simul_params(params, dependencies) -> dict:
         params["MYRIAD_ALLOCATOR"] = False
     if "NUM_THREADS" not in params:
         params["NUM_THREADS"] = 1
+    if "RANDOM_SEED" not in params:
+        params["RANDOM_SEED"] = 42  # FIXME: Use time() for default seed
     # TODO: More intelligently create dependency object string
     params["myriad_lib_objs"] =\
         " ".join([dep.__name__ + ".o" for dep in dependencies])
@@ -213,8 +271,13 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         # TODO: Change this path to something platform-specific (autodetect)
         sys.path.append("build/lib.linux-x86_64-3.4/")
         importlib.invalidate_caches()
-        importlib.import_module("mmqpy")
+        myriad_comm_mod = importlib.import_module("myriad_comm")
         for dependency in getattr(self, "dependencies"):
             if dependency.__name__ != "MyriadObject":
                 importlib.import_module(dependency.__name__.lower())
-        # TODO: Run simulation and get results back
+        # Run simulation and return the communicator object back
+        comm = SubprocessCommunicator(myriad_comm_mod)
+        comm.spawn_child()
+        time.sleep(0.25)  # FIXME: Change this sleep to a wait of some kind
+        comm.setup_connection()
+        return comm

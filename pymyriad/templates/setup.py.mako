@@ -15,13 +15,14 @@ COMPILER = UnixCCompiler(verbose=2)
 MYRIAD_CPYTHON_DEFS = [("_POSIX_C_SOURCE", "200809L"),
                        ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 
-MMQPY = Extension("mmqpy",
-                  define_macros=MYRIAD_CPYTHON_DEFS,
-                  extra_compile_args=["-std=gnu99"],
-                  include_dirs=["/usr/include", np_includes()],
-                  library_dirs=["/usr/lib/"],
-                  libraries=["rt", "pthread"],
-                  sources=["mmqpy.c", "mmq.c"])
+MYRIAD_COMM = Extension("myriad_comm",
+                        define_macros=MYRIAD_CPYTHON_DEFS,
+                        extra_compile_args=["-std=gnu99"],
+                        include_dirs=["/usr/include", np_includes()],
+                        library_dirs=["/usr/lib/"],
+                        libraries=["rt", "pthread"],
+                        sources=["pymyriad_communicator.c",
+                                 "myriad_communicator.c"])
 
 PYMYRIAD = Extension("pymyriad",
                      define_macros=MYRIAD_CPYTHON_DEFS,
@@ -47,7 +48,7 @@ setup(name="pymyriad",
       version="1.0",
       description="Myriad CPython package",
       ext_modules=[
-              MMQPY,
+              MYRIAD_COMM,
               PYMYRIAD,
 % for module in dependencies:
     % if module.__name__ != "MyriadObject":

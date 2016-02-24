@@ -53,7 +53,7 @@ GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
 EXTRA_NVCC_FLAGS := -rdc=true
 
 ## CPU Myriad Objects
-MYRIAD_OBJS 	:= myriad_alloc.o mmq.o ${myriad_lib_objs}
+MYRIAD_OBJS 	:= myriad_alloc.o myriad_communicator.o ${myriad_lib_objs}
 
 ################################
 ##      Linker (LD) Flags     ##

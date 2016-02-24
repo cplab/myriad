@@ -9,23 +9,25 @@
 #include <string.h>
 #include <math.h>
 #include <dirent.h>
+#include <signal.h>
 #include <unistd.h>
 #include <pthread.h>
 
-#ifdef CUDA
+% if CUDA:
 #include <vector_types.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-#endif
+% endif
 
-// Common included header
+## Common included header
 #include "myriad.h"
 
 % for header in dependencies:
 #include "${header.__name__}.h"
 % endfor
 
-#include "mmq.h"
+## Myriad communicator header for communicating with parent process
+#include "myriad_communicator.h"
     
 % if CUDA:
     % for header in dependencies:
@@ -126,8 +128,35 @@ static inline void* _thread_run(void* arg)
 
     return NULL;
 }
-/* NUM_THREADS > 1 */
-% endif 
+% endif
+
+
+//////////////////////////////
+// Cleanup Global Variables //
+//////////////////////////////
+
+static int serversock_fd = -1, socket_fd = -1;
+
+static void cleanup_conn(void)
+{
+    if (serversock_fd > 0)
+    {
+        m_close_socket(serversock_fd);
+        serversock_fd = -1;
+        unlink(UNSOCK_NAME);
+    }
+    if (socket_fd > 0)
+    {
+        m_close_socket(socket_fd);
+        socket_fd = -1;
+    }
+}
+
+## Handle SIGINT and SIGTERM by exiting cleanly, if possible
+static void handle_signal(int signo)
+{
+    exit(EXIT_FAILURE);
+}
 
 
 ///////////////////
@@ -136,6 +165,35 @@ static inline void* _thread_run(void* arg)
 
 int main(void)
 {
+## Setup signal handler
+	if (signal(SIGTERM, handle_signal) == SIG_ERR ||
+        signal(SIGINT, handle_signal) == SIG_ERR)
+    {
+		perror("signal failed: ");
+		exit(EXIT_FAILURE);
+	}
+
+## TODO: Do srand() with provided seed, or use time()
+
+## Setup atexit cleanup functions
+    if (atexit(&cleanup_conn))
+    {
+        fputs("Cannot set cleanup_conn to run at exit.\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    if (atexit(&myriad_finalize))
+    {
+        fputs("Cannot set myriad_finalize to run at exit.\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+
+## Initialize server socket so that we can accept connections
+    if ((serversock_fd = m_server_socket_init(1)) == -1)
+    {
+        fputs("Unable to initialize server socket. Exiting.\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+
     int num_allocs = 0;
     const size_t total_mem_usage = calc_total_size(&num_allocs);
     assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
@@ -145,7 +203,7 @@ int main(void)
     init${myriad_class.obj_name}();
 % endfor
 
-	void* network[NUM_CELLS];
+  	void* network[NUM_CELLS];
 
     ## TODO: Instantiate new cells with myriad_new(), add mechanisms, etc.
     int_fast32_t c_count = 0;
@@ -199,54 +257,34 @@ int main(void)
     }
 % endif
 
-    // Do IPC with parent python process
-    struct mmq_connector conn =
-        {
-            .msg_queue = mmq_init_mq(),
-            .socket_fd = mmq_socket_init(true, NULL),
-            .connection_fd = -1,
-            .server = true
-        };
+## Do IPC with parent python process
+    if ((socket_fd = m_server_socket_accept(serversock_fd)) == -1)
+    {
+        fputs("Unable to accept incoming connection\n", stderr);
+        exit(EXIT_FAILURE);
+    }
 
-    // Main message loop
+## Main message loop
     while (1)
     {
-        // Reset message buffer
-        char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
-
         ///////////////////////////////
         // PHASE 1: SEND OBJECT SIZE //
         ///////////////////////////////
 
-        // Wait for first message
-        puts("Waiting for object request message on queue...");
-        ssize_t msg_size = mq_receive(conn.msg_queue,
-                                      msg_buff,
-                                      MMQ_MSG_SIZE,
-                                      NULL);
-        if (msg_size < 0)
+        // Process message for object request
+        int obj_req = -1;
+        if (m_receive_int(socket_fd, &obj_req) || obj_req < 0)
         {
-            perror("mq_receive:");
+            fputs("Terminating simulation.\n", stderr);
             exit(EXIT_FAILURE);
         }
-        
-        // Process message for object request
-        int64_t obj_req = 0;
-        memcpy(&obj_req, msg_buff, MMQ_MSG_SIZE);
-        printf("Object data request: %" PRIi64 "\n", obj_req);
-        if (obj_req == -1)
-        {
-            puts("Terminating simulation.");
-            break;
-        }
+        printf("Object data request: %d\n", obj_req);
 
         // Send size of compartment object & wait for it to be accepted
-        size_t obj_size = myriad_size_of(network[obj_req]);
-        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
-        memcpy(msg_buff, &obj_size, sizeof(size_t));
-        if (mq_send(conn.msg_queue, msg_buff, MMQ_MSG_SIZE, 0) != 0)
+        const size_t obj_size = myriad_size_of(network[obj_req]);
+        if (m_send_int(socket_fd, obj_size))
         {
-            perror("mq_send size");
+            fputs("Failed to send object size via socket.\n", stderr);
             exit(EXIT_FAILURE);
         }
         printf("Sent data on object size (size is %lu)\n", obj_size);
@@ -256,7 +294,11 @@ int main(void)
         ///////////////////////////////
         
         // Send object data
-        mmq_send_data(&conn, (unsigned char*) network[obj_req], obj_size);
+        if (m_send_data(socket_fd, network[obj_req], obj_size) < 0)
+        {
+            fputs("Serialization aborted: m_send_data failed\n", stderr);
+            exit(EXIT_FAILURE);
+        }
         puts("Sent object data.");
 
         /////////////////////////////////////////////
@@ -264,36 +306,34 @@ int main(void)
         /////////////////////////////////////////////
         
         const struct Compartment* as_cmp = (const struct Compartment*) network[obj_req];
-        printf("Sending information for %i mechanisms.\n", as_cmp->num_mechs);
-        const int my_num_mechs = as_cmp->num_mechs;
-        for (int i = 0; i < my_num_mechs; i++)
+        printf("Sending information for %" PRIu64 " mechanisms.\n", as_cmp->num_mechs);
+        const uint64_t my_num_mechs = as_cmp->num_mechs;
+        for (uint64_t i = 0; i < my_num_mechs; i++)
         {
-            // Send mechanism size data
+            printf("Sending information for mechanism %" PRIu64 "\n", i);
+            
+            // Send mechanism size
             size_t mech_size = myriad_size_of(as_cmp->my_mechs[i]);
-            if (mmq_send_data(&conn, &mech_size, sizeof(size_t)) != sizeof(mech_size))
+            if (m_send_int(socket_fd, mech_size))
             {
-                fprintf(stderr, "Could not send mechanism %i size \n", i);
-            } else {
-                printf("Sent mechanism %i size of %lu.\n", i, mech_size);
+                fputs("Failed to send Mechanism size via socket.\n", stderr);
+                exit(EXIT_FAILURE);
             }
+            printf("Sent mechanism %" PRIu64 "'s size of %lu.\n", i, mech_size);
 
-            // Send mechanism object
-            if (mmq_send_data(&conn, as_cmp->my_mechs[i], mech_size) != (ssize_t) mech_size)
+            // Send mechanism object data
+            if (m_send_data(socket_fd, as_cmp->my_mechs[i], mech_size) != (ssize_t) mech_size)
             {
-                fprintf(stderr, "Could not send mechanism %i\n", i);
-            } else {
-                printf("Sent mechanism %i completely.\n", i);
+                fprintf(stderr, "Could not send mechanism %" PRIu64"\n", i);
+                exit(EXIT_FAILURE);
             }
+            printf("Sent mechanism %" PRIu64 " completely.\n", i);                
         }
 
-        puts("Sent all mechanism objects");
-
-        free(msg_buff);
+        puts("Sent all mechanism objects; object serialization completed.");
     }
     
     puts("Exited message loop.");
     
-    assert(myriad_finalize() == 0);
-    
-    return 0;
+    exit(EXIT_SUCCESS);
 }
