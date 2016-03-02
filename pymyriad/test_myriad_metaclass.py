@@ -48,7 +48,8 @@ class TestMyriadMethod(MyriadTestCase):
         {
         const struct Compartment* superclass = (const struct Compartment*)
             myriad_super(_class);
-        return superclass->my_dtor_t(self);
+        superclass->my_dtor_t(self);
+        return;
         }
         """
         self.assertTrimStrEquals(str(super_delg), expected_result)
@@ -73,7 +74,7 @@ class TestMyriadMethod(MyriadTestCase):
         const struct Compartment* m_class = (const struct Compartment*)
             myriad_class_of(_self);
         assert(m_class->my_add_mech_t);
-        return m_class->my_add_mech_t(mechanism);
+        return m_class->my_add_mech_t(self, mechanism);
         }
         """
         self.assertTrimStrEquals(str(result_fxn), expected_result)

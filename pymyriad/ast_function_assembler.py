@@ -3,8 +3,6 @@ High level function assembler. Ties together ast_parse to parse
 a full function.
 
 """
-__author__ = ["Alex J. Davies", "Pedro Rittner"]
-
 import inspect
 import re
 from types import FunctionType
@@ -12,10 +10,11 @@ from ast import parse
 from collections import OrderedDict
 
 import ast_parse
-import CTypes
+import myriad_ctypes
 from myriad_types import MInt, MyriadScalar, MyriadFunction, MVoid, MyriadCType
 from myriad_utils import remove_header_parens, indent_fix_lines
 
+__author__ = ["Alex J. Davies", "Pedro Rittner"]
 FLOAT_TYPE = "double"
 
 # Attributes cannot be referenced before their parent object.
@@ -23,6 +22,7 @@ FLOAT_TYPE = "double"
 
 
 class CFunc(object):
+    """ Function abstraction object """
 
     def __init__(self, pyCode):
         self.variables = {}
@@ -48,7 +48,7 @@ class CFunc(object):
         retString = self.stringify_declarations()
 
         for node in self.nodeList:
-            if isinstance(node, CTypes.CForLoop):
+            if isinstance(node, myriad_ctypes.CForLoop):
                 retString = retString + node.stringify(self.lists) + "\n"
             else:
                 retString = retString + node.stringify() + "\n"
@@ -56,16 +56,16 @@ class CFunc(object):
 
     def track_variables(self, l):
         # TODO: populate flavours
-        flavours = {type(1): "int64_t", type(3.0): FLOAT_TYPE}
+        flavours = {type(1): "int_fast32_t", type(3.0): FLOAT_TYPE}
         for node in l:
-            if (isinstance(node, CTypes.CAssign) and
-                    not isinstance(node.target, CTypes.CVarAttr) and
+            if (isinstance(node, myriad_ctypes.CAssign) and
+                    not isinstance(node.target, myriad_ctypes.CVarAttr) and
                     node.target.var not in self.variables):
                 targetVar = node.target.var
                 # TODO: what about variable to variable assignments?
                 varType = flavours[type(node.val)]
                 self.variables.update({targetVar: varType})
-            elif isinstance(node, CTypes.CObject):
+            elif isinstance(node, myriad_ctypes.CObject):
                 self.track_variables(list(node.__dict__.values()))
             elif isinstance(node, list):
                 self.track_variables(node)
@@ -85,21 +85,21 @@ class CFunc(object):
 
     def track_attributes(self, l):
         for node in l:
-            if isinstance(node, CTypes.CVarAttr):
-                target = CTypes.get_node_from_var(self.variables, node.var)
+            if isinstance(node, myriad_ctypes.CVarAttr):
+                target = myriad_ctypes.get_node_from_var(self.variables, node.var)
                 if node.attr not in target.attributes:
                     target.attributes.append(node.attr)
-            elif isinstance(node, CTypes.CObject):
+            elif isinstance(node, myriad_ctypes.CObject):
                 self.track_attributes(list(node.__dict__.values()))
 
     def track_lists(self, l):
         # TODO: rerun this when updating any lists.
         # Erase self.lists and repopulate.
         for node in l:
-            if (isinstance(node, CTypes.CAssign) and
-                    isinstance(node.val, CTypes.CList)):
+            if (isinstance(node, myriad_ctypes.CAssign) and
+                    isinstance(node.val, myriad_ctypes.CList)):
                 self.lists.append([node.target, node.val])
-            elif isinstance(node, CTypes.CObject):
+            elif isinstance(node, myriad_ctypes.CObject):
                 self.track_variables(list(node.__dict__.values()))
             elif isinstance(node, list):
                 self.track_variables(node)
@@ -187,26 +187,3 @@ def pyfun_to_cfun(fun: FunctionType, verbatim: bool=False) -> MyriadFunction:
                                 fun_return_type,
                                 fun_def=fun_body)
     return myriad_fun
-
-
-def test_fun(a: MInt, b: MInt) -> MInt:
-    x = 0
-    while x < 3:
-        if a == b:
-            x = x + 1
-            # TODO: sort out assignments like below
-            # c[x] = 1
-    return x
-
-
-def main():
-    # Standalone function
-    mfun = pyfun_to_cfun(test_fun)
-    print(mfun.stringify_decl())
-    print("{")
-    print(mfun.stringify_def())
-    print("}")
-    # Extract method from class and convert
-
-if __name__ == "__main__":
-    main()
