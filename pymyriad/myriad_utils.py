@@ -3,14 +3,13 @@ Collection of internal utility metaclasses and function annotations.
 
 TODO: Use logging module for logging
 """
-
-__author__ = ["Pedro Rittner"]
-
 from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
 from copy import copy
 from collections import OrderedDict
+
+__author__ = ["Pedro Rittner"]
 
 
 def assert_list_type(m_list: list, m_type: type):

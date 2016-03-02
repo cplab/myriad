@@ -45,7 +45,7 @@ static PyObject* Py${obj_name}_${obj_var_name}
 static PyMethodDef py${obj_name.lower()}_functions[] = {
 % for obj_var_name in obj_struct.members.keys():
 % if not obj_var_name.startswith("_"):
-    {"%{obj_var_name}", Py${obj_name}_${obj_var_name}, METH_VARARGS, "TODO"},
+    {"${obj_var_name}", Py${obj_name}_${obj_var_name}, METH_VARARGS, "TODO"},
 % endif
 % endfor
     {NULL, NULL, 0, NULL}           /* sentinel */

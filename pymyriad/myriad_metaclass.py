@@ -1,7 +1,7 @@
 """
 .. module:: myriad_metaclass
     :platform: Linux
-    :synposis: Provides metaclass for automatic Myriad integration
+    :synopsis: Provides metaclass for automatic Myriad integration
 
 .. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
 
