@@ -5,7 +5,105 @@
 
 .. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
 
+Purpose of this module is to provide an abstraction layer for Myriad objects,
+classes, and the methods belonging to them. This is done so that inheritance
+and method overloading can be done as a pre-compilation layer, instead of
+using C++ classes which cannot be unconditionally used in CUDA code.
+
+TODO: Add details about the CUDAfication process for classes/objects/methods.
+
+The following abstractions are expanded upon here:
+
+=======
+Objects
+=======
+
+Myriad's objects are structured as simple structs with state variables. We
+expect the compiler to reasonably align the struct so that binary compatibility
+is maintained across platforms. Struct declarations are done in a header file
+named after the object, e.g. 'MyriadObject.h'.
+
+Inheriting another Myriad object's state is a simple manner of embedding it::
+
+    struct ChildObject {
+        struct ParentObject _;  // Embedded parent object
+        int my_state;
+    };
+
+This is done because you can then up-cast objects for free, since the memory
+start of the parent struct is the same as the memory start of the child::
+
+    struct ParentObject* parent = (struct ParentObject*) child_struct_ptr;
+    parent->parent_state++;  // This will alter *child_struct_ptr
+
+Note that this does not work in the reverse, i.e. down-casts.
+
+All objects are 'inherited' from `struct MyriadObject`, which itself contains
+a pointer to the object's class singleton (see :mod:`MyriadObject` for details)
+
+=======
+Classes
+=======
+
+Classes are structured identically to objects; in fact, classes are themselves
+objects (see :mod:`MyriadObject` for how this circular dependency is resolved).
+
+The major difference is that while objects' structs are replicable state, so
+that they mimic other OOP models with instances having their own, separable
+state, classes are meant to be treated as define-once-reference-everywhere
+singletons. Each object type is created with a pointer to its class definition
+embedded in the state of the originator object (see :mod:`MyriadObject` for
+details on how this is accomplished via `myriad_new`).
+
+Classes' own state are composed entirely of function pointers representing
+method definitions and the superclass they inherit from, for example::
+
+    // Constructor function pointer type
+    typedef void* (* ctor_t) (void* self, va_list* app);
+
+    struct ChildClass {
+        struct ParentClass _;  // Embedded parent class
+        ctor_t my_ctor;        // 'Method' storage using function pointer type
+    }
+
+Classes are initialized on-demand at runtime via a special stand-alone `init`
+function that dynamically creates the singletons. This allows for reduced
+overhead when only a small subset of classes are required in the simulation
+kernel, as well as allowing for run-time overriding of methods in a standard
+fashion (i.e. by passing different arguments to the `myriad_new` calls that
+create the class singletons).
+
+See the section below for how methods are abstracted.
+
+=======
+Methods
+=======
+
+Methods are considered to be a loose amalgamation of 3 or more function
+definitions in addition to a function pointer typedef (for class storage):
+
+1. Stand-alone (i.e. not stored in class struct) Delegator function.
+2. Stand-alone (i.e. not stored in class struct) Superclass Delegator function.
+3. Any number of class-specific Instance Method function definitions.
+
+Each delegator function template can be see in :class:`MyriadMethod`, but in
+short the purpose of those functions are to acquire an object's class pointer
+and dereference the class' function pointer. This is necessary because, since
+the delegators are stand-alone functions with external bindings provided in
+the object's header file, any code that includes said header file will be able
+to call the delegator on any eligible (i.e. subclass'ed) object.
+
+The same applies for the Super Delegator function, albeit it will call the
+given object's superclass' version of the function instead. This is provided
+so that constructors and destructor calls may be made recursively up the
+inheritance tree.
+
+Classes that declare new methods must provide an instance method definition
+so that the `init` function (see above section about Classes) the constructor
+can correctly override the right method. Subclasses can override methods in
+the same fashion, provided they declare their own instance methods.
 """
+
 import inspect
 import logging
 
