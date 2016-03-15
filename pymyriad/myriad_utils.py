@@ -1,15 +1,13 @@
 """
 Collection of internal utility metaclasses and function annotations.
-
-TODO: Use logging module for logging
+:author Pedro Rittner
+#TODO: Use logging module for logging
 """
 from functools import wraps
 from inspect import getcallargs
 from types import FunctionType
 from copy import copy
 from collections import OrderedDict
-
-__author__ = ["Pedro Rittner"]
 
 
 def assert_list_type(m_list: list, m_type: type):
@@ -90,8 +88,8 @@ def enforce_annotations(fun):
             msg_args = {'f': fun, 't1': type(return_val), 't2': templ}
             msg = """Return type mismatch in call to {f}:
             Call return type {t1} does not match expected type {t2}"""
-            if (return_val is not None
-                    and not issubclass(return_val.__class__, templ)):
+            if (return_val is not None and
+                    not issubclass(return_val.__class__, templ)):
                 raise TypeError(msg.format(**msg_args))
         return return_val
     return _wrapper
