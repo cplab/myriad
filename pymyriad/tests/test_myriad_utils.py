@@ -1,18 +1,14 @@
 """
 Test cases for myriad_utils.
-
-TODO: Write my tests for myriad_utils
+:author Pedro Rittner
 """
-
-__author__ = ["Pedro Rittner"]
 
 import unittest
 import inspect
 
 from collections import OrderedDict
 
-from myriad_utils import TypeEnforcer, OrderedSet
-from myriad_utils import indent_fix, remove_header_parens, filter_odict_values
+from context import myriad_utils as mutils
 
 
 class TestTypeEnforcer(unittest.TestCase):
@@ -20,7 +16,7 @@ class TestTypeEnforcer(unittest.TestCase):
 
     def test_type_enforcer(self):
         """ Testing TypeEnforcer functionality """
-        class _Foo(object, metaclass=TypeEnforcer):
+        class _Foo(object, metaclass=mutils.TypeEnforcer):
             def __init__(self, myint: int=0):
                 self.myint = myint
 
@@ -35,7 +31,7 @@ class TestRemoveHeaderParens(unittest.TestCase):
         def inner_fun(a_var: int) -> str:
             pass
         sourcelines = inspect.getsourcelines(inner_fun)[0]
-        remains = remove_header_parens(sourcelines)
+        remains = mutils.remove_header_parens(sourcelines)
         self.assertEqual(len(remains), 1)
         self.assertEqual(remains[0], '            pass\n')
 
@@ -45,7 +41,7 @@ class TestRemoveHeaderParens(unittest.TestCase):
                       b_var: int) -> str:
             pass
         sourcelines = inspect.getsourcelines(inner_fun)[0]
-        remains = remove_header_parens(sourcelines)
+        remains = mutils.remove_header_parens(sourcelines)
         self.assertEqual(len(remains), 1)
         self.assertEqual(remains[0], '            pass\n')
 
@@ -55,14 +51,14 @@ class TestOrderedSet(unittest.TestCase):
 
     def test_ordered_set_creation(self):
         """ Testing OrderedSet creation """
-        new_set = OrderedSet([1, 2, 3])
+        new_set = mutils.OrderedSet([1, 2, 3])
         self.assertIn(1, new_set)
         self.assertIn(2, new_set)
         self.assertIn(3, new_set)
 
     def test_ordered_set_loop(self):
         """ Testing OrderedSet looping """
-        new_set = OrderedSet([1, 2, 3])
+        new_set = mutils.OrderedSet([1, 2, 3])
         count = 1
         for val in new_set:
             self.assertEqual(count, val)
@@ -70,43 +66,43 @@ class TestOrderedSet(unittest.TestCase):
 
     def test_ordered_set_eq(self):
         """ Testing OrderedSet equality """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 3])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 3])
         self.assertEqual(set_a, set_b)
 
     def test_ordered_set_neq(self):
         """ Testing OrderedSet non-equality """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 4])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 4])
         self.assertNotEqual(set_a, set_b)
 
     def test_ordered_set_len(self):
         """ Testing OrderedSet length """
-        set_a = OrderedSet([1, 2, 3, 4, 5])
+        set_a = mutils.OrderedSet([1, 2, 3, 4, 5])
         self.assertEqual(len(set_a), 5)
 
     def test_ordered_set_disjoint(self):
         """ Testing OrderedSet disjoint """
-        set_a = OrderedSet([1, 2, 3, 4])
-        set_b = OrderedSet([5, 6, 7, 8])
+        set_a = mutils.OrderedSet([1, 2, 3, 4])
+        set_b = mutils.OrderedSet([5, 6, 7, 8])
         self.assertTrue(set_a.isdisjoint(set_b))
 
     def test_ordered_set_issubset(self):
         """ Testing OrderedSet subsetting """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 3, 4, 5])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 3, 4, 5])
         self.assertTrue(set_a.issubset(set_b))
 
     def test_ordered_set_issuperset(self):
         """ Testing OrderedSet supersetting """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 3, 4, 5])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 3, 4, 5])
         self.assertTrue(set_b.issuperset(set_a))
 
     def test_ordered_set_union(self):
         """ Testing OrderedSet union """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 3, 4, 5])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 3, 4, 5])
         union_set = set_a.union(set_b)
         count = 1
         for value in union_set:
@@ -115,8 +111,8 @@ class TestOrderedSet(unittest.TestCase):
 
     def test_ordered_set_intersection(self):
         """ Testing OrderedSet intersection """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 3, 4, 5])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 3, 4, 5])
         intersect_set = set_a.intersection(set_b)
         count = 1
         for value in intersect_set:
@@ -127,15 +123,15 @@ class TestOrderedSet(unittest.TestCase):
 
     def test_ordered_set_diff_empty(self):
         """ Testing OrderedSet difference resulting in an empty set """
-        set_a = OrderedSet([1, 2, 3])
-        set_b = OrderedSet([1, 2, 3, 4, 5])
+        set_a = mutils.OrderedSet([1, 2, 3])
+        set_b = mutils.OrderedSet([1, 2, 3, 4, 5])
         diff_set = set_a - set_b
         self.assertTrue(len(diff_set) == 0)
 
     def test_ordered_set_difference(self):
         """ Testing OrderedSet difference """
-        set_a = OrderedSet([1, 2, 3, 4, 5])
-        set_b = OrderedSet([1, 2, 3])
+        set_a = mutils.OrderedSet([1, 2, 3, 4, 5])
+        set_b = mutils.OrderedSet([1, 2, 3])
         diff_set = set_a - set_b
         self.assertNotIn(1, diff_set)
         self.assertNotIn(2, diff_set)
@@ -145,8 +141,8 @@ class TestOrderedSet(unittest.TestCase):
 
     def test_symmetric_difference(self):
         """ Testing OrderedSet symmetric difference """
-        set_a = OrderedSet([1, 2, 3, 4, 5])
-        set_b = OrderedSet([1, 2, 3, 6])
+        set_a = mutils.OrderedSet([1, 2, 3, 4, 5])
+        set_b = mutils.OrderedSet([1, 2, 3, 6])
         xor_set = set_a.symmetric_difference(set_b)
         self.assertNotIn(1, xor_set)
         self.assertNotIn(2, xor_set)
@@ -161,13 +157,13 @@ class TestIndentFix(unittest.TestCase):
 
     def test_empty_str(self):
         """ Testing if indent_fix works on empty strings and None """
-        self.assertIsNone(indent_fix(None))
-        self.assertEqual(indent_fix(""), "")
+        self.assertIsNone(mutils.indent_fix(None))
+        self.assertEqual(mutils.indent_fix(""), "")
 
     def test_single_line(self):
         """ Testing if single-line case works """
         test_str = """     dummy = False     """
-        self.assertEqual(indent_fix(test_str), "dummy = False")
+        self.assertEqual(mutils.indent_fix(test_str), "dummy = False")
 
     def test_multi_line(self):
         """ Testing if multi-line case works """
@@ -184,7 +180,7 @@ class TestIndentFix(unittest.TestCase):
                 pass
             else:
                 print("LOL")"""
-        self.assertEqual(expected_str, indent_fix(test_str))
+        self.assertEqual(expected_str, mutils.indent_fix(test_str))
 
 
 class TestFilterODictValues(unittest.TestCase):
@@ -193,37 +189,38 @@ class TestFilterODictValues(unittest.TestCase):
     def test_filter_empty_odict(self):
         """ Testing filtering out values from an empty OrderedDict """
         old_d = OrderedDict()
-        new_d = filter_odict_values(old_d)
+        new_d = mutils.filter_odict_values(old_d)
         self.assertTrue(len(new_d) == len(old_d))
 
     def test_filter_empty_args(self):
         """ Testing filtering out nothing from a non-empty OrderedDict """
         old_d = OrderedDict({"a": 1, "b": 5.5, "c": "LOL"})
-        new_d = filter_odict_values(old_d)
+        new_d = mutils.filter_odict_values(old_d)
         self.assertTrue(len(new_d) == len(old_d))
 
     def test_filter_single_type(self):
         """ Testing filtering out a single type from non-empty OrderedDict """
         old_d = OrderedDict({"a": 1, "b": 5.5, "c": "LOL"})
-        new_d = filter_odict_values(old_d, int)
+        new_d = mutils.filter_odict_values(old_d, int)
         self.assertTrue(len(new_d) == 2)
 
     def test_filter_multiple_types(self):
         """ Testing filtering out multiple types from non-empty OrderedDict """
         old_d = OrderedDict({"a": 1, "b": 5.5, "c": "LOL"})
-        new_d = filter_odict_values(old_d, int, float)
+        new_d = mutils.filter_odict_values(old_d, int, float)
         self.assertTrue(len(new_d) == 1)
 
     def test_filter_inherited_types(self):
         """ Testing filtering out inherited types """
         class Parent(object):
             pass
+
         class Child(Parent):
             pass
         old_d = OrderedDict({"a": 1, 45: Parent(), "c": Child()})
-        new_d = filter_odict_values(old_d, Parent)
+        new_d = mutils.filter_odict_values(old_d, Parent)
         self.assertTrue(len(new_d) == 1)
-        new_d = filter_odict_values(old_d, Child)
+        new_d = mutils.filter_odict_values(old_d, Child)
         self.assertTrue(len(new_d) == 2)
 
 if __name__ == "__main__":

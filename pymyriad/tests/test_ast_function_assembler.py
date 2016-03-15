@@ -7,8 +7,8 @@ import unittest
 import logging
 from myriad_testing import MyriadTestCase, set_external_loggers
 
-import ast_function_assembler as ast_func
-from myriad_types import MInt
+from context import ast_function_assembler as ast_func
+from context import myriad_types
 
 #: Log for purposes of logging MyriadTestCase output
 LOG = logging.getLogger(__name__)
@@ -23,7 +23,8 @@ class ASTFunctionTester(MyriadTestCase):
 
     def test_simple_func_decl(self):
         """ Testing if parsing a simple function's declaration works """
-        def test_fun(a: MInt, b: MInt) -> MInt:
+        def test_fun(a: myriad_types.MInt,
+                     b: myriad_types.MInt) -> myriad_types.MInt:
             return 0
         mfun = ast_func.pyfun_to_cfun(test_fun)
         self.assertIsNotNone(mfun)
@@ -32,7 +33,8 @@ class ASTFunctionTester(MyriadTestCase):
 
     def test_simple_func_def(self):
         """ Tests if parsing a simple function's definition works """
-        def test_fun(a: MInt, b: MInt) -> MInt:
+        def test_fun(a: myriad_types.MInt,
+                     b: myriad_types.MInt) -> myriad_types.MInt:
             x = 0
             while x < 3:
                 if a == b:

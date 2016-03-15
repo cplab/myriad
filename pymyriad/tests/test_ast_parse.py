@@ -3,7 +3,7 @@ Tester module for ast and ast_parse.
 Author: Alex Davies
 """
 
-import ast_parse
+from context import ast_parse
 import ast
 import unittest
 

@@ -6,11 +6,10 @@ import unittest
 
 from myriad_testing import set_external_loggers, MyriadTestCase
 
-import myriad_simul
-
-import myriad_object
-import myriad_compartment
-import myriad_mechanism
+from context import myriad_simul
+from context import myriad_object
+from context import myriad_compartment
+from context import myriad_mechanism
 
 
 @set_external_loggers("TestMyriadSimulObject", myriad_simul.LOG)

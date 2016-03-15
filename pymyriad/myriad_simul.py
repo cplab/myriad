@@ -38,6 +38,36 @@ PYMYRIAD_H_TEMPLATE = resource_string(
     __name__,
     "templates/pymyriad.h.mako").decode("UTF-8")
 
+#: Template for myriad_alloc.c (myriad memory allocator utility implementation)
+MYRIAD_ALLOC_C_TEMPLATE = resource_string(
+    __name__,
+    "templates/myriad_alloc.c.mako").decode("UTF-8")
+
+#: Template for myriad_alloc.h (myriad memory allocator utility header)
+MYRIAD_ALLOC_H_TEMPLATE = resource_string(
+    __name__,
+    "templates/myriad_alloc.h.mako").decode("UTF-8")
+
+#: Template for myriad_communicator.c (myriad UDP socket API for IPC impl)
+MYRIAD_COMMUNICATOR_C_TEMPLATE = resource_string(
+    __name__,
+    "templates/myriad_communicator.c.mako").decode("UTF-8")
+
+#: Template for myriad_communicator.c (myriad UDP socket API for IPC header)
+MYRIAD_COMMUNICATOR_H_TEMPLATE = resource_string(
+    __name__,
+    "templates/myriad_communicator.h.mako").decode("UTF-8")
+
+#: Template for pmyriad.c (myriad Python 'glue' for object interpretation)
+PYMYRIAD_C_TEMPLATE = resource_string(
+    __name__,
+    "templates/pymyriad.c.mako").decode("UTF-8")
+
+#: Template for pymyriad_commuinicator.c (myriad Python 'glue' for IPC)
+PYMYRIAD_COMMUNICATOR_C_TEMPLATE = resource_string(
+    __name__,
+    "templates/pymyriad_communicator.c.mako").decode("UTF-8")
+
 #######
 # Log #
 #######
@@ -192,15 +222,27 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self.simul_params = _setup_simul_params(kwargs,
                                                 getattr(self, "dependencies"))
         #: Template for Makefile, used for building C executable
-        self._makefile_template = None
+        self._makefile_tmpl = None
         #: Template for setup.py, used for building CPython extensions
-        self._setuppy_template = None
+        self._setuppy_tmpl = None
         #: Template for main.c main simulation file
-        self._main_template = None
+        self._main_tmpl = None
         #: Template for myriad.h parameter and macro file
-        self._myriad_h_template = None
+        self._myriad_h_tmpl = None
         #: Template for pymyriad.h CPython interface header
-        self._pymyriad_h_template = None
+        self._pymyriad_h_tmpl = None
+        #: Template for myriad_alloc.c myriad memory allocator utility
+        self._myriad_alloc_c_tmpl = None
+        #: Template for myriad_alloc.h myriad memory allocator utility header
+        self._myriad_alloc_h_tmpl = None
+        #: Template for myriad_communicator.c myriad UDP socket API for IPC
+        self._myriad_communicator_c_tmpl = None
+        #: Template for myriad_communicator.h myriad UDP socket API for IPC
+        self._myriad_communicator_h_tmpl = None
+        #: Template for pmyriad.c myriad Python 'glue' for object interp
+        self._pymyriad_c_tmpl = None
+        #: Template for pymyriad_commuinicator.c myriad Python 'glue' for IPC
+        self._pymyriad_communicator_c_tmpl = None
 
     def add_mechanism(self, comp, mech):
         """ 'Adds' the mechanism to the compartment """
@@ -240,30 +282,65 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         for dependency in getattr(self, "dependencies"):
             dependency.render_templates()
         # Create & render templates for simulation-specific files
-        self._makefile_template = MakoFileTemplate("Makefile",
-                                                   MAKEFILE_TEMPLATE,
-                                                   self.simul_params)
-        self._setuppy_template = MakoFileTemplate(
+        self._makefile_tmpl = MakoFileTemplate(
+            "Makefile",
+            MAKEFILE_TEMPLATE,
+            self.simul_params)
+        self._setuppy_tmpl = MakoFileTemplate(
             "setup.py",
             SETUPPY_TEMPLATE,
             {"dependencies": getattr(self, "dependencies")})
         main_params = {"compartments": self._compartments,
                        "mechanisms": self._mechanisms}
         main_params.update(self.simul_params)
-        self._main_template = MakoFileTemplate("main.c",
-                                               MAIN_TEMPLATE,
-                                               main_params)
-        self._myriad_h_template = MakoFileTemplate("myriad.h",
-                                                   MYRIAD_H_TEMPLATE,
-                                                   self.simul_params)
-        self._pymyriad_h_template = MakoFileTemplate("pymyriad.h",
-                                                     PYMYRIAD_H_TEMPLATE,
-                                                     self.simul_params)
-        self._makefile_template.render_to_file()
-        self._setuppy_template.render_to_file()
-        self._main_template.render_to_file()
-        self._myriad_h_template.render_to_file()
-        self._pymyriad_h_template.render_to_file()
+        self._main_tmpl = MakoFileTemplate(
+            "main.c",
+            MAIN_TEMPLATE,
+            main_params)
+        self._myriad_h_tmpl = MakoFileTemplate(
+            "myriad.h",
+            MYRIAD_H_TEMPLATE,
+            self.simul_params)
+        self._pymyriad_h_tmpl = MakoFileTemplate(
+            "pymyriad.h",
+            PYMYRIAD_H_TEMPLATE,
+            self.simul_params)
+        self._myriad_alloc_c_tmpl = MakoFileTemplate(
+            "myriad_alloc.c",
+            MYRIAD_ALLOC_C_TEMPLATE,
+            self.simul_params)
+        self._myriad_alloc_h_tmpl = MakoFileTemplate(
+            "myriad_alloc.h",
+            MYRIAD_ALLOC_H_TEMPLATE,
+            self.simul_params)
+        self._myriad_communicator_c_tmpl = MakoFileTemplate(
+            "myriad_communicator.c",
+            MYRIAD_COMMUNICATOR_C_TEMPLATE,
+            self.simul_params)
+        self._myriad_communicator_h_tmpl = MakoFileTemplate(
+            "myriad_communicator.h",
+            MYRIAD_COMMUNICATOR_H_TEMPLATE,
+            self.simul_params)
+        self._pymyriad_c_tmpl = MakoFileTemplate(
+            "pymyriad.c",
+            PYMYRIAD_C_TEMPLATE,
+            self.simul_params)
+        self._pymyriad_communicator_c_tmpl = MakoFileTemplate(
+            "pymyriad_communicator.c",
+            PYMYRIAD_COMMUNICATOR_C_TEMPLATE,
+            self.simul_params)
+        # Render templates to file
+        self._makefile_tmpl.render_to_file()
+        self._setuppy_tmpl.render_to_file()
+        self._main_tmpl.render_to_file()
+        self._myriad_h_tmpl.render_to_file()
+        self._pymyriad_h_tmpl.render_to_file()
+        self._myriad_alloc_c_tmpl.render_to_file()
+        self._myriad_alloc_h_tmpl.render_to_file()
+        self._myriad_communicator_c_tmpl.render_to_file()
+        self._myriad_communicator_h_tmpl.render_to_file()
+        self._pymyriad_c_tmpl.render_to_file()
+        self._pymyriad_communicator_c_tmpl.render_to_file()
         # Once templates are rendered, perform compilation
         subprocess.check_call(["make", "-j4", "all"])
         subprocess.check_call(["python", "setup.py", "build"])

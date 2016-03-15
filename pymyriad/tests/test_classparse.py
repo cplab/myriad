@@ -5,8 +5,8 @@ import unittest
 import logging
 
 from myriad_testing import MyriadTestCase, set_external_loggers
-from ast_function_assembler import pyfun_to_cfun
-from myriad_types import MInt
+from context import ast_function_assembler
+from context import myriad_types
 
 
 #: Log for purposes of logging MyriadTestCase output
@@ -24,7 +24,8 @@ class TestClass(object):
     def other_method(self, a):
         return self.x + a
 
-    def test_method(self, a: MInt, b: MInt) -> MInt:
+    def test_method(self, a: myriad_types.MInt,
+                    b: myriad_types.MInt) -> myriad_types.MInt:
         self.x = self.other_method(a)
         return self.x
 
@@ -35,13 +36,13 @@ class TestClassParsing(MyriadTestCase):
 
     def test_parse_class_method_decl(self):
         """ Testing if parsing class method declarations works """
-        m_fun = pyfun_to_cfun(TestClass.test_method)
+        m_fun = ast_function_assembler.pyfun_to_cfun(TestClass.test_method)
         expected_decl = "int64_t test_method(void *self, int64_t a, int64_t b)"
         self.assertTrimStrEquals(m_fun.stringify_decl(), expected_decl)
 
     def test_parse_class_method_def(self):
         """ Testing if parsing class method definition works """
-        m_fun = pyfun_to_cfun(TestClass.test_method)
+        m_fun = ast_function_assembler.pyfun_to_cfun(TestClass.test_method)
         expected_def = """
         ((struct TestClass*) self)->x = other_method(self, a);;
         return ((struct TestClass*) self)->x;
