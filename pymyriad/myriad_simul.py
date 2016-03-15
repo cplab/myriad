@@ -343,7 +343,6 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self._pymyriad_communicator_c_tmpl.render_to_file()
         # Once templates are rendered, perform compilation
         subprocess.check_call(["make", "-j4", "all"])
-        subprocess.check_call(["python", "setup.py", "build"])
         # Invalidate cache and load dynamic extensions
         # TODO: Change this path to something platform-specific (autodetect)
         sys.path.append("build/lib.linux-x86_64-3.4/")

@@ -109,7 +109,7 @@ BINARIES	:= $(wildcard *.bin)
 
 build: all
 
-all: $(SIMUL_MAIN_BIN)
+all: $(SIMUL_MAIN_BIN) python_build
 
 clean:
 	@rm -f $(OBJECTS) $(LIBRARIES) $(BINARIES) *.s *.i *.ii
@@ -156,3 +156,6 @@ $(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_OBJS) $(CUDA_MYRI
     % endif
 % endif
 
+## ----- Python build -----
+python_build:
+	python setup.py build
