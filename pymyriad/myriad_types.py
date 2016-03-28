@@ -75,6 +75,7 @@ class _MyriadBase(object):
         return self._cgen.visit(self.decl)
 
 
+#: Mapping of C type declarations to Python's PyObject identifiers
 _C_DECL_MAPPING = {
     "int": 'i',
     "char": 'b',

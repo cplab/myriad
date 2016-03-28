@@ -11,18 +11,6 @@ from collections import OrderedDict
 from context import myriad_utils as mutils
 
 
-class TestTypeEnforcer(unittest.TestCase):
-    """ Test cases for TypeEnforcer """
-
-    def test_type_enforcer(self):
-        """ Testing TypeEnforcer functionality """
-        class _Foo(object, metaclass=mutils.TypeEnforcer):
-            def __init__(self, myint: int=0):
-                self.myint = myint
-
-        self.assertRaises(TypeError, _Foo, 5.)
-
-
 class TestRemoveHeaderParens(unittest.TestCase):
     """ Test cases for the function remove_header_parens """
 

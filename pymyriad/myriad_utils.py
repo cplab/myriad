@@ -5,7 +5,6 @@ Collection of internal utility metaclasses and function annotations.
 """
 from functools import wraps
 from inspect import getcallargs
-from types import FunctionType
 from copy import copy
 from collections import OrderedDict
 
@@ -93,20 +92,6 @@ def enforce_annotations(fun):
                 raise TypeError(msg.format(**msg_args))
         return return_val
     return _wrapper
-
-
-class TypeEnforcer(type):
-    """
-    Metaclass designed to setup runtime typechecking for all subclasses.
-    """
-
-    def __new__(mcs, name, bases, attrs):
-        """ Overwrites all methods with enforced annotated wrappers """
-        for attr_name, attr_value in list(attrs.items()):
-            if isinstance(attr_value, FunctionType):
-                attrs[attr_name] = enforce_annotations(attr_value)
-
-        return super(TypeEnforcer, mcs).__new__(mcs, name, bases, attrs)
 
 
 class OrderedSet(object):
