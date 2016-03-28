@@ -1,12 +1,11 @@
 """
 Common wrapper for Mako templates
 """
-
-from myriad_utils import enforce_annotations
+import os
+from io import StringIO
 from mako.template import Template
 from mako.runtime import Context
-from io import StringIO
-import os
+from myriad_utils import enforce_annotations
 
 
 class MakoTemplate(object):
@@ -88,14 +87,3 @@ class MakoFileTemplate(MakoTemplate):
         self.render()
         with open(filename, 'w') as filep:
             filep.write(self._buffer.getvalue())
-
-
-def main():
-    """ Renders a simple MakoTemplate """
-    tmp = MakoFileTemplate(None, "hello ${data}!")
-    tmp.context = {"data": "World"}
-    tmp.render_to_file("hello.txt")
-    print(tmp.buffer)
-
-if __name__ == "__main__":
-    main()

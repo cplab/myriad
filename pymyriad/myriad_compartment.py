@@ -2,10 +2,9 @@
 Compartment object specification
 """
 import logging
-import myriad_object
 
+from myriad_object import MyriadObject
 from myriad_metaclass import myriad_method_verbatim
-
 from myriad_types import MyriadScalar
 from myriad_types import MVoid, MVarArgs, MInt, MDouble
 
@@ -17,7 +16,7 @@ LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
 
 
-class Compartment(myriad_object.MyriadObject):
+class Compartment(MyriadObject):
     """
     Compartment object specification.
     """

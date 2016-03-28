@@ -3,7 +3,9 @@ Functions for parsing Python string to CTypes using the CFunc framework.
 Author: Alex Davies
 """
 
-import myriad_ctypes
+from myriad_ctypes import CForLoop, CAssign, CVar, CCompare, CVarAttr, CCall
+from myriad_ctypes import CList, CChar, CString, CSubscript, CUnaryOp
+from myriad_ctypes import CBinaryOp, CReturn, CIf, CWhileLoop, CBoolOp
 
 # TODO: add comparison chaining
 # TODO: implement function calls for simple mathematical functions
@@ -78,26 +80,26 @@ def parse_literal(node):
         return node.n
     elif nodeClassName == "Str":
         if len(node.s) == 1:
-            return myriad_ctypes.CChar(node.s)
+            return CChar(node.s)
         else:
-            return myriad_ctypes.CString(node.s)
+            return CString(node.s)
     elif nodeClassName == "List":
         retList = []
         for n in node.elts:
             retList.append(parse_literal(n))
-        return myriad_ctypes.CList(retList)   
+        return CList(retList)
     elif nodeClassName == "NameConstant":
         return node.value
 
 
 def parse_subscript(node):
-    return myriad_ctypes.CSubscript(node.value, parse_node(node.slice.value))
+    return CSubscript(node.value, parse_node(node.slice.value))
 
 
 def parse_var(node):
     """ Parses variable node """
     if node.__class__.__name__ == "Name":
-        return myriad_ctypes.CVar(node)
+        return CVar(node)
 
 
 def parse_call(node):
@@ -106,19 +108,19 @@ def parse_call(node):
     for arg in node.args:
         args.append(parse_node(arg))
     func = parse_node(node.func)
-    return myriad_ctypes.CCall(func, args)
+    return CCall(func, args)
 
 
 def parse_unaryop(node):
     """ Parses unary operator """
-    return myriad_ctypes.CUnaryOp(node, parse_node(node.operand))
+    return CUnaryOp(node, parse_node(node.operand))
 
 
 def parse_binaryop(node):
     """ Parses binary operator """
     lhs = parse_node(node.left)
     rhs = parse_node(node.right)
-    return myriad_ctypes.CBinaryOp(node, lhs, rhs)
+    return CBinaryOp(node, lhs, rhs)
 
 
 def parse_boolop(node):
@@ -126,7 +128,7 @@ def parse_boolop(node):
     vals = []
     for val in node.values:
         vals.append(parse_node(val))
-    return myriad_ctypes.CBoolOp(node, vals)
+    return CBoolOp(node, vals)
 
 
 def parse_compare(node):
@@ -134,19 +136,19 @@ def parse_compare(node):
     # nodeOp = node.ops[0].__class__.__name__
     left = parse_node(node.left)
     comparator = parse_node(node.comparators[0])
-    return myriad_ctypes.CCompare(node, left, comparator)
+    return CCompare(node, left, comparator)
 
 
 def parse_attribute(node):
     """ Parses attribute retrieval """
-    return myriad_ctypes.CVarAttr(node)
+    return CVarAttr(node)
 
 
 def parse_assign(node):
     """ Parses assignment operator """
     target = parse_node(node.targets[0])
     val = parse_node(node.value)
-    return myriad_ctypes.CAssign(target, val)
+    return CAssign(target, val)
 
 
 def parse_for_loop(node):
@@ -158,7 +160,7 @@ def parse_for_loop(node):
     for child in node.body:
         newNode = parse_node(child)
         body.append(newNode)
-    return myriad_ctypes.CForLoop(target, iterateOver, body)
+    return CForLoop(target, iterateOver, body)
 
 
 def parse_while_loop(node):
@@ -169,7 +171,7 @@ def parse_while_loop(node):
     for child in node.body:
         newNode = parse_node(child)
         body.append(newNode)
-    return myriad_ctypes.CWhileLoop(cond, body)
+    return CWhileLoop(cond, body)
 
 
 def parse_if_statement(node):
@@ -183,12 +185,12 @@ def parse_if_statement(node):
     for child in node.orelse:
         newNode = parse_node(child)
         false.append(newNode)
-    return myriad_ctypes.CIf(cond, true, false)
+    return CIf(cond, true, false)
 
 
 def parse_return(node):
     """ Parses return statement """
-    return myriad_ctypes.CReturn(parse_node(node.value))
+    return CReturn(parse_node(node.value))
 
 
 def determine_type(tvar):

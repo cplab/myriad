@@ -3,10 +3,9 @@ Mechanism specification
 """
 
 import logging
-import myriad_object
 
+from myriad_object import MyriadObject
 from myriad_metaclass import myriad_method_verbatim
-
 from myriad_types import MyriadScalar
 from myriad_types import MVoid, MVarArgs, MInt, MDouble
 
@@ -18,7 +17,7 @@ LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
 
 
-class Mechanism(myriad_object.MyriadObject):
+class Mechanism(MyriadObject):
     """
     Mechanism object specification.
     """
@@ -47,12 +46,3 @@ class Mechanism(myriad_object.MyriadObject):
         """
         return 0.0;
         """
-
-
-def main():
-    """ Renders the Mechanism templates, logging the output to stderr """
-    LOG.addHandler(logging.StreamHandler())
-    Mechanism.render_templates()
-
-if __name__ == "__main__":
-    main()

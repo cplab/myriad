@@ -9,9 +9,10 @@ from types import FunctionType
 from ast import parse
 from collections import OrderedDict
 
-import ast_parse
-import myriad_ctypes
-from myriad_types import MInt, MyriadScalar, MyriadFunction, MVoid, MyriadCType
+from ast_parse import parse_node
+from myriad_ctypes import CForLoop, CAssign, CVarAttr, CObject, CList
+from myriad_ctypes import get_node_from_var
+from myriad_types import MyriadScalar, MyriadFunction, MVoid, MyriadCType
 from myriad_utils import remove_header_parens, indent_fix_lines
 
 __author__ = ["Alex J. Davies", "Pedro Rittner"]
@@ -34,7 +35,7 @@ class CFunc(object):
     def parse_python(self):
         parsed = parse(self.pyCode).body
         for node in parsed:
-            convertedCType = ast_parse.parse_node(node)
+            convertedCType = parse_node(node)
             self.nodeList.append(convertedCType)
 
     def stringify_declarations(self):
@@ -48,7 +49,7 @@ class CFunc(object):
         retString = self.stringify_declarations()
 
         for node in self.nodeList:
-            if isinstance(node, myriad_ctypes.CForLoop):
+            if isinstance(node, CForLoop):
                 retString = retString + node.stringify(self.lists) + "\n"
             else:
                 retString = retString + node.stringify() + "\n"
@@ -58,14 +59,14 @@ class CFunc(object):
         # TODO: populate flavours
         flavours = {type(1): "int_fast32_t", type(3.0): FLOAT_TYPE}
         for node in l:
-            if (isinstance(node, myriad_ctypes.CAssign) and
-                    not isinstance(node.target, myriad_ctypes.CVarAttr) and
+            if (isinstance(node, CAssign) and
+                    not isinstance(node.target, CVarAttr) and
                     node.target.var not in self.variables):
                 targetVar = node.target.var
                 # TODO: what about variable to variable assignments?
                 varType = flavours[type(node.val)]
                 self.variables.update({targetVar: varType})
-            elif isinstance(node, myriad_ctypes.CObject):
+            elif isinstance(node, CObject):
                 self.track_variables(list(node.__dict__.values()))
             elif isinstance(node, list):
                 self.track_variables(node)
@@ -85,21 +86,21 @@ class CFunc(object):
 
     def track_attributes(self, l):
         for node in l:
-            if isinstance(node, myriad_ctypes.CVarAttr):
-                target = myriad_ctypes.get_node_from_var(self.variables, node.var)
+            if isinstance(node, CVarAttr):
+                target = get_node_from_var(self.variables, node.var)
                 if node.attr not in target.attributes:
                     target.attributes.append(node.attr)
-            elif isinstance(node, myriad_ctypes.CObject):
+            elif isinstance(node, CObject):
                 self.track_attributes(list(node.__dict__.values()))
 
     def track_lists(self, l):
         # TODO: rerun this when updating any lists.
         # Erase self.lists and repopulate.
         for node in l:
-            if (isinstance(node, myriad_ctypes.CAssign) and
-                    isinstance(node.val, myriad_ctypes.CList)):
+            if (isinstance(node, CAssign) and
+                    isinstance(node.val, CList)):
                 self.lists.append([node.target, node.val])
-            elif isinstance(node, myriad_ctypes.CObject):
+            elif isinstance(node, CObject):
                 self.track_variables(list(node.__dict__.values()))
             elif isinstance(node, list):
                 self.track_variables(node)

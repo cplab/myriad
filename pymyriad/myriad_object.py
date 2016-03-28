@@ -11,10 +11,8 @@ from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 from myriad_types import MyriadScalar, MyriadFunction
 from myriad_types import MVoid, MVarArgs, MInt
 
-import myriad_metaclass
-
 from myriad_metaclass import _myriadclass_method, _MyriadObjectBase
-from myriad_metaclass import myriad_method_verbatim
+from myriad_metaclass import myriad_method_verbatim, MyriadMetaclass
 
 #######
 # Log #
@@ -50,7 +48,7 @@ CLS_CUDAFY_TEMPLATE = resource_string(
 
 
 class MyriadObject(_MyriadObjectBase,
-                   metaclass=myriad_metaclass.MyriadMetaclass):
+                   metaclass=MyriadMetaclass):
     """ Base class that every myriad object inherits from """
 
     @myriad_method_verbatim
@@ -283,12 +281,3 @@ class MyriadObject(_MyriadObjectBase,
             myriad_methods["cls_ctor"] = MyriadFunction.from_myriad_func(
                 getattr(cls, "myriad_methods")["cls_ctor"],
                 fun_def=template.buffer)
-
-
-def main():
-    """ Renders the MyriadObject templates, logging the output to stderr """
-    LOG.addHandler(logging.StreamHandler())
-    MyriadObject.render_templates()
-
-if __name__ == "__main__":
-    main()
