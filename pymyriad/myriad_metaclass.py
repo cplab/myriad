@@ -180,6 +180,10 @@ CUH_FILE_TEMPLATE = resource_string(
     __name__,
     "templates/cuda_header_file.mako").decode("UTF-8")
 
+CU_FILE_TEMPLATE = resource_string(
+    __name__,
+    "templates/cuda_impl.mako").decode("UTF-8")
+
 C_FILE_TEMPLATE = resource_string(
     __name__,
     "templates/c_file.mako").decode("UTF-8")
@@ -446,7 +450,10 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
         namespace["obj_name"] + ".cuh",
         CUH_FILE_TEMPLATE,
         namespace)
-    # TODO: CU file template
+    namespace["cu_file_template"] = MakoFileTemplate(
+        namespace["obj_name"] + ".cu",
+        CU_FILE_TEMPLATE,
+        namespace)
     namespace["pyc_file_template"] = MakoFileTemplate(
         "py" + namespace["obj_name"].lower() + ".c",
         PYC_COMP_FILE_TEMPLATE,
@@ -454,15 +461,22 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
     return namespace
 
 
-def _generate_includes_helper(superclass, features: set=None) -> (set, set):
-    """ Generates local and lib includes based on superclass and features """
+def _generate_includes(superclass) -> (set, set):
+    """ Generates local and lib includes based on superclass """
     lcl_inc = []
     if superclass is not _MyriadObjectBase:
         lcl_inc = [superclass.__name__ + ".h"]
     # TODO: Better detection of system/library headers
     lib_inc = copy(DEFAULT_LIB_INCLUDES)
-    # TODO: Add CUDA includes on-demand
     return (lcl_inc, lib_inc)
+
+
+def _generate_cuda_includes(superclass) -> (set, set):
+    """ Generates local and lib includes for a CUDA file """
+    lcl_inc = []
+    if superclass is not _MyriadObjectBase:
+        lcl_inc = [superclass.__name__ + ".cuh"]
+    return (lcl_inc, DEFAULT_LIB_INCLUDES | DEFAULT_CUDA_INCLUDES)
 
 
 def _parse_namespace(namespace: dict,
@@ -694,7 +708,9 @@ class MyriadMetaclass(type):
 
         # Add #include's from system libraries, local files, and CUDA headers
         namespace["local_includes"], namespace["lib_includes"] =\
-            _generate_includes_helper(supercls)
+            _generate_includes(supercls)
+        namespace["cuda_local_includes"], namespace["cuda_lib_includes"] =\
+            _generate_cuda_includes(supercls)
 
         # Create myriad class struct
         namespace["cls_struct"] = MyriadStructType(namespace["cls_name"],

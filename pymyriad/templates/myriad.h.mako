@@ -96,6 +96,11 @@ extern __thread union _eco _eco;  ## Must be thread-local due to side-effects.
         exit(EXIT_FAILURE);                                                 \
     } }
 
+## CUDA utility macros
+#define cuda_myriad_class_of(x) ((struct MyriadObject*) x)->mclass
+#define cyda_myriad_size_of(x) ((struct MyriadObject*) x)->mclass->size
+#define cuda_myriad_super(x) ((struct MyriadObjectClass*) x)->super
+
 % endif
 
 ## Extra debug macros

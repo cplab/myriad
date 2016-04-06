@@ -71,7 +71,7 @@ class _MyriadBase(object):
         self.storage = [] if storage is None else storage
 
     def stringify_decl(self) -> str:
-        """ Renders the internal C declaration and returns it as a string. """
+        """ Renders the internal C declaration and returns it as a string """
         return self._cgen.visit(self.decl)
 
 
@@ -555,6 +555,11 @@ class MyriadFunction(_MyriadBase):
         new_instance.gen_typedef()
         return new_instance
 
+    def stringify_cuda_decl(self) -> str:
+        """ Renders a CUDA C declaration and returns it as a string """
+        cpy = self.__class__.from_myriad_func(self, ident="cuda_" + self.ident)
+        return cpy.stringify_decl()
+
     @classmethod
     def from_method_signature(cls,
                               ident: str,
@@ -582,16 +587,13 @@ class MyriadFunction(_MyriadBase):
         _tmp, tmp = None, None
 
         # Fix for an insiduous bug with string identifiers (e.g. int64_t)
-        if isinstance(self.func_decl.type.type, TypeDecl):
-            _tmp = self.func_decl.type.type.type
-        else:
-            _tmp = IdentifierType(names=self.func_decl.type.type.names)
+        _tmp = self.func_decl.type.type.type\
+            if isinstance(self.func_decl.type.type, TypeDecl) else\
+            IdentifierType(names=self.func_decl.type.type.names)
 
         # Use TypeDecl/PtrDecl depending on whether return value is a pointer
-        if self.ret_var.ptr:
-            tmp = PtrDecl([], TypeDecl(self.typedef_name, [], _tmp))
-        else:
-            tmp = TypeDecl(self.typedef_name, [], _tmp)
+        tmp = PtrDecl([], TypeDecl(self.typedef_name, [], _tmp))\
+            if self.ret_var.ptr else TypeDecl(self.typedef_name, [], _tmp)
 
         _tmp_fdecl = PtrDecl([], FuncDecl(self.param_list, tmp))
 

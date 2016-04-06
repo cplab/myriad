@@ -9,9 +9,17 @@
 #include <cuda_runtime_api.h>
 
 ## Add local includes
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 % for lib in local_includes:
 #include "${lib}"
 % endfor
+
+#ifdef __cplusplus
+}
+#endif
 
 extern __constant__ __device__ struct ${cls_name}* ${obj_name}_dev_t;
 extern __constant__ __device__ struct ${cls_name}* ${cls_name}_dev_t;

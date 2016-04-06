@@ -223,7 +223,7 @@ class MyriadObject(_MyriadObjectBase,
         """ Render internal templates to files"""
         # Render templates for the superclass
         if cls is not MyriadObject:
-            cls.__bases__[0].render_templates()
+            getattr(cls.__bases__[0], "render_templates")()
         # Render templates for the current class
         LOG.debug("Rendering H File for %s", cls.__name__)
         getattr(cls, "header_file_template").render_to_file(overwrite=False)
@@ -231,6 +231,8 @@ class MyriadObject(_MyriadObjectBase,
         getattr(cls, "c_file_template").render_to_file(overwrite=False)
         LOG.debug("Rendering CUH File for %s", cls.__name__)
         getattr(cls, "cuh_file_template").render_to_file(overwrite=False)
+        LOG.debug("Rendering CU file for %s", cls.__name__)
+        getattr(cls, "cu_file_template").render_to_file(overwrite=False)
         # MyriadObject has its own special pyc/pyh files
         if cls is MyriadObject:
             LOG.debug("Rendering PYC File for MyriadObject")
