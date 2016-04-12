@@ -181,7 +181,7 @@ int main(void)
         fputs("Cannot set cleanup_conn to run at exit.\n", stderr);
         exit(EXIT_FAILURE);
     }
-    if (atexit(&myriad_finalize))
+    if (atexit((void (*)(void)) &myriad_finalize))
     {
         fputs("Cannot set myriad_finalize to run at exit.\n", stderr);
         exit(EXIT_FAILURE);
