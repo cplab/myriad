@@ -106,6 +106,7 @@ the same fashion, provided they declare their own instance methods.
 
 import inspect
 import logging
+import os
 
 from collections import OrderedDict
 from copy import copy
@@ -154,43 +155,44 @@ DEFAULT_CUDA_INCLUDES = {"cuda_runtime.h", "cuda_runtime_api.h"}
 
 DELG_TEMPLATE = resource_string(
     __name__,
-    "templates/delegator_func.mako").decode("UTF-8")
+    os.path.join("templates", "delegator_func.mako")).decode("UTF-8")
 
 SUPER_DELG_TEMPLATE = resource_string(
     __name__,
-    "templates/super_delegator_func.mako").decode("UTF-8")
+    os.path.join("templates", "super_delegator_func.mako")).decode("UTF-8")
 
 INIT_OB_FUN_TEMPLATE = resource_string(
     __name__,
-    "templates/init_ob_fun.mako").decode("UTF-8")
+    os.path.join("templates", "init_ob_fun.mako")).decode("UTF-8")
 
 MYRIADOBJECT_OBJ_ARR_TEMPLATE = resource_string(
     __name__,
-    "templates/MyriadObject_obj_arr.mako").decode("UTF-8")
+    os.path.join("templates", "MyriadObject_obj_arr.mako")).decode("UTF-8")
 
 MYRIADOBJECT_INIT_FUN_TEMPLATE = resource_string(
     __name__,
-    "templates/MyriadObject_obj_init_fun.mako").decode("UTF-8")
+    os.path.join("templates", "MyriadObject_obj_init_fun.mako")
+).decode("UTF-8")
 
 HEADER_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/header_file.mako").decode("UTF-8")
+    os.path.join("templates", "header_file.mako")).decode("UTF-8")
 
 CUH_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/cuda_header_file.mako").decode("UTF-8")
+    os.path.join("templates", "cuda_header_file.mako")).decode("UTF-8")
 
 CU_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/cuda_impl.mako").decode("UTF-8")
+    os.path.join("templates", "cuda_impl.mako")).decode("UTF-8")
 
 C_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/c_file.mako").decode("UTF-8")
+    os.path.join("templates", "c_file.mako")).decode("UTF-8")
 
 PYC_COMP_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/pyc_file.mako").decode("UTF-8")
+    os.path.join("templates", "pyc_file.mako")).decode("UTF-8")
 
 ######################
 # Delegator Creation #

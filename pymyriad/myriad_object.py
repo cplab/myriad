@@ -2,6 +2,7 @@
 Definition of the parent MyriadObject, from which all Myriad types inherit.
 """
 import logging
+import os
 
 from collections import OrderedDict
 from pkg_resources import resource_string
@@ -28,23 +29,23 @@ LOG.addHandler(logging.NullHandler())
 
 MYRIADOBJECT_PYC_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/pymyriadobject.c.mako").decode("UTF-8")
+    os.path.join("templates", "pymyriadobject.c.mako")).decode("UTF-8")
 
 MYRIADOBJECT_PYH_FILE_TEMPLATE = resource_string(
     __name__,
-    "templates/pymyriadobject.h.mako").decode("UTF-8")
+    os.path.join("templates", "pymyriadobject.h.mako")).decode("UTF-8")
 
 CTOR_TEMPLATE_TEMPLATE = resource_string(
     __name__,
-    "templates/ctor_template.mako").decode("UTF-8")
+    os.path.join("templates", "ctor_template.mako")).decode("UTF-8")
 
 CLS_CTOR_TEMPLATE = resource_string(
     __name__,
-    "templates/class_ctor_template.mako").decode("UTF-8")
+    os.path.join("templates", "class_ctor_template.mako")).decode("UTF-8")
 
 CLS_CUDAFY_TEMPLATE = resource_string(
     __name__,
-    "templates/class_cudafy_template.mako").decode("UTF-8")
+    os.path.join("templates", "class_cudafy_template.mako")).decode("UTF-8")
 
 
 class MyriadObject(_MyriadObjectBase,
@@ -219,8 +220,10 @@ class MyriadObject(_MyriadObjectBase,
         """
 
     @classmethod
-    def render_templates(cls):
+    def render_templates(cls, template_dir=None):
         """ Render internal templates to files"""
+        # Get template rendering directory
+        template_dir = template_dir if template_dir else os.getcwd()
         # Render templates for the superclass
         if cls is not MyriadObject:
             getattr(cls.__bases__[0], "render_templates")()

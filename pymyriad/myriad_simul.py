@@ -9,6 +9,9 @@ import subprocess
 import importlib
 import time
 
+from tempfile import TemporaryDirectory
+from copy import copy
+
 from pkg_resources import resource_string
 
 from myriad_mako_wrapper import MakoFileTemplate
@@ -18,55 +21,55 @@ from myriad_mako_wrapper import MakoFileTemplate
 #############
 
 #: Template for makefile (used for building C backend)
-MAKEFILE_TEMPLATE = resource_string(__name__,
-                                    "templates/Makefile.mako").decode("UTF-8")
+MAKEFILE_TEMPLATE = resource_string(
+    __name__, "templates" + os.sep + "Makefile.mako").decode("UTF-8")
 
 #: Template for setup.py (used for building CPython extension modules)
-SETUPPY_TEMPLATE = resource_string(__name__,
-                                   "templates/setup.py.mako").decode("UTF-8")
+SETUPPY_TEMPLATE = resource_string(
+    __name__, "templates" + os.sep + "setup.py.mako").decode("UTF-8")
 
 #: Template for main.c (main executable C file)
-MAIN_TEMPLATE = resource_string(__name__,
-                                "templates/main.c.mako").decode("UTF-8")
+MAIN_TEMPLATE = resource_string(
+    __name__, "templates" + os.sep + "main.c.mako").decode("UTF-8")
 
 #: Template for myriad.h (main parameter/macro file)
-MYRIAD_H_TEMPLATE = resource_string(__name__,
-                                    "templates/myriad.h.mako").decode("UTF-8")
+MYRIAD_H_TEMPLATE = resource_string(
+    __name__, "templates" + os.sep + "myriad.h.mako").decode("UTF-8")
 
 #: Template for pymyriad.h (main CPython interface file)
 PYMYRIAD_H_TEMPLATE = resource_string(
     __name__,
-    "templates/pymyriad.h.mako").decode("UTF-8")
+    "templates" + os.sep + "pymyriad.h.mako").decode("UTF-8")
 
 #: Template for myriad_alloc.c (myriad memory allocator utility implementation)
 MYRIAD_ALLOC_C_TEMPLATE = resource_string(
     __name__,
-    "templates/myriad_alloc.c.mako").decode("UTF-8")
+    "templates" + os.sep + "myriad_alloc.c.mako").decode("UTF-8")
 
 #: Template for myriad_alloc.h (myriad memory allocator utility header)
 MYRIAD_ALLOC_H_TEMPLATE = resource_string(
     __name__,
-    "templates/myriad_alloc.h.mako").decode("UTF-8")
+    "templates" + os.sep + "myriad_alloc.h.mako").decode("UTF-8")
 
 #: Template for myriad_communicator.c (myriad UDP socket API for IPC impl)
 MYRIAD_COMMUNICATOR_C_TEMPLATE = resource_string(
     __name__,
-    "templates/myriad_communicator.c.mako").decode("UTF-8")
+    "templates" + os.sep + "myriad_communicator.c.mako").decode("UTF-8")
 
 #: Template for myriad_communicator.c (myriad UDP socket API for IPC header)
 MYRIAD_COMMUNICATOR_H_TEMPLATE = resource_string(
     __name__,
-    "templates/myriad_communicator.h.mako").decode("UTF-8")
+    "templates" + os.sep + "myriad_communicator.h.mako").decode("UTF-8")
 
 #: Template for pmyriad.c (myriad Python 'glue' for object interpretation)
 PYMYRIAD_C_TEMPLATE = resource_string(
     __name__,
-    "templates/pymyriad.c.mako").decode("UTF-8")
+    "templates" + os.sep + "pymyriad.c.mako").decode("UTF-8")
 
 #: Template for pymyriad_commuinicator.c (myriad Python 'glue' for IPC)
 PYMYRIAD_COMMUNICATOR_C_TEMPLATE = resource_string(
     __name__,
-    "templates/pymyriad_communicator.c.mako").decode("UTF-8")
+    "templates" + os.sep + "pymyriad_communicator.c.mako").decode("UTF-8")
 
 #######
 # Log #
@@ -271,64 +274,65 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         """ Creates and links Compartments and mechanisms """
         raise NotImplementedError("Please override setup() in your class")
 
-    # TODO: Create temporary directory to put all this crap in
-    def run(self):
-        """ Runs the simulation and puts results back into Python objects """
-        # Calculate the number of compartments
-        if len(self._compartments) == 0:
-            raise RuntimeError("No compartments found!")
-        self.simul_params["NUM_COMPARTMENTS"] = len(self._compartments)
-        # Render templates for dependencies
+    def _render_templates(self, extra_params: dict=None) -> TemporaryDirectory:
+        """ Renderes templates into temporary directory, which is returned """
+        # Update parameters
+        final_params = copy(self.simul_params)
+        if extra_params:
+            final_params.update(extra_params)
+        # Create temporary directory to hold files in
+        template_dir = TemporaryDirectory()
+        template_dir_name = template_dir.name + os.sep
+        # TODO: Render templates for dependencies into template_dir
         for dependency in getattr(self, "dependencies"):
             dependency.render_templates()
-        # Create & render templates for simulation-specific files
+        # Render templates into template_dir
         self._makefile_tmpl = MakoFileTemplate(
-            "Makefile",
+            template_dir_name + "Makefile",
             MAKEFILE_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._setuppy_tmpl = MakoFileTemplate(
-            "setup.py",
+            template_dir_name + "setup.py",
             SETUPPY_TEMPLATE,
             {"dependencies": getattr(self, "dependencies")})
-        main_params = {"compartments": self._compartments,
-                       "mechanisms": self._mechanisms}
-        main_params.update(self.simul_params)
         self._main_tmpl = MakoFileTemplate(
-            "main.c",
+            template_dir_name + "main.c",
             MAIN_TEMPLATE,
-            main_params)
+            {"dependencies": getattr(self, "dependencies"),
+             "compartments": self._compartments,
+             "mechanisms": self._mechanisms}.update(final_params))
         self._myriad_h_tmpl = MakoFileTemplate(
-            "myriad.h",
+            template_dir_name + "myriad.h",
             MYRIAD_H_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._pymyriad_h_tmpl = MakoFileTemplate(
-            "pymyriad.h",
+            template_dir_name + "pymyriad.h",
             PYMYRIAD_H_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._myriad_alloc_c_tmpl = MakoFileTemplate(
-            "myriad_alloc.c",
+            template_dir_name + "myriad_alloc.c",
             MYRIAD_ALLOC_C_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._myriad_alloc_h_tmpl = MakoFileTemplate(
-            "myriad_alloc.h",
+            template_dir_name + "myriad_alloc.h",
             MYRIAD_ALLOC_H_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._myriad_communicator_c_tmpl = MakoFileTemplate(
-            "myriad_communicator.c",
+            template_dir_name + "myriad_communicator.c",
             MYRIAD_COMMUNICATOR_C_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._myriad_communicator_h_tmpl = MakoFileTemplate(
-            "myriad_communicator.h",
+            template_dir_name + "myriad_communicator.h",
             MYRIAD_COMMUNICATOR_H_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._pymyriad_c_tmpl = MakoFileTemplate(
-            "pymyriad.c",
+            template_dir_name + "pymyriad.c",
             PYMYRIAD_C_TEMPLATE,
-            self.simul_params)
+            final_params)
         self._pymyriad_communicator_c_tmpl = MakoFileTemplate(
-            "pymyriad_communicator.c",
+            template_dir_name + "pymyriad_communicator.c",
             PYMYRIAD_COMMUNICATOR_C_TEMPLATE,
-            self.simul_params)
+            final_params)
         # Render templates to file
         self._makefile_tmpl.render_to_file()
         self._setuppy_tmpl.render_to_file()
@@ -341,18 +345,32 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         self._myriad_communicator_h_tmpl.render_to_file()
         self._pymyriad_c_tmpl.render_to_file()
         self._pymyriad_communicator_c_tmpl.render_to_file()
+        # Return template directory
+        return template_dir
+
+    # TODO: Create temporary directory to put all this crap in
+    def run(self):
+        """ Runs the simulation and puts results back into Python objects """
+        # Calculate the number of compartments
+        if len(self._compartments) == 0:
+            raise RuntimeError("No compartments found!")
+        # Create & render templates for simulation-specific files
+        template_dir = self._render_templates(
+            {"NUM_COMPARTMENTS": len(self._compartments)})
         # Once templates are rendered, perform compilation
-        subprocess.check_call(["make", "-j4", "all"])
+        subprocess.check_call(
+            ["make", "-C " + template_dir.name, "-j4", "all"])
         # Invalidate cache and load dynamic extensions
         # TODO: Change this path to something platform-specific (autodetect)
-        sys.path.append("build/lib.linux-x86_64-3.4/")
+        sys.path.append(template_dir.name + "build/lib.linux-x86_64-3.4/")
         importlib.invalidate_caches()
         myriad_comm_mod = importlib.import_module("myriad_comm")
         for dependency in getattr(self, "dependencies"):
             if dependency.__name__ != "MyriadObject":
                 importlib.import_module(dependency.__name__.lower())
         # Run simulation and return the communicator object back
-        comm = SubprocessCommunicator(myriad_comm_mod)
+        comm = SubprocessCommunicator(
+            myriad_comm_mod, template_dir.name + "main.bin")
         comm.spawn_child()
         time.sleep(0.25)  # FIXME: Change this sleep to a wait of some kind
         comm.setup_connection()

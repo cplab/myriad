@@ -2,9 +2,13 @@
 Common wrapper for Mako templates
 """
 import os
+import sys
 from io import StringIO
+
 from mako.template import Template
 from mako.runtime import Context
+from mako import exceptions
+
 from myriad_utils import enforce_annotations
 
 
@@ -55,7 +59,10 @@ class MakoTemplate(object):
 
     def render(self):
         """ Renders the template to the internal buffer."""
-        self._template.render_context(self._context)
+        try:
+            self._template.render_context(self._context)
+        except exceptions.MakoException:
+            print(exceptions.text_error_template().render())
 
 
 class MakoFileTemplate(MakoTemplate):
