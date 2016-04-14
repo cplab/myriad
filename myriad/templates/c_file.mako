@@ -1,6 +1,7 @@
 ## Python imports as a module-level block
 <%!
-    from myriad_metaclass import create_delegator, create_super_delegator
+    from context import myriad
+    from myriad.myriad_metaclass import create_delegator, create_super_delegator
 %>
 
 ## Add lib includes

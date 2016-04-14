@@ -10,9 +10,10 @@ import unittest
 
 from myriad_testing import set_external_loggers, MyriadTestCase
 
-from context import myriad_types as mtypes
-from context import myriad_metaclass as mclass
-from context import myriad_object as mobject
+from context import myriad
+from myriad import myriad_types as mtypes
+from myriad import myriad_metaclass as mclass
+from myriad import myriad_object as mobject
 
 
 @set_external_loggers("TestMyriadMetaclass", mobject.LOG, mclass.LOG)

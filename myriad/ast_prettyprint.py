@@ -7,7 +7,8 @@ Alex Leone (acleone ~AT~ gmail.com), 2010-01-30
 From http://alexleone.blogspot.co.uk/2010/01/python-ast-pretty-printer.html
 """
 
-import sys, tokenize
+import sys
+import tokenize
 from ast import *
 
 

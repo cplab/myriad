@@ -2,10 +2,11 @@
 Tester module for ast and ast_parse.
 Author: Alex Davies
 """
-
-from context import ast_parse
 import ast
 import unittest
+
+from context import myriad
+from myriad import ast_parse
 
 
 class ASTCTypesTester(unittest.TestCase):

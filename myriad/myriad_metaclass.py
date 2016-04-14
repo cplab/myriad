@@ -115,15 +115,15 @@ from pkg_resources import resource_string
 
 from pycparser.c_ast import ID, TypeDecl, Struct, PtrDecl, Decl
 
-from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
+from .myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
-from myriad_utils import OrderedSet
+from .myriad_utils import OrderedSet
 
-from myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
-from myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
-from myriad_types import MDouble, MVoid, MSizeT, filter_inconvertible_types
+from .myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
+from .myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
+from .myriad_types import MDouble, MVoid, MSizeT, filter_inconvertible_types
 
-from ast_function_assembler import pyfun_to_cfun
+from .ast_function_assembler import pyfun_to_cfun
 
 #######
 # Log #
@@ -279,13 +279,12 @@ def myriad_method(method):
     """
     Tags a method in a class to be a myriad method (i.e. converted to a C func)
     NOTE: This MUST be the first decorator applied to the function! E.g.:
-
-        @another_decorator
-        @yet_another_decorator
-        @myriad_method
-        def my_fn(stuff):
-            pass
-
+    `
+    @another_decorator
+    @yet_another_decorator
+    @myriad_method
+    def my_fn(stuff):
+    `
     This is because decorators replace the wrapped function's signature.
     """
     @wraps(method)
@@ -304,12 +303,12 @@ def myriad_method_verbatim(method):
     but takes the docstring as verbatim C code.
 
     NOTE: This MUST be the first decorator applied to the function! E.g.:
-
-        @another_decorator
-        @yet_another_decorator
-        @myriad_method_verbatim
-        def my_fn(stuff):
-            pass
+    `
+    @another_decorator
+    @yet_another_decorator
+    @myriad_method_verbatim
+    def my_fn(stuff):
+    `
 
     This is because decorators replace the wrapped function's signature.
     """
@@ -332,12 +331,12 @@ def _myriadclass_method(method):
     MyriadObject.c to define behaviour tied to MyriadObject inheritance.
 
     NOTE: This MUST be the first decorator applied to the function! E.g.:
-
-        @another_decorator
-        @yet_another_decorator
-        @_myriadclass_method
-        def my_fn(stuff):
-            pass
+    `
+    @another_decorator
+    @yet_another_decorator
+    @_myriadclass_method
+    def my_fn(stuff):
+    `
 
     This is because decorators replace the wrapped function's signature.
     """
@@ -444,22 +443,27 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
         namespace["obj_name"] + ".c",
         C_FILE_TEMPLATE,
         namespace)
+    LOG.debug("c_file_template done for %s", namespace["obj_name"])
     namespace["header_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".h",
         HEADER_FILE_TEMPLATE,
         namespace)
+    LOG.debug("header_file_template done for %s", namespace["obj_name"])
     namespace["cuh_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".cuh",
         CUH_FILE_TEMPLATE,
         namespace)
+    LOG.debug("cuh_file_template done for %s", namespace["obj_name"])
     namespace["cu_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".cu",
         CU_FILE_TEMPLATE,
         namespace)
+    LOG.debug("cu_file_template done for %s", namespace["obj_name"])
     namespace["pyc_file_template"] = MakoFileTemplate(
         "py" + namespace["obj_name"].lower() + ".c",
         PYC_COMP_FILE_TEMPLATE,
         namespace)
+    LOG.debug("pyc_file_template done for %s", namespace["obj_name"])
     return namespace
 
 

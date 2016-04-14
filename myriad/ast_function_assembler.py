@@ -9,11 +9,11 @@ from types import FunctionType
 from ast import parse
 from collections import OrderedDict
 
-from ast_parse import parse_node
-from myriad_ctypes import CForLoop, CAssign, CVarAttr, CObject, CList
-from myriad_ctypes import get_node_from_var
-from myriad_types import MyriadScalar, MyriadFunction, MVoid, MyriadCType
-from myriad_utils import remove_header_parens, indent_fix_lines
+from .ast_parse import parse_node
+from .myriad_ctypes import CForLoop, CAssign, CVarAttr, CObject, CList
+from .myriad_ctypes import get_node_from_var
+from .myriad_types import MyriadScalar, MyriadFunction, MVoid, MyriadCType
+from .myriad_utils import remove_header_parens, indent_fix_lines
 
 __author__ = ["Alex J. Davies", "Pedro Rittner"]
 FLOAT_TYPE = "double"

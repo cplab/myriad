@@ -2,14 +2,13 @@
 Common wrapper for Mako templates
 """
 import os
-import sys
 from io import StringIO
 
 from mako.template import Template
 from mako.runtime import Context
 from mako import exceptions
 
-from myriad_utils import enforce_annotations
+from .myriad_utils import enforce_annotations
 
 
 class MakoTemplate(object):

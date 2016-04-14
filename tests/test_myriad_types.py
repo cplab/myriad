@@ -7,7 +7,8 @@ from collections import OrderedDict
 
 from myriad_testing import trim_spaces
 
-from context import myriad_types as mtypes
+from context import myriad
+from myriad import myriad_types as mtypes
 
 
 class TestScalars(unittest.TestCase):

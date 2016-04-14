@@ -1,6 +1,7 @@
 ## Top-level module includes
 <%!
-    import myriad_types
+    from context import myriad
+    from myriad import myriad_types
     from pycparser.c_ast import ArrayDecl
 %>
 

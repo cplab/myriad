@@ -27,7 +27,7 @@ from pycparser.c_ast import Decl, PtrDecl, TypeDecl, ID, ArrayDecl
 from pycparser.c_ast import Struct, FuncDecl
 from pycparser.c_ast import ParamList
 
-from myriad_utils import enforce_annotations, assert_list_type
+from .myriad_utils import enforce_annotations, assert_list_type
 
 
 # TODO: add support for __hash__ and __eq__ for dict/set purposes

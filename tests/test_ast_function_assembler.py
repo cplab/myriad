@@ -7,8 +7,9 @@ import unittest
 import logging
 from myriad_testing import MyriadTestCase, set_external_loggers
 
-from context import ast_function_assembler as ast_func
-from context import myriad_types
+from context import myriad
+from myriad import ast_function_assembler as ast_func
+from myriad import myriad_types
 
 #: Log for purposes of logging MyriadTestCase output
 LOG = logging.getLogger(__name__)

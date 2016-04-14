@@ -14,7 +14,7 @@ from copy import copy
 
 from pkg_resources import resource_string
 
-from myriad_mako_wrapper import MakoFileTemplate
+from .myriad_mako_wrapper import MakoFileTemplate
 
 #############
 # Templates #

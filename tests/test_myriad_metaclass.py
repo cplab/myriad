@@ -12,8 +12,9 @@ from collections import OrderedDict
 
 from myriad_testing import set_external_loggers, MyriadTestCase
 
-from context import myriad_types
-from context import myriad_metaclass
+from context import myriad
+from myriad import myriad_types
+from myriad import myriad_metaclass
 
 
 @set_external_loggers("TestMyriadMethod", myriad_metaclass.LOG)

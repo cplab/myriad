@@ -4,7 +4,8 @@
     classname - Name of the class this is implemented for as a string
 </%doc>
 <%
-    from myriad_types import MVoid
+    from context import myriad
+    from myriad.myriad_types import MVoid
     ## Get the function arguments as a comma-seperated list
     fun_args = ','.join([arg.ident for arg in delegator.args_list.values()][1:])
     ## Get the 'class' argument (usually '_class')

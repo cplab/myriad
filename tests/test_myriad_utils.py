@@ -8,7 +8,8 @@ import inspect
 
 from collections import OrderedDict
 
-from context import myriad_utils as mutils
+from context import myriad
+from myriad import myriad_utils as mutils
 
 
 class TestRemoveHeaderParens(unittest.TestCase):

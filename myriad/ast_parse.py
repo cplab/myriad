@@ -3,9 +3,9 @@ Functions for parsing Python string to CTypes using the CFunc framework.
 Author: Alex Davies
 """
 
-from myriad_ctypes import CForLoop, CAssign, CVar, CCompare, CVarAttr, CCall
-from myriad_ctypes import CList, CChar, CString, CSubscript, CUnaryOp
-from myriad_ctypes import CBinaryOp, CReturn, CIf, CWhileLoop, CBoolOp
+from .myriad_ctypes import CForLoop, CAssign, CVar, CCompare, CVarAttr, CCall
+from .myriad_ctypes import CList, CChar, CString, CSubscript, CUnaryOp
+from .myriad_ctypes import CBinaryOp, CReturn, CIf, CWhileLoop, CBoolOp
 
 # TODO: add comparison chaining
 # TODO: implement function calls for simple mathematical functions

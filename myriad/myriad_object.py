@@ -7,13 +7,13 @@ import os
 from collections import OrderedDict
 from pkg_resources import resource_string
 
-from myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
+from .myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
-from myriad_types import MyriadScalar, MyriadFunction
-from myriad_types import MVoid, MVarArgs, MInt
+from .myriad_types import MyriadScalar, MyriadFunction
+from .myriad_types import MVoid, MVarArgs, MInt
 
-from myriad_metaclass import _myriadclass_method, _MyriadObjectBase
-from myriad_metaclass import myriad_method_verbatim, MyriadMetaclass
+from .myriad_metaclass import _myriadclass_method, _MyriadObjectBase
+from .myriad_metaclass import myriad_method_verbatim, MyriadMetaclass
 
 #######
 # Log #
