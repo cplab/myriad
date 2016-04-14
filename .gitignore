@@ -12,9 +12,6 @@
 TAGS
 tags
 
-# Doxygen
-doc/
-
 # Python
 *.pyc
 *.swp
@@ -41,6 +38,6 @@ callgrind.out.*
 /.settings/
 /__pycache__/
 /.ropeproject/
-/pymyriad/__pycache__/
-/pymyriad/docs/_build
-/build/
+/myriad/__pycache__/
+/docs/_build
+/build

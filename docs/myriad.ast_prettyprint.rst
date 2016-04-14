@@ -1,7 +1,7 @@
-ast_function_assembler module
+myriad.ast_prettyprint module
 =============================
 
-.. automodule:: ast_function_assembler
+.. automodule:: myriad.ast_prettyprint
     :members:
     :undoc-members:
     :show-inheritance:

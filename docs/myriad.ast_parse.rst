@@ -1,7 +1,7 @@
-myriad_metaclass module
+myriad.ast_parse module
 =======================
 
-.. automodule:: myriad_metaclass
+.. automodule:: myriad.ast_parse
     :members:
     :undoc-members:
     :show-inheritance:

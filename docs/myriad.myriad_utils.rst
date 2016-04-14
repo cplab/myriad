@@ -1,7 +1,7 @@
-myriad_mako_wrapper module
+myriad.myriad_utils module
 ==========================
 
-.. automodule:: myriad_mako_wrapper
+.. automodule:: myriad.myriad_utils
     :members:
     :undoc-members:
     :show-inheritance:
