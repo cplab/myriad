@@ -20,24 +20,19 @@ class wrap_file_function(object):
     """
     Wrap a function which takes a file or a str as it's first argument.
     If a str is provided, replace the first argument of the wrapped function
-    with a file handle, and close the file afterwards
+    with a file handle, and close the file afterwards.
 
-    Example:
-    `
-    @wrap_file_function('w')
-    def write_hi(f):
-    # File writing occurs here
-    `
-    The following will write to already open file handle:
-    `
-    f = open('f1.txt', 'w')
-    write_hi(f)
-    f.close()
-    `
-    The following opens file f2.txt with mode 'w', writes to it, and closes it:
-    `
-    write_hi('f2.txt')
-    `
+    .. code-block:: python
+
+        @wrap_file_function('w')
+        def write_hi(f):
+            f.write('Hello, World!')
+        # The following will write to already open file handle:
+        f = open('f1.txt', 'w')
+        write_hi(f)
+        f.close()
+        # The following opens file f2.txt for writing, writes, then closes it:
+        write_hi('f2.txt')
     """
 
     def __init__(self, *args):
