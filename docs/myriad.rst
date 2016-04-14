@@ -18,7 +18,6 @@ Submodules
    myriad.myriad_simul
    myriad.myriad_types
    myriad.myriad_utils
-   myriad.termcolor
 
 Module contents
 ---------------

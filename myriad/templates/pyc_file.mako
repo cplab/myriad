@@ -1,7 +1,5 @@
 ## Top-level module includes
 <%!
-    from context import myriad
-    from myriad import myriad_types
     from pycparser.c_ast import ArrayDecl
 %>
 
@@ -36,7 +34,7 @@ static PyObject* Py${obj_name}_${obj_var_name}
     Py_XINCREF(buf_arr);
     return buf_arr;
     % else:
-    return Py_BuildValue("${myriad_types.c_decl_to_pybuildarg(obj_var_decl)}",
+    return Py_BuildValue("${pyc_scalar_types[obj_var_name]}",
                          _self->${obj_var_name});
     % endif
 }

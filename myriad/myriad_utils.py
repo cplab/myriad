@@ -23,18 +23,21 @@ class wrap_file_function(object):
     with a file handle, and close the file afterwards
 
     Example:
-
+    `
     @wrap_file_function('w')
     def write_hi(f):
-        f.write('hi!\n')
-
-    # This will write to already open file handle.
+    # File writing occurs here
+    `
+    The following will write to already open file handle:
+    `
     f = open('f1.txt', 'w')
     write_hi(f)
     f.close()
-
-    # This will open file f2.txt with mode 'w', write to it, and close it.
+    `
+    The following opens file f2.txt with mode 'w', writes to it, and closes it:
+    `
     write_hi('f2.txt')
+    `
     """
 
     def __init__(self, *args):

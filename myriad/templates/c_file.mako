@@ -1,9 +1,3 @@
-## Python imports as a module-level block
-<%!
-    from context import myriad
-    from myriad.myriad_metaclass import create_delegator, create_super_delegator
-%>
-
 ## Add lib includes
 % for lib in lib_includes:
 #include <${lib}>
@@ -45,11 +39,7 @@ ${mtd.stringify_def()}
 % endfor
 
 ## Method delegators
-% for method in own_methods:
-<%
-    delg = create_delegator(method, cls_name)
-    super_delg = create_super_delegator(delg, cls_name)
-%>
+% for delg, super_delg in own_method_delgs:
 ${delg.stringify_def()}
 
 ${super_delg.stringify_def()}

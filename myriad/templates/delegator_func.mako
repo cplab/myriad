@@ -2,10 +2,9 @@
     Expected values:
     delegator - MyriadFunction object representing the base delegator
     classname - Name of the class this is implemented for as a string
+    MVoid - myriad_types' MVoid type, passed by reference to avoid importing
 </%doc>
 <%
-    from context import myriad
-    from myriad.myriad_types import MVoid
     ## Get the function arguments as a comma-seperated list
     fun_args = ','.join([arg.ident for arg in delegator.args_list.values()][1:])
     ## Get the 'class' argument (usually '_class')

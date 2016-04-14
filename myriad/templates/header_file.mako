@@ -1,8 +1,3 @@
-<%!
-    from context import myriad
-    from myriad.myriad_metaclass import create_delegator, create_super_delegator
-%>
-
 ## Add include guards
 <% include_guard = obj_name.upper() + "_H" %>
 #ifndef ${include_guard}
@@ -22,7 +17,7 @@
 % endfor
 
 ## Declare typedefs for own methods ONLY
-% for delg in [create_delegator(m, cls_name) for m in own_methods]:
+% for (delg, _) in own_method_delgs:
 #ifndef ${delg.typedef_name.upper()}
 #define ${delg.typedef_name.upper()}
 ${delg.stringify_typedef()};
@@ -41,11 +36,7 @@ extern const void* ${obj_name};
 extern const void* ${cls_name};
 
 ## Method delegators
-% for method in own_methods:
-<%
-    delg = create_delegator(method, cls_name)
-    super_delg = create_super_delegator(delg, cls_name)
-%>
+% for delg, super_delg in own_method_delgs:
 extern ${delg.stringify_decl()};
 
 extern ${super_delg.stringify_decl()};

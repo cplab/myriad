@@ -1,9 +1,3 @@
-## Python imports as a module-level block
-<%!
-    from context import myriad
-    from myriad.myriad_metaclass import create_delegator, create_super_delegator
-%>
-
 % for lib in cuda_lib_includes:
 #include <${lib}>
 % endfor
@@ -35,7 +29,7 @@ __device__ ${mtd.typedef_name} cuda_${mtd.typedef_name} = cuda_${mtd.ident};
 
 % endfor
 
-## Method delegators
+## TODO: Method delegators for CUDA methods, rendered in _template_creator_helper
 ## % for method in own_methods:
 ## <%
 ##     delg = create_delegator(method, cls_name)

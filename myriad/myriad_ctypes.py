@@ -71,18 +71,15 @@ class CSubscript(CObject):
         self.val = variable_node.id  # String identified of the variable
         self.sliceClass = slice_node.__class__.__name__  # Name of slice class
         self.sl = slice_node
-        """
         # TODO: fix for variables (e.g. l[a] where a is a variable)
         # The above is necessary for loops.
-        if self.sliceClass == "Index":
-            #indexValue = sliceNode.value.n
-            self.sliceDict = {"Index" : indexValue}
-
-        if self.sliceClass == "Slice":
-            lowerValue = sliceNode.lower.n
-            upperValue = sliceNode.upper.n
-            self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}
-        """
+        # if self.sliceClass == "Index":
+        #     #indexValue = sliceNode.value.n
+        #     self.sliceDict = {"Index" : indexValue}
+        # if self.sliceClass == "Slice":
+        #     lowerValue = sliceNode.lower.n
+        #     upperValue = sliceNode.upper.n
+        #     self.sliceDict = {"Lower" : lowerValue, "Upper" : upperValue}
 
     def stringify(self):
         """

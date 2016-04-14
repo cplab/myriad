@@ -113,7 +113,7 @@ from copy import copy
 from functools import wraps
 from pkg_resources import resource_string
 
-from pycparser.c_ast import ID, TypeDecl, Struct, PtrDecl, Decl
+from pycparser.c_ast import ID, TypeDecl, Struct, PtrDecl, Decl, ArrayDecl
 
 from .myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 
@@ -122,6 +122,7 @@ from .myriad_utils import OrderedSet
 from .myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from .myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
 from .myriad_types import MDouble, MVoid, MSizeT, filter_inconvertible_types
+from .myriad_types import c_decl_to_pybuildarg
 
 from .ast_function_assembler import pyfun_to_cfun
 
@@ -212,7 +213,9 @@ def create_delegator(instance_fxn: MyriadFunction,
     # Create copy with modified identifier
     ist_cpy = MyriadFunction.from_myriad_func(instance_fxn)
     # Generate template and render into copy's definition
-    template_vars = {"delegator": ist_cpy, "classname": classname}
+    template_vars = {"delegator": ist_cpy,
+                     "classname": classname,
+                     "MVoid": MVoid}
     template = MakoTemplate(DELG_TEMPLATE, template_vars)
     LOG.debug("Rendering create_delegator template for %s", classname)
     template.render()
@@ -244,7 +247,8 @@ def create_super_delegator(delg_fxn: MyriadFunction,
     # Generate template and render
     template_vars = {"delegator": delg_fxn,
                      "super_delegator": s_delg_f,
-                     "classname": classname}
+                     "classname": classname,
+                     "MVoid": MVoid}
     template = MakoTemplate(SUPER_DELG_TEMPLATE, template_vars)
     LOG.debug("Rendering create_super_delegator template for %s", classname)
     template.render()
@@ -376,6 +380,7 @@ class _MyriadObjectBase(object):
         return [base_name + ".c",
                 base_name + ".h",
                 base_name + ".cuh",
+                base_name + ".cu",
                 "py" + base_name.lower() + ".c"]
 
 
@@ -439,30 +444,48 @@ def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
     """
     Creates templates using namespace, and returns the updated namespace.
     """
+    # Initialize delegators/superdelegators in local namespace
+    local_namespace = copy(namespace)
+    own_method_delgs = []
+    for method in namespace["own_methods"]:
+        own_method_delgs.append(
+            (create_delegator(method, namespace["cls_name"]),
+             create_super_delegator(method, namespace["cls_name"])))
+    local_namespace["own_method_delgs"] = own_method_delgs
     namespace["c_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".c",
         C_FILE_TEMPLATE,
-        namespace)
+        local_namespace)
     LOG.debug("c_file_template done for %s", namespace["obj_name"])
     namespace["header_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".h",
         HEADER_FILE_TEMPLATE,
-        namespace)
+        local_namespace)
     LOG.debug("header_file_template done for %s", namespace["obj_name"])
     namespace["cuh_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".cuh",
         CUH_FILE_TEMPLATE,
-        namespace)
+        local_namespace)
     LOG.debug("cuh_file_template done for %s", namespace["obj_name"])
     namespace["cu_file_template"] = MakoFileTemplate(
         namespace["obj_name"] + ".cu",
         CU_FILE_TEMPLATE,
-        namespace)
+        local_namespace)
     LOG.debug("cu_file_template done for %s", namespace["obj_name"])
+    # Initialize object struct conversion for CPython getter methods
+    # Ignores superclass (_), class object, and array declarations
+    # Places result in local namespace to avoid collisions/for efficiency
+    pyc_scalar_types = {}
+    for obj_var_name, obj_var_decl in namespace["obj_struct"].members.items():
+        if (not obj_var_name.startswith("_") and
+                not obj_var_name == "mclass" and
+                not isinstance(obj_var_decl.type, ArrayDecl)):
+            pyc_scalar_types[obj_var_name] = c_decl_to_pybuildarg(obj_var_decl)
+    local_namespace["pyc_scalar_types"] = pyc_scalar_types
     namespace["pyc_file_template"] = MakoFileTemplate(
         "py" + namespace["obj_name"].lower() + ".c",
         PYC_COMP_FILE_TEMPLATE,
-        namespace)
+        local_namespace)
     LOG.debug("pyc_file_template done for %s", namespace["obj_name"])
     return namespace
 
