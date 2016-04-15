@@ -35,7 +35,7 @@
 // Simulation parameters
 #define MYRIAD_ALLOCATOR
 #define FAST_EXP
-#define NUM_THREADS 2
+#define NUM_THREADS 1
 #define SIMUL_LEN 1000
 #define DT 0.001
 #define NUM_CELLS 2
@@ -93,35 +93,12 @@ extern __thread union _eco _eco;  //! Must be thread-local due to side-effects.
 #define _exp _exp_helper
 #endif /* FAST_EXP */
 
-
-// Unit testing macros
-#ifdef UNIT_TEST
-    /*! 
-	 * Allows for unit testing arbitrary functions as long as they follow the
-     * standard format of 0 = PASS, anything else = FAIL 
-	 */
-    #define UNIT_TEST_FUN(fun, ...) do {                                       \
-        puts("TESTING: "#fun);                                                 \
-        fprintf(stdout, #fun":\t%s\n\n", fun( __VA_ARGS__) ? "FAIL" : "PASS"); \
-    } while(0)
-		
-	//! Compares the value of two expressions, 0 = PASS, o.w. FAIL
-    #define UNIT_TEST_VAL_EQ(a,b) do {                         \
-		printf("TESTING: "#a" == "#b" ... ");				   \
-		fprintf(stdout, "%s\n", a == b ? "PASS" : "FAIL"); \
-	} while(0)
-#else
-    #define UNIT_TEST_FUN(...) do {} while(0)
-    #define UNIT_TEST_VAL_EQ(...) do {} while(0)
-#endif
-
 #ifdef DEBUG
 	//! Prints debug information string to stderr with file and line info.
     #define DEBUG_PRINTF(str, ...) fprintf(stderr, str, __VA_ARGS__)
 #else
     #define DEBUG_PRINTF(...) do {} while (0)
 #endif
-
 
 #ifdef CUDA
 //! Checks the return value of a CUDA library call for errors, exits if error

@@ -24,15 +24,18 @@ OS_ARCH = x86_64
 COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas
 
 ifdef DEBUG
-COMMON_CFLAGS += -Og -g -DDEBUG=$(DEBUG) -DUNIT_TEST
+COMMON_CFLAGS += -Og -g -DDEBUG
 else
 COMMON_CFLAGS += -O2 -march=native
 endif
 
 
-CCFLAGS		:= $(COMMON_CFLAGS) -Wpedantic -std=gnu99 -ffinite-math-only -fno-trapping-math -fno-math-errno
+CCFLAGS		:= $(COMMON_CFLAGS) -Wpedantic -std=gnu99
 ifndef CUDA
 CCFLAGS += -flto
+ifndef DEBUG
+CCFLAGS += -ffinite-math-only -fno-trapping-math -fno-math-errno
+endif
 endif
 CUFLAGS		:= $(COMMON_CFLAGS)
 
