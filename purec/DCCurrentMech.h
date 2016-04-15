@@ -61,9 +61,7 @@ struct DCCurrentMechClass
 
 /**
  * Initializes prototype DC Current Mechanism infrastructure on the heap.
- *
- * @param[in]  init_cuda  flag for directing CUDA protoype initialization
  */
-extern void initDCCurrMech(const bool init_cuda);
+extern void initDCCurrMech(void);
 
 #endif /* DCCURRENTMECH_H */

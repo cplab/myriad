@@ -93,7 +93,9 @@ extern void* myriad_new(const void* _class, ...);
    
    @returns pointer to the reference class of the instance object
  */
-extern const void* myriad_class_of(const void* _self);
+#ifndef myriad_class_of
+#define myriad_class_of(_self) ((const struct MyriadObject*) _self)->m_class
+#endif
 
 /**
    Returns the size of a given generic object.
@@ -102,7 +104,7 @@ extern const void* myriad_class_of(const void* _self);
 
    @returns size of the given object
  */
-extern size_t myriad_size_of(const void* self);
+#define myriad_size_of(self) ((const struct MyriadObject*) _self)->m_class->size
 
 /**
    Tests if a given object is an instance of a given prototype class.
@@ -112,7 +114,7 @@ extern size_t myriad_size_of(const void* self);
    
    @returns 1 if true, 0 if otherwise
 */
-extern int myriad_is_a(const void* _self, const struct MyriadClass* m_class);
+#define myriad_is_a(_self, other_class) _self && ((const struct MyriadObject*) _self)->m_class == other_class
 
 /**
    Tests if a given object instance inherets from a given prototype class.

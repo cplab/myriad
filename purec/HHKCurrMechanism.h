@@ -43,6 +43,6 @@ struct HHKCurrMechanismClass
 	struct MechanismClass _;
 };
 
-void initHHKCurrMechanism(const bool init_cuda);
+void initHHKCurrMechanism(void);
 
 #endif

@@ -80,6 +80,6 @@ struct MechanismClass
  *
  * @param[in]  init_cuda  flag for directing CUDA protoype initialization
  */
-extern void initMechanism(const bool init_cuda);
+extern void initMechanism(void);
 
 #endif /* MECHANISM_H */

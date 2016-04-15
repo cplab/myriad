@@ -27,6 +27,6 @@ struct HHSomaCompartmentClass
     struct CompartmentClass _;
 };
 
-extern void initHHSomaCompartment(const bool init_cuda);
+extern void initHHSomaCompartment(void);
 
 #endif

@@ -45,6 +45,6 @@ struct HHNaCurrMechanismClass
 	struct MechanismClass _; 
 };
 
-void initHHNaCurrMechanism(const bool init_cuda);
+void initHHNaCurrMechanism(void);
 
 #endif

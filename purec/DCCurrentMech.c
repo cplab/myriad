@@ -95,10 +95,8 @@ static void* DCCurrentMechClass_cudafy(void* _self, int clobber)
 const void* DCCurrentMech;
 const void* DCCurrentMechClass;
 
-void initDCCurrMech(const bool init_cuda)
+void initDCCurrMech(void)
 {
-	// initCompartment(init_cuda);
-	
 	if (!DCCurrentMechClass)
 	{
 		DCCurrentMechClass =
@@ -110,25 +108,22 @@ void initDCCurrMech(const bool init_cuda)
 				0
 			);
 		
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)DCCurrentMechClass, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) DCCurrentMechClass)->device_class = 
-				(struct MyriadClass*) tmp_mech_c_t;
+#ifdef CUDA
+        void* tmp_mech_c_t = myriad_cudafy((void*)DCCurrentMechClass, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) DCCurrentMechClass)->device_class = 
+            (struct MyriadClass*) tmp_mech_c_t;
 			
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &DCCurrentMechClass_dev_t,
-					&tmp_mech_c_t,
-					sizeof(struct DCCurrentMechClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &DCCurrentMechClass_dev_t,
+                &tmp_mech_c_t,
+                sizeof(struct DCCurrentMechClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 
 	if (!DCCurrentMech)
@@ -143,25 +138,22 @@ void initDCCurrMech(const bool init_cuda)
 				0
 			);
 		
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_t = myriad_cudafy((void*)DCCurrentMech, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) DCCurrentMech)->device_class = 
-				(struct MyriadClass*) tmp_mech_t;
+#ifdef CUDA
+        void* tmp_mech_t = myriad_cudafy((void*)DCCurrentMech, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) DCCurrentMech)->device_class = 
+            (struct MyriadClass*) tmp_mech_t;
 
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &DCCurrentMech_dev_t,
-					&tmp_mech_t,
-					sizeof(struct DCCurrentMech*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &DCCurrentMech_dev_t,
+                &tmp_mech_t,
+                sizeof(struct DCCurrentMech*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 }
 

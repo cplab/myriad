@@ -57,7 +57,7 @@ static struct MyriadClass object[] =
 const void* MyriadObject = object;
 const void* MyriadClass = object + 1;
 
-static void* MyriadObject_ctor(void* _self, va_list* app)
+static void* MyriadObject_ctor(void* _self, va_list* app __attribute__((unused)))
 {
     return _self;
 }
@@ -70,38 +70,31 @@ static int MyriadObject_dtor(void* _self)
 
 static void* MyriadObject_cudafy(void* self_obj, int clobber)
 {
-    #ifdef CUDA
-    {
-        struct MyriadObject* self = (struct MyriadObject*) self_obj;
-        void* n_dev_obj = NULL;
-        size_t my_size = myriad_size_of(self);
+    void* n_dev_obj = NULL;
+#ifdef CUDA
+    struct MyriadObject* self = (struct MyriadObject*) self_obj;
+    size_t my_size = myriad_size_of(self);
 
-        const struct MyriadClass* tmp = self->m_class;
-        self->m_class = self->m_class->device_class;
+    const struct MyriadClass* tmp = self->m_class;
+    self->m_class = self->m_class->device_class;
 
-        CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
+    CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
 
-        CUDA_CHECK_RETURN(
-            cudaMemcpy(
-                n_dev_obj,
-                self,
-                my_size,
-                cudaMemcpyHostToDevice
-                )
-            );
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            n_dev_obj,
+            self,
+            my_size,
+            cudaMemcpyHostToDevice
+            )
+        );
 
-        self->m_class = tmp;
-
-        return n_dev_obj;
-    }
-    #else
-    {
-        return NULL;
-    }
-    #endif
+    self->m_class = tmp;
+#endif 
+    return n_dev_obj;
 }
 
-static void MyriadObject_decudafy(void* _self, void* cuda_self)
+static void MyriadObject_decudafy(void* _self __attribute__((unused)), void* cuda_self __attribute__((unused)))
 {
     // We assume (for now) that the class hasn't changed on the GPU.
     // This makes this effectively a no-op since nothing gets copied back
@@ -162,10 +155,10 @@ static void* MyriadClass_ctor(void* _self, va_list* app)
     return self;
 }
 
-static int MyriadClass_dtor(void* self)
+static int MyriadClass_dtor(void* self __attribute__((unused)))
 {
     fprintf(stderr, "Destroying a Class is undefined behavior.\n");
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 }
 
 // IMPORTANT: This is, ironically, for external classes' use only, since our 
@@ -198,45 +191,41 @@ static void* MyriadClass_cudafy(void* _self, int clobber)
      * A: We take it on good faith that the under class has set their super class
      *    to be the visible SuperClass->device_class.
      */
-    #ifdef CUDA
-    {
-        struct MyriadClass* self = (struct MyriadClass*) _self;
+#ifdef CUDA
+    struct MyriadClass* self = (struct MyriadClass*) _self;
 
-        const struct MyriadClass* dev_class = NULL;
+    const struct MyriadClass* dev_class = NULL;
 
-        const size_t class_size = myriad_size_of(self); // DO NOT USE sizeof(struct MyriadClass)!
+    const size_t class_size = myriad_size_of(self); // DO NOT USE sizeof(struct MyriadClass)!
 
-        // Allocate space for new class on the card
-        CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
+    // Allocate space for new class on the card
+    CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
     
-        // Memcpy the entirety of the old class onto a new CPU heap pointer
-        const struct MyriadClass* class_cpy = (const struct MyriadClass*) calloc(1, class_size);
-        memcpy((void*)class_cpy, _self, class_size);
+    // Memcpy the entirety of the old class onto a new CPU heap pointer
+    const struct MyriadClass* class_cpy = (const struct MyriadClass*) calloc(1, class_size);
+    memcpy((void*)class_cpy, _self, class_size);
 
-        // Embedded object's class set to our GPU class; this is unaffected by $clobber
-        memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*)); 
+    // Embedded object's class set to our GPU class; this is unaffected by $clobber
+    memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*)); 
 
-        CUDA_CHECK_RETURN(
-            cudaMemcpy(
-                (void*)dev_class,
-                class_cpy,
-                class_size,
-                cudaMemcpyHostToDevice
-                )
-            );
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            (void*)dev_class,
+            class_cpy,
+            class_size,
+            cudaMemcpyHostToDevice
+            )
+        );
 
-        free((void*)class_cpy); // Can safely free since underclasses get nothing
+    free((void*)class_cpy); // Can safely free since underclasses get nothing
         
-        return (void*) dev_class;
-    }
-    #else
-    {
-        return NULL;
-    }
-    #endif
+    return (void*) dev_class;
+#else
+    return NULL;
+#endif
 }
 
-static void MyriadClass_decudafy(void* _self, void* cuda_self)
+static void MyriadClass_decudafy(void* _self __attribute__((unused)), void* cuda_self __attribute__((unused)))
 {
     fprintf(stderr, "De-CUDAfying a class is undefined behavior. Aborted.\n");
     return;
@@ -268,36 +257,6 @@ void* myriad_new(const void* _class, ...)
     va_end(ap);
     
     return curr_obj;
-}
-
-//----------------------------
-//         Class Of
-//----------------------------
-
-const void* myriad_class_of(const void* _self)
-{
-    const struct MyriadObject* self = (const struct MyriadObject*) _self;
-    return self->m_class;
-}
-
-//----------------------------
-//         Size Of
-//----------------------------
-
-size_t myriad_size_of(const void* _self)
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-
-    return m_class->size;
-}
-
-//----------------------------
-//         Is A
-//----------------------------
-
-int myriad_is_a(const void* _self, const struct MyriadClass* m_class)
-{
-    return _self && myriad_class_of(_self) == m_class;
 }
 
 //----------------------------
@@ -416,105 +375,101 @@ void super_decudafy(const void* _class, void* _self, void* cuda_self)
 int initCUDAObjects()
 {
     // Can't initialize if there be no CUDA
-    #ifdef CUDA
-    {
-        ////////////////////////////////////////////////
-        // Pre-allocate GPU classes for self-reference /
-        ////////////////////////////////////////////////
+#ifdef CUDA
+    ////////////////////////////////////////////////
+    // Pre-allocate GPU classes for self-reference /
+    ////////////////////////////////////////////////
 
-        const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
+    const struct MyriadClass *obj_addr = NULL, *class_addr = NULL;
     
-        //TODO: Not sure if we need these; surely we can just use object[x].size instead?
-        const size_t obj_size = sizeof(struct MyriadObject);
-        const size_t class_size = sizeof(struct MyriadClass);
+    //TODO: Not sure if we need these; surely we can just use object[x].size instead?
+    const size_t obj_size = sizeof(struct MyriadObject);
+    const size_t class_size = sizeof(struct MyriadClass);
 
-        // Allocate class and object structs on the GPU.
-        CUDA_CHECK_RETURN(cudaMalloc((void**)&obj_addr, class_size)); 
-        CUDA_CHECK_RETURN(cudaMalloc((void**)&class_addr, class_size));
+    // Allocate class and object structs on the GPU.
+    CUDA_CHECK_RETURN(cudaMalloc((void**)&obj_addr, class_size)); 
+    CUDA_CHECK_RETURN(cudaMalloc((void**)&class_addr, class_size));
 
-        ///////////////////////////////////////////////////
-        // Static initialization using "Anonymous"  Class /
-        ///////////////////////////////////////////////////
+    ///////////////////////////////////////////////////
+    // Static initialization using "Anonymous"  Class /
+    ///////////////////////////////////////////////////
 
-        const struct MyriadClass anon_class_class = {
-            {class_addr}, // MyriadClass' class is itself
-            obj_addr,     // Superclass is MyriadObject (a Class is an Object)
-            class_addr,   // Device class is itself (since we're on the GPU)
-            class_size,   // Size is the class size (methods and all)
-            NULL,         // No constructor on the GPU
-            NULL,         // No destructor on the GPU
-            NULL,         // No cudafication; we're already on the GPU!
-            NULL,         // No decudafication; we *stay* on the GPU.
-        };
+    const struct MyriadClass anon_class_class = {
+        {class_addr}, // MyriadClass' class is itself
+        obj_addr,     // Superclass is MyriadObject (a Class is an Object)
+        class_addr,   // Device class is itself (since we're on the GPU)
+        class_size,   // Size is the class size (methods and all)
+        NULL,         // No constructor on the GPU
+        NULL,         // No destructor on the GPU
+        NULL,         // No cudafication; we're already on the GPU!
+        NULL,         // No decudafication; we *stay* on the GPU.
+    };
 
-        CUDA_CHECK_RETURN(
-            cudaMemcpy(
-                (void**) class_addr,
-                &anon_class_class,
-                sizeof(struct MyriadClass),
-                cudaMemcpyHostToDevice
-                )
-            );  
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            (void**) class_addr,
+            &anon_class_class,
+            sizeof(struct MyriadClass),
+            cudaMemcpyHostToDevice
+            )
+        );  
 
-        // Remember to update static CPU class object
-        object[1].device_class = class_addr; //TODO: Replace with memcpy?
+    // Remember to update static CPU class object
+    object[1].device_class = class_addr; //TODO: Replace with memcpy?
 
-        /////////////////////////////////////////////////////////
-        // Static initialization using "Anonymous" Object Class /
-        /////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////
+    // Static initialization using "Anonymous" Object Class /
+    /////////////////////////////////////////////////////////
     
-        const struct MyriadClass anon_obj_class = {
-            {class_addr}, // It's class is MyriadClass (on GPU, of course)
-            obj_addr,     // Superclass is itself
-            class_addr,   // Device class is it's class (since we're on the GPU)
-            obj_size,     // Size is effectively a pointer
-            NULL,         // No constructor on the GPU
-            NULL,         // No destructor on the GPU
-            NULL,         // No cudafication; we're already on the GPU!
-            NULL,         // No decudafication; we *stay* on the GPU
-        };
+    const struct MyriadClass anon_obj_class = {
+        {class_addr}, // It's class is MyriadClass (on GPU, of course)
+        obj_addr,     // Superclass is itself
+        class_addr,   // Device class is it's class (since we're on the GPU)
+        obj_size,     // Size is effectively a pointer
+        NULL,         // No constructor on the GPU
+        NULL,         // No destructor on the GPU
+        NULL,         // No cudafication; we're already on the GPU!
+        NULL,         // No decudafication; we *stay* on the GPU
+    };
     
-        CUDA_CHECK_RETURN(
-            cudaMemcpy(
-                (void**) obj_addr,
-                &anon_obj_class,
-                sizeof(struct MyriadClass),
-                cudaMemcpyHostToDevice
-                )
-            );
+    CUDA_CHECK_RETURN(
+        cudaMemcpy(
+            (void**) obj_addr,
+            &anon_obj_class,
+            sizeof(struct MyriadClass),
+            cudaMemcpyHostToDevice
+            )
+        );
     
-        // Remember to update static CPU object
-        object[0].device_class = (const struct MyriadClass*) obj_addr; //TODO: Replace with memcpy?
+    // Remember to update static CPU object
+    object[0].device_class = (const struct MyriadClass*) obj_addr; //TODO: Replace with memcpy?
 
-        /////////////////////////////////////////////////
-        // Memcpy GPU class pointers to *_dev_t symbols /
-        /////////////////////////////////////////////////
+    /////////////////////////////////////////////////
+    // Memcpy GPU class pointers to *_dev_t symbols /
+    /////////////////////////////////////////////////
 
-        CUDA_CHECK_RETURN(
-            cudaMemcpyToSymbol(
-                (const void*) &MyriadClass_dev_t,
-                &class_addr,
-                sizeof(void*),
-                0,
-                cudaMemcpyHostToDevice
-                )
-            );
+    CUDA_CHECK_RETURN(
+        cudaMemcpyToSymbol(
+            (const void*) &MyriadClass_dev_t,
+            &class_addr,
+            sizeof(void*),
+            0,
+            cudaMemcpyHostToDevice
+            )
+        );
 
-        CUDA_CHECK_RETURN(
-            cudaMemcpyToSymbol(
-                (const void*) &MyriadObject_dev_t,
-                &obj_addr,
-                sizeof(void*),
-                0,
-                cudaMemcpyHostToDevice
-                )
-            );
+    CUDA_CHECK_RETURN(
+        cudaMemcpyToSymbol(
+            (const void*) &MyriadObject_dev_t,
+            &obj_addr,
+            sizeof(void*),
+            0,
+            cudaMemcpyHostToDevice
+            )
+        );
 
-        return 0;
-    } 
-    #else
-    {
-        return EXIT_FAILURE;
-    }
-    #endif
+    return 0;
+#else
+    return EXIT_FAILURE;
+#endif
 }

@@ -45,6 +45,6 @@ struct HHSpikeGABAAMechanismClass
 	struct MechanismClass _; //! HHSpikeGABAAMechanismClass : MechanismClass
 };
 
-void initHHSpikeGABAAMechanism(const bool cuda_init);
+void initHHSpikeGABAAMechanism(void);
 
 #endif /* HHSPIKEGABAACURRMECHANISM_H */

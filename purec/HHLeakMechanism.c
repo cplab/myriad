@@ -101,10 +101,9 @@ static void* HHLeakMechanismClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHLeakMechanism;
-const void* HHLeakMechanismClass;
+const void *HHLeakMechanism, *HHLeakMechanismClass;
 
-void initHHLeakMechanism(const bool init_cuda)
+void initHHLeakMechanism(void)
 {
 	if (!HHLeakMechanismClass)
 	{
@@ -117,25 +116,22 @@ void initHHLeakMechanism(const bool init_cuda)
 				0
 			);
 		
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHLeakMechanismClass, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHLeakMechanismClass)->device_class = 
-				(struct MyriadClass*) tmp_mech_c_t;
+#ifdef CUDA
+        void* tmp_mech_c_t = myriad_cudafy((void*)HHLeakMechanismClass, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) HHLeakMechanismClass)->device_class = 
+            (struct MyriadClass*) tmp_mech_c_t;
 			
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHLeakMechanismClass_dev_t,
-					&tmp_mech_c_t,
-					sizeof(struct HHLeakMechanismClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHLeakMechanismClass_dev_t,
+                &tmp_mech_c_t,
+                sizeof(struct HHLeakMechanismClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 
 	if (!HHLeakMechanism)
@@ -150,25 +146,22 @@ void initHHLeakMechanism(const bool init_cuda)
 				0
 			);
 		
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHLeakMechanism, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHLeakMechanism)->device_class = 
-				(struct MyriadClass*) tmp_mech_t;
+#ifdef CUDA
+        void* tmp_mech_t = myriad_cudafy((void*)HHLeakMechanism, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) HHLeakMechanism)->device_class = 
+            (struct MyriadClass*) tmp_mech_t;
 
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHLeakMechanism_dev_t,
-					&tmp_mech_t,
-					sizeof(struct HHLeakMechanism*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHLeakMechanism_dev_t,
+                &tmp_mech_t,
+                sizeof(struct HHLeakMechanism*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 }
 

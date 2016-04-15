@@ -190,7 +190,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 
 const void *CompartmentClass, *Compartment;
 
-void initCompartment(const bool init_cuda)
+void initCompartment(void)
 {
 	if (!CompartmentClass)
 	{
@@ -206,22 +206,19 @@ void initCompartment(const bool init_cuda)
 		struct MyriadObject* mech_class_obj = (struct MyriadObject*) CompartmentClass;
 		memcpy( (void**) &mech_class_obj->m_class, &CompartmentClass, sizeof(void*));
 
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_comp_c_t = myriad_cudafy((void*)CompartmentClass, 1);
-			((struct MyriadClass*) CompartmentClass)->device_class = (struct MyriadClass*) tmp_comp_c_t;
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &CompartmentClass_dev_t,
-					&tmp_comp_c_t,
-					sizeof(struct CompartmentClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+#ifdef CUDA
+        void* tmp_comp_c_t = myriad_cudafy((void*)CompartmentClass, 1);
+        ((struct MyriadClass*) CompartmentClass)->device_class = (struct MyriadClass*) tmp_comp_c_t;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &CompartmentClass_dev_t,
+                &tmp_comp_c_t,
+                sizeof(struct CompartmentClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 	
 	if (!Compartment)
@@ -237,23 +234,19 @@ void initCompartment(const bool init_cuda)
 				   0
 			);
 
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_t = myriad_cudafy((void*)Compartment, 1);
-			((struct MyriadClass*) Compartment)->device_class = (struct MyriadClass*) tmp_mech_t;
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &Compartment_dev_t,
-					&tmp_mech_t,
-					sizeof(struct Compartment*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-
-		}
-		#endif
+#ifdef CUDA
+        void* tmp_mech_t = myriad_cudafy((void*)Compartment, 1);
+        ((struct MyriadClass*) Compartment)->device_class = (struct MyriadClass*) tmp_mech_t;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &Compartment_dev_t,
+                &tmp_mech_t,
+                sizeof(struct Compartment*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 	
 }

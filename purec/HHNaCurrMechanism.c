@@ -121,10 +121,8 @@ static void* HHNaCurrMechanismClass_cudafy(void* _self, int clobber)
 const void* HHNaCurrMechanism;
 const void* HHNaCurrMechanismClass;
 
-void initHHNaCurrMechanism(const bool init_cuda)
+void initHHNaCurrMechanism(void)
 {
-	// initCompartment(init_cuda);
-	
 	if (!HHNaCurrMechanismClass)
 	{
 		HHNaCurrMechanismClass =
@@ -136,25 +134,22 @@ void initHHNaCurrMechanism(const bool init_cuda)
 				0
 			);
 		
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHNaCurrMechanismClass, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHNaCurrMechanismClass)->device_class = 
-				(struct MyriadClass*) tmp_mech_c_t;
+#ifdef CUDA
+        void* tmp_mech_c_t = myriad_cudafy((void*)HHNaCurrMechanismClass, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) HHNaCurrMechanismClass)->device_class = 
+            (struct MyriadClass*) tmp_mech_c_t;
 			
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHNaCurrMechanismClass_dev_t,
-					&tmp_mech_c_t,
-					sizeof(struct HHNaCurrMechanismClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHNaCurrMechanismClass_dev_t,
+                &tmp_mech_c_t,
+                sizeof(struct HHNaCurrMechanismClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 
 	if (!HHNaCurrMechanism)
@@ -169,25 +164,22 @@ void initHHNaCurrMechanism(const bool init_cuda)
 				0
 			);
 		
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHNaCurrMechanism, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHNaCurrMechanism)->device_class = 
-				(struct MyriadClass*) tmp_mech_t;
+#ifdef CUDA
+        void* tmp_mech_t = myriad_cudafy((void*)HHNaCurrMechanism, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) HHNaCurrMechanism)->device_class = 
+            (struct MyriadClass*) tmp_mech_t;
 
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHNaCurrMechanism_dev_t,
-					&tmp_mech_t,
-					sizeof(struct HHNaCurrMechanism*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHNaCurrMechanism_dev_t,
+                &tmp_mech_t,
+                sizeof(struct HHNaCurrMechanism*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
 	}
 }
 

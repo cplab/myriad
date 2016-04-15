@@ -135,7 +135,7 @@ static void* MechanismClass_cudafy(void* _self, int clobber)
 
 const void *MechanismClass, *Mechanism;
 
-void initMechanism(bool init_cuda)
+void initMechanism(void)
 {
 	if (!MechanismClass)
 	{
@@ -151,24 +151,21 @@ void initMechanism(bool init_cuda)
 		struct MyriadObject* mech_class_obj = NULL; mech_class_obj = (struct MyriadObject*) MechanismClass;
 		memcpy( (void**) &mech_class_obj->m_class, &MechanismClass, sizeof(void*));
 
-		#ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)MechanismClass, 1);
-			((struct MyriadClass*) MechanismClass)->device_class = (struct MyriadClass*) tmp_mech_c_t;
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &MechanismClass_dev_t,
-					&tmp_mech_c_t,
-					sizeof(struct MechanismClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
-		#endif
-	}
-	
+#ifdef CUDA
+        void* tmp_mech_c_t = myriad_cudafy((void*)MechanismClass, 1);
+        ((struct MyriadClass*) MechanismClass)->device_class = (struct MyriadClass*) tmp_mech_c_t;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &MechanismClass_dev_t,
+                &tmp_mech_c_t,
+                sizeof(struct MechanismClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
+#endif
+    }
+    
 	if (!Mechanism)
 	{
 		Mechanism = 
@@ -181,9 +178,7 @@ void initMechanism(bool init_cuda)
 				   0
 			);
 
-		#ifdef CUDA
-		if (init_cuda)
-		{
+#ifdef CUDA
 			void* tmp_mech_t = myriad_cudafy((void*)Mechanism, 1);
 			((struct MyriadClass*) Mechanism)->device_class = (struct MyriadClass*) tmp_mech_t;
 			CUDA_CHECK_RETURN(
@@ -196,8 +191,6 @@ void initMechanism(bool init_cuda)
 					)
 				);
 
-		}
-		#endif
-	}
-	
+#endif
+    }
 }

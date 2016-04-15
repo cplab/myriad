@@ -81,9 +81,7 @@ struct CompartmentClass
 
 /**
  * Initializes prototype compartment infrastructure on the heap.
- *
- * @param[in]  init_cuda  flag for directing CUDA prototype initialization
  */
-extern void initCompartment(const bool init_cuda);
+extern void initCompartment(void);
 
 #endif /* COMPARTMENT_H */

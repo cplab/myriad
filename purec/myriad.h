@@ -32,6 +32,36 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+// Simulation parameters
+#define MYRIAD_ALLOCATOR
+#define FAST_EXP
+#define NUM_THREADS 1
+#define SIMUL_LEN 1000000
+#define DT 0.001
+#define NUM_CELLS 64
+#define MAX_NUM_MECHS 2048
+// Leak params
+#define G_LEAK 1.0
+#define E_REV -65.0
+// Sodium params
+#define G_NA 35.0
+#define E_NA 55.0
+#define HH_M 0.5
+#define HH_H 0.1
+// Potassium params
+#define G_K 9.0
+#define E_K -90.0
+#define HH_N 0.1
+// Compartment Params
+#define CM 1.0
+#define INIT_VM -65.0
+// GABA-a Params
+#define GABA_VM_THRESH 0.0
+#define GABA_G_MAX 0.1
+#define GABA_TAU_ALPHA 0.08333333333333333
+#define GABA_TAU_BETA 10.0
+#define GABA_REV -75.0
+
 //! Use myriad's own private allocator scheme
 #ifdef MYRIAD_ALLOCATOR
 #include "myriad_alloc.h"
@@ -85,35 +115,6 @@ extern ddtable_t exp_table;
 #else
 #define EXP(x) _exp(x)
 #endif /* USE_DDTABLE */
-
-
-// Simulation parameters
-#define NUM_THREADS 1
-#define SIMUL_LEN 1000000
-#define DT 0.001
-#define NUM_CELLS 20
-#define MAX_NUM_MECHS 32
-// Leak params
-#define G_LEAK 1.0
-#define E_REV -65.0
-// Sodium params
-#define G_NA 35.0
-#define E_NA 55.0
-#define HH_M 0.5
-#define HH_H 0.1
-// Potassium params
-#define G_K 9.0
-#define E_K -90.0
-#define HH_N 0.1
-// Compartment Params
-#define CM 1.0
-#define INIT_VM -65.0
-// GABA-a Params
-#define GABA_VM_THRESH 0.0
-#define GABA_G_MAX 0.1
-#define GABA_TAU_ALPHA 0.08333333333333333
-#define GABA_TAU_BETA 10.0
-#define GABA_REV -75.0
 
 #ifdef CUDA
 #include <cuda_runtime.h>

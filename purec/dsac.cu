@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include <assert.h>
 #include <string.h>
 #include <math.h>
 #include <dirent.h>
@@ -13,6 +12,9 @@
 #include <vector_types.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
+const bool USE_CUDA = true;
+#else
+const bool USE_CUDA = false;
 #endif
 
 // Myriad C API Headers
@@ -30,7 +32,6 @@ extern "C" {
 #include "HHKCurrMechanism.h"
 #include "HHSpikeGABAAMechanism.h"
 #include "DCCurrentMech.h"
-#include "mmq.h"
     
 #ifdef __cplusplus
 }
@@ -82,10 +83,16 @@ static void* new_dsac_soma(unsigned int id,
 		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 0.0);
 	}
 
-	assert(0 == add_mechanism(hh_comp_obj, hh_leak_mech));
-	assert(0 == add_mechanism(hh_comp_obj, hh_na_curr_mech));
-	assert(0 == add_mechanism(hh_comp_obj, hh_k_curr_mech));
-	assert(0 == add_mechanism(hh_comp_obj, dc_curr_mech));
+	const int result =
+        add_mechanism(hh_comp_obj, hh_leak_mech) ||
+        add_mechanism(hh_comp_obj, hh_na_curr_mech) ||
+        add_mechanism(hh_comp_obj, hh_k_curr_mech) ||
+        add_mechanism(hh_comp_obj, dc_curr_mech);
+    if (result)
+    {
+        fputs("Failed to add mechanisms to compartment", stderr);
+        exit(EXIT_FAILURE);
+    }
 
     for (uint64_t i = 0; i < num_connxs; i++)
     {
@@ -103,18 +110,19 @@ static void* new_dsac_soma(unsigned int id,
                                                GABA_TAU_ALPHA,
                                                GABA_TAU_BETA,
                                                GABA_REV);
-        assert(0 == add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech));
-        // DEBUG_PRINTF("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
-        //              connect_to[i],
-        //              id);
+        if (add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech))
+        {
+            fputs("Unable to add GABA current mechanism", stderr);
+            exit(EXIT_FAILURE);
+        }
+        DEBUG_PRINTF("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
+                     connect_to[i],
+                     id);
     }
 
 	return hh_comp_obj;
 }
 
-#ifndef MYRIAD_ALLOCATOR
-static ssize_t calc_total_size(int* num_allocs) __attribute__((unused));
-#endif
 static ssize_t calc_total_size(int* num_allocs)
 {
     ssize_t total_size = 0;
@@ -202,33 +210,33 @@ static inline void* _thread_run(void* arg)
 }
 #endif /* NUM_THREADS > 1 */
 
-static int dsac()
+int main(void)
 {
+    srand(42);
+
 #ifdef MYRIAD_ALLOCATOR
     int num_allocs = 0;
     const size_t total_mem_usage = calc_total_size(&num_allocs);
-    assert(myriad_alloc_init(total_mem_usage, num_allocs) == 0);
-    // DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
+    if (myriad_alloc_init(total_mem_usage, num_allocs))
+    {
+        fputs("Unable to initialize myriad allocator\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
 #endif /* MYRIAD_ALLOCATOR */
 
 #ifdef USE_DDTABLE
     exp_table = ddtable_new(DDTABLE_NUM_KEYS);
 #endif /* USE_DDTABLE */
 
-#ifdef CUDA
-    const bool use_cuda = true;
-#else
-    const bool use_cuda = false;
-#endif
-
-	initMechanism(use_cuda);
-    initCompartment(use_cuda);
-	initDCCurrMech(use_cuda);
-	initHHLeakMechanism(use_cuda);
-	initHHNaCurrMechanism(use_cuda);
-	initHHKCurrMechanism(use_cuda);
-	initHHSpikeGABAAMechanism(use_cuda);
-	initHHSomaCompartment(use_cuda);
+	initMechanism();
+    initCompartment();
+	initDCCurrMech();
+	initHHLeakMechanism();
+	initHHNaCurrMechanism();
+	initHHKCurrMechanism();
+	initHHSpikeGABAAMechanism();
+	initHHSomaCompartment();
 
 	void* network[NUM_CELLS];
     
@@ -248,7 +256,7 @@ static int dsac()
             } else {
                 to_connect[j] = j;   // Connect to cell j
             }
-            // DEBUG_PRINTF("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
+            DEBUG_PRINTF("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
         }
         
         const bool stimulate = rand() % 2 == 0;
@@ -275,7 +283,7 @@ static int dsac()
         if(pthread_create(&_threads[i], NULL, &_thread_run, (void*) i))
         {
             fprintf(stderr, "Could not create thread %lu\n", i);
-            return -1;
+            exit(EXIT_FAILURE);
         }
     }
     for(int i = 0; i < NUM_THREADS; ++i)
@@ -283,7 +291,7 @@ static int dsac()
         if(pthread_join(_threads[i], NULL))
         {
             fprintf(stderr, "Could not join thread %d\n", i);
-            return -1;
+            exit(EXIT_FAILURE);
         }
     }
 #else
@@ -300,122 +308,13 @@ static int dsac()
 #endif /* NUM_THREADS > 1 */
 
     // Cleanup
-    #ifdef USE_DDTABLE
+#ifdef USE_DDTABLE
     ddtable_free(exp_table);
-    #endif
+#endif
 
-    // Do IPC with parent python process
-    struct mmq_connector conn =
-        {
-            .msg_queue = mmq_init_mq(),
-            .socket_fd = mmq_socket_init(true, NULL),
-            .connection_fd = -1,
-            .server = true
-        };
-
-    // Main message loop
-    while(1)
-    {
-        // Reset message buffer
-        char* msg_buff = (char*) calloc(MMQ_MSG_SIZE + 1, sizeof(char));
-
-        ///////////////////////////////
-        // PHASE 1: SEND OBJECT SIZE //
-        ///////////////////////////////
-
-        // Wait for first message
-        puts("Waiting for object request message on queue...");
-        ssize_t msg_size = mq_receive(conn.msg_queue,
-                                      msg_buff,
-                                      MMQ_MSG_SIZE,
-                                      NULL);
-        if (msg_size < 0)
-        {
-            perror("mq_receive:");
-            exit(EXIT_FAILURE);
-        }
-        
-        // Process message for object request
-        int64_t obj_req = 0;
-        memcpy(&obj_req, msg_buff, MMQ_MSG_SIZE);
-        printf("Object data request: %" PRIi64 "\n", obj_req);
-        if (obj_req == -1)
-        {
-            puts("Terminating simulation.");
-            break;
-        }
-
-        // Send size of compartment object & wait for it to be accepted
-        size_t obj_size = myriad_size_of(network[obj_req]);
-        memset(msg_buff, 0, MMQ_MSG_SIZE + 1);
-        memcpy(msg_buff, &obj_size, sizeof(size_t));
-        if (mq_send(conn.msg_queue, msg_buff, MMQ_MSG_SIZE, 0) != 0)
-        {
-            perror("mq_send size");
-            exit(EXIT_FAILURE);
-        }
-        printf("Sent data on object size (size is %lu)\n", obj_size);
-
-        ///////////////////////////////
-        // PHASE 2: SEND OBJECT DATA //
-        ///////////////////////////////
-        
-        // Send object data
-        mmq_send_data(&conn, (unsigned char*) network[obj_req], obj_size);
-        puts("Sent object data.");
-
-        /////////////////////////////////////////////
-        // PHASE 3: SEND MECHANISM DATA ONE-BY-ONE //
-        /////////////////////////////////////////////
-        
-        const struct Compartment* as_cmp = (const struct Compartment*) network[obj_req];
-        printf("Sending information for %" PRIu64 " mechanisms.\n", as_cmp->num_mechs);
-        const uint64_t my_num_mechs = as_cmp->num_mechs;
-        for (uint64_t i = 0; i < my_num_mechs; i++)
-        {
-            // Send mechanism size data
-            size_t mech_size = myriad_size_of(as_cmp->my_mechs[i]);
-            if (mmq_send_data(&conn, &mech_size, sizeof(size_t)) != sizeof(mech_size))
-            {
-                fprintf(stderr, "Could not send mechanism %" PRIu64" size \n", i);
-            } else {
-                printf("Sent mechanism %" PRIu64 "'s size of %lu.\n", i, mech_size);
-            }
-
-            // Send mechanism object
-            if (mmq_send_data(&conn, as_cmp->my_mechs[i], mech_size) != (ssize_t) mech_size)
-            {
-                fprintf(stderr, "Could not send mechanism %" PRIu64"\n", i);
-            } else {
-                printf("Sent mechanism %" PRIu64 " completely.\n", i);                
-            }
-        }
-
-        puts("Sent all mechanism objects");
-
-        free(msg_buff);
-    }
+#ifdef MYRIAD_ALLOCATOR
+    myriad_finalize();
+#endif
     
-    puts("Exited message loop.");
-    
-    #ifdef MYRIAD_ALLOCATOR
-    assert(myriad_finalize() == 0);
-    #endif
-    
-    return 0;
-}
-
-///////////////////
-// Main function //
-///////////////////
-int main()
-{
-    srand(42);
-    // puts("Hello World!\n");
-
-	assert(0 == dsac());
-
-    // puts("\nDone.");
-
-    return EXIT_SUCCESS;
+    exit(EXIT_SUCCESS);
 }

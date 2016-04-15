@@ -134,10 +134,9 @@ static void* HHSomaCompartmentClass_cudafy(void* _self, int clobber)
 // Dynamic Initialization //
 ////////////////////////////
 
-const void* HHSomaCompartment;
-const void* HHSomaCompartmentClass;
+const void *HHSomaCompartment, *HHSomaCompartmentClass;
 
-void initHHSomaCompartment(const bool init_cuda)
+void initHHSomaCompartment(void)
 {
 	if (!HHSomaCompartmentClass)
 	{
@@ -151,20 +150,17 @@ void initHHSomaCompartment(const bool init_cuda)
 			);
 
 #ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_comp_c_t = myriad_cudafy((void*)HHSomaCompartmentClass, 1);
-			((struct MyriadClass*) HHSomaCompartmentClass)->device_class = (struct MyriadClass*) tmp_comp_c_t;
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHSomaCompartmentClass_dev_t,
-					&tmp_comp_c_t,
-					sizeof(struct HHSomaCompartmentClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
+        void* tmp_comp_c_t = myriad_cudafy((void*)HHSomaCompartmentClass, 1);
+        ((struct MyriadClass*) HHSomaCompartmentClass)->device_class = (struct MyriadClass*) tmp_comp_c_t;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHSomaCompartmentClass_dev_t,
+                &tmp_comp_c_t,
+                sizeof(struct HHSomaCompartmentClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
 #endif
 	}
 
@@ -184,20 +180,17 @@ void initHHSomaCompartment(const bool init_cuda)
 			);
 
 #ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHSomaCompartment, 1);
-			((struct MyriadClass*) HHSomaCompartment)->device_class = (struct MyriadClass*) tmp_mech_t;
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHSomaCompartment_dev_t,
-					&tmp_mech_t,
-					sizeof(struct HHSomaCompartment*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
+        void* tmp_mech_t = myriad_cudafy((void*)HHSomaCompartment, 1);
+        ((struct MyriadClass*) HHSomaCompartment)->device_class = (struct MyriadClass*) tmp_mech_t;
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHSomaCompartment_dev_t,
+                &tmp_mech_t,
+                sizeof(struct HHSomaCompartment*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
 #endif
 	}
 }

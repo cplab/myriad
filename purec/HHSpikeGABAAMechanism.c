@@ -27,7 +27,7 @@ static void* HHSpikeGABAAMechanism_ctor(void* _self, va_list* app)
 
     // Automatic calculations for t_p and A-bar, from Guoshi
     self->peak_cond_t = ((self->tau_alpha * self->tau_beta) /
-        (self->tau_beta - self->tau_alpha)) * 
+                         (self->tau_beta - self->tau_alpha)) * 
         log(self->tau_beta / self->tau_alpha);
 
     self->norm_const = 1.0 / 
@@ -125,7 +125,7 @@ static void* HHSpikeGABAAMechanismClass_cudafy(void* _self, int clobber)
 const void* HHSpikeGABAAMechanism;
 const void* HHSpikeGABAAMechanismClass;
 
-void initHHSpikeGABAAMechanism(const bool init_cuda)
+void initHHSpikeGABAAMechanism(void)
 {
 	if (!HHSpikeGABAAMechanismClass)
 	{
@@ -136,26 +136,23 @@ void initHHSpikeGABAAMechanism(const bool init_cuda)
 				sizeof(struct HHSpikeGABAAMechanismClass),
 				myriad_cudafy, HHSpikeGABAAMechanismClass_cudafy,
 				0
-			);
+                );
 		
 #ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_c_t = myriad_cudafy((void*)HHSpikeGABAAMechanismClass, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHSpikeGABAAMechanismClass)->device_class = 
-				(struct MyriadClass*) tmp_mech_c_t;
+        void* tmp_mech_c_t = myriad_cudafy((void*)HHSpikeGABAAMechanismClass, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) HHSpikeGABAAMechanismClass)->device_class = 
+            (struct MyriadClass*) tmp_mech_c_t;
 			
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHSpikeGABAAMechanismClass_dev_t,
-					&tmp_mech_c_t,
-					sizeof(struct HHSpikeGABAAMechanismClass*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHSpikeGABAAMechanismClass_dev_t,
+                &tmp_mech_c_t,
+                sizeof(struct HHSpikeGABAAMechanismClass*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
 #endif
 	}
 
@@ -169,26 +166,24 @@ void initHHSpikeGABAAMechanism(const bool init_cuda)
 				myriad_ctor, HHSpikeGABAAMechanism_ctor,
 				mechanism_fxn, HHSpikeGABAAMechanism_mech_fun,
 				0
-			);
+                );
 		
 #ifdef CUDA
-		if (init_cuda)
-		{
-			void* tmp_mech_t = myriad_cudafy((void*)HHSpikeGABAAMechanism, 1);
-			// Set our device class to the newly-cudafied class object
-			((struct MyriadClass*) HHSpikeGABAAMechanism)->device_class = 
-				(struct MyriadClass*) tmp_mech_t;
 
-			CUDA_CHECK_RETURN(
-				cudaMemcpyToSymbol(
-					(const void*) &HHSpikeGABAAMechanism_dev_t,
-					&tmp_mech_t,
-					sizeof(struct HHSpikeGABAAMechanism*),
-					0,
-					cudaMemcpyHostToDevice
-					)
-				);
-		}
+        void* tmp_mech_t = myriad_cudafy((void*)HHSpikeGABAAMechanism, 1);
+        // Set our device class to the newly-cudafied class object
+        ((struct MyriadClass*) HHSpikeGABAAMechanism)->device_class = 
+            (struct MyriadClass*) tmp_mech_t;
+
+        CUDA_CHECK_RETURN(
+            cudaMemcpyToSymbol(
+                (const void*) &HHSpikeGABAAMechanism_dev_t,
+                &tmp_mech_t,
+                sizeof(struct HHSpikeGABAAMechanism*),
+                0,
+                cudaMemcpyHostToDevice
+                )
+            );
 #endif
 	}
 }

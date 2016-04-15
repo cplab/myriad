@@ -43,6 +43,6 @@ struct HHLeakMechanismClass
 	struct MechanismClass _;
 };
 
-extern void initHHLeakMechanism(const bool cuda_init);
+extern void initHHLeakMechanism(void);
 
 #endif /* HHLEAKMECHANISM_H */
