@@ -6,6 +6,7 @@
 
 #include "MyriadObject.h"
 #include "MyriadObject.cuh"
+#include "myriad_alloc.h"
 
 ////////////////////////////////////////////
 // Forward declaration for static methods //

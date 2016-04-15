@@ -25,7 +25,7 @@ __device__ void HHSomaCompartment_cuda_simul_fxn(void* _self,
 	// Calculate mechanism contribution to current term
 	for (uint64_t i = 0; i < self->_.num_mechs; i++)
 	{
-		struct Mechanism* curr_mech = self->_.my_mechs[i];
+		struct Mechanism* curr_mech = (struct Mechanism*) self->_.my_mechs[i];
 		struct Compartment* pre_comp = (struct Compartment*) network[curr_mech->source_id];
 		
 		//TODO: Make this conditional on specific Mechanism types

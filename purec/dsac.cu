@@ -23,6 +23,9 @@ extern "C" {
 #endif
 
 #include "myriad.h"
+#ifdef MYRIAD_ALLOCATOR    
+#include "myriad_alloc.h"
+#endif
 #include "MyriadObject.h"
 #include "Mechanism.h"
 #include "Compartment.h"
@@ -210,6 +213,14 @@ static inline void* _thread_run(void* arg)
 }
 #endif /* NUM_THREADS > 1 */
 
+// CUDA Kernel
+#ifdef CUDA
+__global__ void myriad_cuda_simul(void* network[NUM_CELLS])
+{
+    int i = threadIdx.x;
+}
+#endif
+
 int main(void)
 {
     srand(42);
@@ -223,11 +234,13 @@ int main(void)
         exit(EXIT_FAILURE);
     }
     DEBUG_PRINTF("total size: %lu, num allocs: %i\n", total_mem_usage, num_allocs);
+    if (atexit((void (*)(void)) myriad_finalize))
+    {
+        fputs("Could not set myriad_finalize to run at exit\n", stderr);
+        myriad_finalize();
+        exit(EXIT_FAILURE);
+    }
 #endif /* MYRIAD_ALLOCATOR */
-
-#ifdef USE_DDTABLE
-    exp_table = ddtable_new(DDTABLE_NUM_KEYS);
-#endif /* USE_DDTABLE */
 
 	initMechanism();
     initCompartment();
@@ -238,7 +251,7 @@ int main(void)
 	initHHSpikeGABAAMechanism();
 	initHHSomaCompartment();
 
-	void* network[NUM_CELLS];
+	void* network[NUM_CELLS] = {NULL};
     
     const unsigned int num_connxs = NUM_CELLS;
     int64_t to_connect[num_connxs];
@@ -306,11 +319,6 @@ int main(void)
         current_time += DT;
     }
 #endif /* NUM_THREADS > 1 */
-
-    // Cleanup
-#ifdef USE_DDTABLE
-    ddtable_free(exp_table);
-#endif
 
 #ifdef MYRIAD_ALLOCATOR
     myriad_finalize();

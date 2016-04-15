@@ -1,7 +1,7 @@
 ###############################
 #     CUDA Binaries & Libs    #
 ###############################
-CUDA_PATH	?= /usr/lib/nvidia-cuda-toolkit
+CUDA_PATH	?= /usr/local/cuda
 CUDA_INC_PATH	?= $(CUDA_PATH)/include
 CUDA_BIN_PATH	?= $(CUDA_PATH)/bin
 CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
@@ -37,12 +37,12 @@ endif
 CUFLAGS		:= $(COMMON_CFLAGS)
 
 # NVCC & related flags
-NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
+NVCC_HOSTCC_FLAGS = --device-c -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
 NVCCFLAGS := -m$(OS_SIZE)
 ifdef DEBUG
 NVCCFLAGS += -g -G
 endif
-GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
+GENCODE_FLAGS := -gencode arch=compute_35,code=sm_35
 EXTRA_NVCC_FLAGS := -rdc=true
 
 ###############################
@@ -55,8 +55,6 @@ MYRIAD_LIB_OBJS	:= MyriadObject.c.o Mechanism.c.o Compartment.c.o \
 	DCCurrentMech.c.o HHGradedGABAAMechanism.c.o HHSpikeGABAAMechanism.c.o myriad_alloc.c.o
 
 # CUDA Myriad Library
-CUDA_MYRIAD_LIB_LDNAME := cudamyriad
-CUDA_MYRIAD_LIB	:= 
 CUDA_MYRIAD_LIB_OBJS = MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 	HHSomaCompartment.cu.o HHLeakMechanism.cu.o HHNaCurrMechanism.cu.o \
 	HHKCurrMechanism.cu.o DCCurrentMech.cu.o HHGradedGABAAMechanism.cu.o \
@@ -68,7 +66,7 @@ CUDA_MYRIAD_LIB_OBJS = MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 
 LD_FLAGS            := -L. -lm -lpthread -lrt
 CUDART_LD_FLAGS     := -L$(CUDA_LIB_PATH) -lcudart
-CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) -l$(CUDA_MYRIAD_LIB_LDNAME) $(LD_FLAGS)
+CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) $(LD_FLAGS) -Wl,-rpath=$(CUDA_LIB_PATH)
 
 ###############################
 #       Definition Flags      #
@@ -164,7 +162,7 @@ endif
 
 # ------- Host Linker Generated Binary -------
 
-$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB_OBJS) $(CUDA_MYRIAD_LIB)
+$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB_OBJS) $(CUDA_MYRIAD_LIB_OBJS)
 ifdef CUDA
 	$(CC) -o $@ $+ $(CUDA_BIN_LDFLAGS)
 else

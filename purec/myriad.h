@@ -64,7 +64,6 @@
 
 //! Use myriad's own private allocator scheme
 #ifdef MYRIAD_ALLOCATOR
-#include "myriad_alloc.h"
 #define _my_malloc(size) myriad_malloc(size, true)
 #define _my_calloc(num, size) myriad_calloc(num, size, true)
 #define _my_free(loc) myriad_free(loc)
@@ -115,11 +114,6 @@ extern ddtable_t exp_table;
 #else
 #define EXP(x) _exp(x)
 #endif /* USE_DDTABLE */
-
-#ifdef CUDA
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#endif
 
 // Unit testing macros
 #ifdef UNIT_TEST
