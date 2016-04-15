@@ -16,7 +16,7 @@ struct HHSomaCompartment
     //! Membrane voltage - mV
     double vm[SIMUL_LEN];
     //! Length of soma_vm array
-    uint64_t vm_len;
+    uint_fast32_t vm_len;
     //! Capacitance - nF
     double cm;   
 };

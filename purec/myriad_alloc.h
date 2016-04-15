@@ -39,7 +39,7 @@ struct alloc_buffer
     //! Current metadata size
     size_t metadata_size;
     //! Current metadata entry.
-    uint64_t meta_indx;
+    uint_fast32_t meta_indx;
     //! Allocation metadata.
     struct alloc_data* metadata;
     //! Raw data buffer

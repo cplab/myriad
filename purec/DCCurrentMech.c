@@ -16,8 +16,8 @@ static void* DCCurrentMech_ctor(void* _self, va_list* app)
 	struct DCCurrentMech* self = 
 		(struct DCCurrentMech*) super_ctor(DCCurrentMech, _self, app);
     
-	self->t_start = va_arg(*app, uint64_t);
-	self->t_stop = va_arg(*app, uint64_t);
+	self->t_start = va_arg(*app, uint_fast32_t);
+	self->t_stop = va_arg(*app, uint_fast32_t);
     self->amplitude = va_arg(*app, double);
 	
 	return self;
@@ -26,9 +26,8 @@ static void* DCCurrentMech_ctor(void* _self, va_list* app)
 static double DCCurrentMech_mech_fun(void* _self,
                                      void* pre_comp,
                                      void* post_comp,
-                    
                                      const double global_time,
-                                     const uint64_t curr_step)
+                                     const uint_fast32_t curr_step)
 {
 	const struct DCCurrentMech* self = (const struct DCCurrentMech*) _self;
 
@@ -70,7 +69,7 @@ static void* DCCurrentMechClass_cudafy(void* _self, int clobber)
 				);
 			copy_class._.m_mech_fxn = my_mech_fun;
 		
-			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
+			// DEBUG_PRINTF("Copy Class mech fxn: %p\n", (void*) my_mech_fun);
 		
 			const struct MyriadClass* super_class = (const struct MyriadClass*) MechanismClass;
 			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));

@@ -37,9 +37,9 @@ struct DCCurrentMech
     //! DCCurrentMech : Mechanism
 	const struct Mechanism _;
     //! Time step at which current starts flowing
-	uint64_t t_start;
+	uint_fast32_t t_start;
     //! Time step at which current stops flowing
-	uint64_t t_stop;
+	uint_fast32_t t_stop;
     //! Current amplitude in nA
 	double amplitude;
 };

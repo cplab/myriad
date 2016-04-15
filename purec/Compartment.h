@@ -22,7 +22,7 @@
 typedef void (* compartment_simul_fxn_t) (void* _self,
                                           void** network,
                                           const double global_time,
-                                          const uint64_t curr_step);
+                                          const uint_fast32_t curr_step);
 
 //! Method for adding mechanisms to a compartment
 typedef int (* compartment_add_mech_t) (void* _self, void* mechanism);
@@ -43,7 +43,7 @@ extern const void* CompartmentClass;
 extern void simul_fxn(void* _self,
                       void** network,
                       const double global_time,
-                      const uint64_t curr_step);
+                      const uint_fast32_t curr_step);
 
 /**
  * Generic mechanism adder delegator.
@@ -61,9 +61,9 @@ struct Compartment
     //! Compartment : MyriadObject
 	const struct MyriadObject _;
     //! This compartment's unique ID number
-	uint64_t id;
+	uint_fast32_t id;
     //! Number of mechanisms in this compartment
-	uint64_t num_mechs;
+	uint_fast32_t num_mechs;
     //! List of mechanisms in this compartment
 	void* my_mechs[MAX_NUM_MECHS];
 };

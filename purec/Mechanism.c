@@ -17,7 +17,7 @@ static void* Mechanism_ctor(void* _self, va_list* app)
 {
 	struct Mechanism* self = (struct Mechanism*) super_ctor(Mechanism, _self, app);
 	
-	self->source_id = va_arg(*app, uint64_t);
+	self->source_id = va_arg(*app, uint_fast32_t);
 
 	return _self;
 }
@@ -30,7 +30,7 @@ static double Mechanism_mechanism_fxn(void* _self,
                                       void* pre_comp,
                                       void* post_comp,
                                       const double global_time,
-                                      const uint64_t curr_step)
+                                      const uint_fast32_t curr_step)
 {
 	// const struct Mechanism* self = (const struct Mechanism*) _self;
 	// printf("My source id is %u\n", self->source_id);
@@ -41,7 +41,7 @@ double mechanism_fxn(void* _self,
                      void* pre_comp,
                      void* post_comp,
                      const double global_time,
-                     const uint64_t curr_step)
+                     const uint_fast32_t curr_step)
 {
 	const struct MechanismClass* m_class = (const struct MechanismClass*) myriad_class_of(_self);
 	assert(m_class->m_mech_fxn);
@@ -53,7 +53,7 @@ double super_mechanism_fxn(void* _class,
                            void* pre_comp,
                            void* post_comp,
                            const double global_time,
-                           const uint64_t curr_step)
+                           const uint_fast32_t curr_step)
 {
 	const struct MechanismClass* s_class=(const struct MechanismClass*) myriad_super(_class);
 	assert(_self && s_class->m_mech_fxn);
@@ -108,7 +108,7 @@ static void* MechanismClass_cudafy(void* _self, int clobber)
             )
         );
     copy_class.m_mech_fxn = my_mech_fun;
-    DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
+    // DEBUG_PRINTF("Copy Class mech fxn: %p\n", (void*) my_mech_fun);
 	
     // !!!!!!!!! IMPORTANT !!!!!!!!!!!!!!
     // By default we clobber the copy_class_class' superclass with

@@ -15,8 +15,8 @@ static void* Compartment_ctor(void* _self, va_list* app)
 {
 	struct Compartment* self = (struct Compartment*) super_ctor(Compartment, _self, app);
 
-	self->id = va_arg(*app, uint64_t);
-	self->num_mechs = va_arg(*app, uint64_t);
+	self->id = va_arg(*app, uint_fast32_t);
+	self->num_mechs = va_arg(*app, uint_fast32_t);
 
     // XXX: DEPRECATED
     // This allows us to "inherit" Mechanisms from other compartments easily.
@@ -39,7 +39,7 @@ static void* Compartment_ctor(void* _self, va_list* app)
 static void Compartment_simul_fxn(void* _self,
                                   void** network,
                                   const double global_time,
-                                  const uint64_t curr_step)
+                                  const uint_fast32_t curr_step)
 {
 	// const struct Compartment* self = (const struct Compartment*) _self;
 	// printf("My id is %u\n", self->id);
@@ -50,7 +50,7 @@ static void Compartment_simul_fxn(void* _self,
 void simul_fxn(void* _self,
                void** network,
                const double global_time,
-               const uint64_t curr_step)
+               const uint_fast32_t curr_step)
 {
 	const struct CompartmentClass* m_class = 
 		(const struct CompartmentClass*) myriad_class_of((void*) _self);
@@ -62,7 +62,7 @@ void super_simul_fxn(void* _class,
                      void* _self,
                      void** network,
                      const double global_time,
-                     const uint64_t curr_step)
+                     const uint_fast32_t curr_step)
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
 	assert(_self && s_class->m_compartment_simul_fxn);
@@ -166,7 +166,7 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 			);
 		copy_class.m_compartment_simul_fxn = my_comp_fun;
 		
-		DEBUG_PRINTF("Copy Class comp fxn: %p\n", my_comp_fun);
+		// DEBUG_PRINTF("Copy Class comp fxn: %p\n", (void*) my_comp_fun);
 		
 		const struct MyriadClass* super_class = (const struct MyriadClass*) MyriadClass;
 		memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));

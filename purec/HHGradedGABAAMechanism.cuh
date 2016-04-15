@@ -40,7 +40,7 @@ extern __device__ double HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
                                                               void* post_comp,
                                                               const double dt,
                                                               const double global_time,
-                                                              const uint64_t curr_step);
+                                                              const uint_fast32_t curr_step);
 
 #endif /* CUDA */
 #endif /* HHNACURRMECHANISM_CUH */

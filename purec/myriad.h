@@ -35,10 +35,10 @@
 // Simulation parameters
 #define MYRIAD_ALLOCATOR
 #define FAST_EXP
-#define NUM_THREADS 1
-#define SIMUL_LEN 1000000
+#define NUM_THREADS 2
+#define SIMUL_LEN 1000
 #define DT 0.001
-#define NUM_CELLS 64
+#define NUM_CELLS 2
 #define MAX_NUM_MECHS 2048
 // Leak params
 #define G_LEAK 1.0
@@ -86,34 +86,13 @@ union _eco
 extern __thread union _eco _eco;  //! Must be thread-local due to side-effects.
 #define EXP_A 1512775
 #define EXP_C 60801
-
-// Have to define a function in case of DDTABLE, since it uses a fxn ptr.
-#ifdef USE_DDTABLE
-extern double _exp(const double x);
-#else
-#define _exp(y) (_eco.n.i = EXP_A*(y) + (1072693248 - EXP_C), _eco.d)
-#endif /* USE_DDTABLE */
-
+#define EXP(y) (_eco.n.i = EXP_A*(y) + (1072693248 - EXP_C), _eco.d)
 #else
 // If not using fast exponential, just alias math.h exponential function
 #define _exp_helper exp
 #define _exp _exp_helper
 #endif /* FAST_EXP */
 
-
-//! Use hash table for exponential function lookups
-#ifdef USE_DDTABLE
-// Default number of keys
-#ifndef DDTABLE_NUM_KEYS
-#define DDTABLE_NUM_KEYS 67108864
-#endif
-
-#include "ddtable.h"
-extern ddtable_t exp_table;
-#define EXP(x) ddtable_check_get_set(exp_table, x, &_exp)
-#else
-#define EXP(x) _exp(x)
-#endif /* USE_DDTABLE */
 
 // Unit testing macros
 #ifdef UNIT_TEST
@@ -137,10 +116,8 @@ extern ddtable_t exp_table;
 #endif
 
 #ifdef DEBUG
-	//! Prints debug information string to stdout with file and line info.
-    #define DEBUG_PRINTF(str, ...) do {  \
-        fprintf(stdout, "DEBUG @ " __FILE__ ":" __LINE__ ": "#str, __VA_ARGS__); \
-	} while(0)
+	//! Prints debug information string to stderr with file and line info.
+    #define DEBUG_PRINTF(str, ...) fprintf(stderr, str, __VA_ARGS__)
 #else
     #define DEBUG_PRINTF(...) do {} while (0)
 #endif

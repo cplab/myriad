@@ -145,7 +145,7 @@ void myriad_free(void* loc)
 
     // Calculate offset from pointer location to heap.
     const ptrdiff_t offset = (uintptr_t) loc - (uintptr_t) myriad_memdat.heap;
-    for (uint64_t i = 0; i < myriad_memdat.metadata_size; i++)
+    for (uint_fast32_t i = 0; i < myriad_memdat.metadata_size; i++)
     {
         if (offset == myriad_memdat.metadata[i].offset)
         {

@@ -32,7 +32,7 @@ __device__ double HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
                                                        void* pre_comp,
                                                        void* post_comp,
                                                        const double global_time,
-                                                       const uint64_t curr_step)
+                                                       const uint_fast32_t curr_step)
 {
 	struct HHSpikeGABAAMechanism* self = (struct HHSpikeGABAAMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;

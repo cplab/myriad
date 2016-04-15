@@ -14,7 +14,7 @@ __device__ void Compartment_cuda_simul_fxn(
 	void* _self,
 	void** network,
     const double global_time,
-	const uint64_t curr_step
+	const uint_fast32_t curr_step
 	)
 {
 	const struct Compartment* self = (const struct Compartment*) _self;
@@ -28,9 +28,8 @@ __device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartm
 __device__ void cuda_simul_fxn(
 	void* _self,
 	void** network,
- 
     const double global_time,
-	const uint64_t curr_step
+	const uint_fast32_t curr_step
 	)
 {
 	const struct CompartmentClass* m_class =

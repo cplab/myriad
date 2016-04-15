@@ -22,6 +22,6 @@ extern __device__ compartment_simul_fxn_t HHSomaCompartment_simul_fxn_t;
 extern __device__ void HHSomaCompartment_cuda_simul_fxn(void* _self,
                                                         void** network,
                                                         const double global_time,
-                                                        const uint64_t curr_step);
+                                                        const uint_fast32_t curr_step);
 #endif /* CUDA */
 #endif /* HHSOMACOMPARTMENT_CUH */

@@ -30,7 +30,7 @@ static double HHNaCurrMechanism_mech_fun(void* _self,
                                          void* pre_comp,
                                          void* post_comp,
                                          const double global_time,
-                                         const uint64_t curr_step)
+                                         const uint_fast32_t curr_step)
 {
 	struct HHNaCurrMechanism* self = (struct HHNaCurrMechanism*) _self;
 	const struct HHSomaCompartment* c1 = (const struct HHSomaCompartment*) pre_comp;
@@ -96,7 +96,7 @@ static void* HHNaCurrMechanismClass_cudafy(void* _self, int clobber)
 				);
 			copy_class._.m_mech_fxn = my_mech_fun;
 		
-			DEBUG_PRINTF("Copy Class mech fxn: %p\n", my_mech_fun);
+			// DEBUG_PRINTF("Copy Class mech fxn: %p\n", (void*) my_mech_fun);
 		
 			const struct MyriadClass* super_class = (const struct MyriadClass*) MechanismClass;
 			memcpy((void**) &copy_class_class->super, &super_class->device_class, sizeof(void*));

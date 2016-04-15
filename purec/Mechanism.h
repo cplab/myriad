@@ -22,7 +22,7 @@ typedef double (* mech_fun_t) (void* _self,
                                void* pre_comp,
                                void* post_comp,
                                const double global_time,
-                               const uint64_t curr_step);
+                               const uint_fast32_t curr_step);
 
 //! Generic pointer for new(Mechanism) purposes
 extern const void* Mechanism;
@@ -43,7 +43,7 @@ extern double mechanism_fxn(void* _self,
                             void* pre_comp,
                             void* post_comp,
                             const double global_time,
-                            const uint64_t curr_step);
+                            const uint_fast32_t curr_step);
 
 /**
  * Mechanism object structure definition.
@@ -57,7 +57,7 @@ struct Mechanism
     //! Mechanism : MyriadObject
 	const struct MyriadObject _;
     //! Source ID of the pre-mechanism compartment
-	uint64_t source_id;
+	uint_fast32_t source_id;
 };
 
 /**

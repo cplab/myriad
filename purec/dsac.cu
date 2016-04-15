@@ -59,17 +59,10 @@ extern "C" {
 // Fast exponential function structure/function
 #ifdef FAST_EXP
 __thread union _eco _eco;
-#ifdef USE_DDTABLE
-double _exp(double y)
-{
-    _eco.n.i = EXP_A * (y) + (1072693248 - EXP_C);
-    return _eco.d;
-}
-#endif
 #endif
 
 static void* new_dsac_soma(unsigned int id,
-                           int64_t* connect_to,
+                           int_fast32_t* connect_to,
                            bool stimulate,
                            const unsigned int num_connxs)
 {
@@ -97,7 +90,7 @@ static void* new_dsac_soma(unsigned int id,
         exit(EXIT_FAILURE);
     }
 
-    for (uint64_t i = 0; i < num_connxs; i++)
+    for (uint_fast32_t i = 0; i < num_connxs; i++)
     {
         // Don't connect if it's -1
         if (connect_to[i] == -1)
@@ -118,9 +111,7 @@ static void* new_dsac_soma(unsigned int id,
             fputs("Unable to add GABA current mechanism", stderr);
             exit(EXIT_FAILURE);
         }
-        DEBUG_PRINTF("GABA synapse from ID# %" PRIi64 " -> #ID %i\n",
-                     connect_to[i],
-                     id);
+        DEBUG_PRINTF("GABA synapse from ID# %li -> #ID %i\n", connect_to[i], id);
     }
 
 	return hh_comp_obj;
@@ -151,27 +142,16 @@ static ssize_t calc_total_size(int* num_allocs)
     total_size += sizeof(struct HHSpikeGABAAMechanism) * NUM_CELLS * NUM_CELLS;
     *num_allocs = *num_allocs + (6 * NUM_CELLS) + (NUM_CELLS * NUM_CELLS);
 
-    // DDTABLE
-    #ifdef USE_DDTABLE
-    *num_allocs = *num_allocs + 1;
-    total_size += sizeof(struct ddtable);
-    total_size += sizeof(int_fast8_t) * DDTABLE_NUM_KEYS;
-    total_size += 2 * sizeof(double) * DDTABLE_NUM_KEYS;
-    #endif
-    
     return total_size;
 }
 
-#ifdef USE_DDTABLE
-ddtable_t exp_table = NULL;
-#endif /* USE_DDTABLE */
-
 #if NUM_THREADS > 1
-struct _pthread_vals
+
+static struct _pthread_vals
 {
     void** network;
     double curr_time;
-    uint64_t curr_step;
+    uint_fast32_t curr_step;
     uint_fast32_t num_done;
     pthread_mutex_t barrier_mutx;
     pthread_cond_t barrier_cv;
@@ -185,7 +165,6 @@ static inline void* _thread_run(void* arg)
     
     while(_pthread_vals.curr_step < SIMUL_LEN)
 	{
-#pragma GCC ivdep
 		for (int i = network_indx_start; i < network_indx_end; i++)
 		{
 			simul_fxn(_pthread_vals.network[i],
@@ -208,7 +187,6 @@ static inline void* _thread_run(void* arg)
         }
         pthread_mutex_unlock(&_pthread_vals.barrier_mutx);
 	}
-
     return NULL;
 }
 #endif /* NUM_THREADS > 1 */
@@ -253,15 +231,15 @@ int main(void)
 
 	void* network[NUM_CELLS] = {NULL};
     
-    const unsigned int num_connxs = NUM_CELLS;
-    int64_t to_connect[num_connxs];
+    const uint_fast32_t num_connxs = NUM_CELLS;
+    int_fast32_t to_connect[num_connxs];
 
-	for (unsigned int my_id = 0; my_id < NUM_CELLS; my_id++)
+	for (int_fast32_t my_id = 0; my_id < NUM_CELLS; my_id++)
 	{
-        memset(to_connect, 0, sizeof(int64_t) * num_connxs);
+        memset(to_connect, 0, sizeof(int_fast32_t) * num_connxs);
         
 		// All-to-All
-        for (int64_t j = 0; j < NUM_CELLS; j++)
+        for (int_fast32_t j = 0; j < NUM_CELLS; j++)
         {
             if (j == my_id)
             {
@@ -269,7 +247,7 @@ int main(void)
             } else {
                 to_connect[j] = j;   // Connect to cell j
             }
-            DEBUG_PRINTF("to_connect[%" PRIi64 "]: %" PRIi64 "\n", j, to_connect[j]);
+            DEBUG_PRINTF("to_connect[%" PRIiFAST64 "]: %" PRIiFAST64 "\n", j, to_connect[j]);
         }
         
         const bool stimulate = rand() % 2 == 0;
@@ -295,24 +273,24 @@ int main(void)
     {
         if(pthread_create(&_threads[i], NULL, &_thread_run, (void*) i))
         {
-            fprintf(stderr, "Could not create thread %lu\n", i);
+            DEBUG_PRINTF(stderr, "Could not create thread %lu\n", i);
             exit(EXIT_FAILURE);
         }
     }
+    DEBUG_PRINTF("Done creating %d threads\n", NUM_THREADS);
     for(int i = 0; i < NUM_THREADS; ++i)
     {
         if(pthread_join(_threads[i], NULL))
         {
-            fprintf(stderr, "Could not join thread %d\n", i);
+            DEBUG_PRINTF(stderr, "Could not join thread %d\n", i);
             exit(EXIT_FAILURE);
         }
     }
 #else
     double current_time = DT;
-    for (uint_fast64_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
+    for (uint_fast32_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
-#pragma GCC ivdep
-        for (uint_fast64_t i = 0; i < NUM_CELLS; i++)
+        for (uint_fast32_t i = 0; i < NUM_CELLS; i++)
         {
             simul_fxn(network[i], network, current_time, curr_step);
         }
