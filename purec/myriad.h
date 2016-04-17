@@ -25,42 +25,61 @@
 #define MYRIAD_H
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 1
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
+#ifdef FAST_EXP
+#ifndef DOUBLE_PRECISION
+#error "Fast exponential calculation only works with float64 (-DDOUBLE_PRECISION)"
+#endif // DOUBLE_PRECISION
+#endif // FAST_EXP
+
+#ifdef DOUBLE_PRECISION
+typedef double scalar;
+#else
+typedef float scalar;
+#endif  /* DOUBLE_PRECISION */
+
 // Simulation parameters
-#define MYRIAD_ALLOCATOR
-#define FAST_EXP
-#define NUM_THREADS 1
-#define SIMUL_LEN 1000
-#define DT 0.001
-#define NUM_CELLS 2
+#define DT (scalar) 0.025
+#define SIMUL_LEN 20000
+#define NUM_CELLS 20
 #define MAX_NUM_MECHS 2048
+#ifndef NUM_THREADS
+#define NUM_THREADS 1
+#endif
+// DC Stimulation params
+#define STIM_ONSET 2000
+#define STIM_END 6000
+#define STIM_CURR (scalar) 9.0
 // Leak params
-#define G_LEAK 1.0
-#define E_REV -65.0
+#define G_LEAK (scalar) 1.0
+#define E_LEAK (scalar) -65.0
 // Sodium params
-#define G_NA 35.0
-#define E_NA 55.0
-#define HH_M 0.5
-#define HH_H 0.1
+#define G_NA (scalar) 35.0
+#define E_NA (scalar) 55.0
+#define HH_M (scalar) 0.9
+#define HH_H (scalar) 0.01
 // Potassium params
-#define G_K 9.0
-#define E_K -90.0
-#define HH_N 0.1
+#define G_K (scalar) 9.0
+#define E_K (scalar) -90.0
+#define HH_N (scalar) 0.1
 // Compartment Params
-#define CM 1.0
-#define INIT_VM -65.0
+#define CM (scalar) 1.0
+#define INIT_VM (scalar) -65.0
 // GABA-a Params
-#define GABA_VM_THRESH 0.0
-#define GABA_G_MAX 0.1
-#define GABA_TAU_ALPHA 0.08333333333333333
-#define GABA_TAU_BETA 10.0
-#define GABA_REV -75.0
+#define GABA_VM_THRESH (scalar) 0.0
+#define GABA_G_MAX (scalar) 0.1
+#define GABA_TAU_ALPHA (scalar) 0.08333333333333333
+#define GABA_TAU_BETA (scalar) 10.0
+#define GABA_REV (scalar) -75.0
 
 //! Use myriad's own private allocator scheme
 #ifdef MYRIAD_ALLOCATOR
@@ -88,9 +107,9 @@ extern __thread union _eco _eco;  //! Must be thread-local due to side-effects.
 #define EXP_C 60801
 #define EXP(y) (_eco.n.i = EXP_A*(y) + (1072693248 - EXP_C), _eco.d)
 #else
-// If not using fast exponential, just alias math.h exponential function
-#define _exp_helper exp
-#define _exp _exp_helper
+// If not using fast exponential, just alias tgmath.h exponential function
+#include <tgmath.h>
+#define EXP exp
 #endif /* FAST_EXP */
 
 #ifdef DEBUG

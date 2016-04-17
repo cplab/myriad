@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <string.h>
-#include <math.h>
+#include <time.h>
+
 #include <dirent.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef CUDA
 #include <vector_types.h>
@@ -61,23 +65,46 @@ extern "C" {
 __thread union _eco _eco;
 #endif
 
-static void* new_dsac_soma(unsigned int id,
-                           int_fast32_t* connect_to,
-                           bool stimulate,
-                           const unsigned int num_connxs)
+static inline void* new_dsac_soma(
+    unsigned int id,
+    int_fast32_t* connect_to,
+    bool stimulate,
+    const unsigned int num_connxs)
 {
-	void* hh_comp_obj = myriad_new(HHSomaCompartment, id, 0, NULL, NULL, INIT_VM, CM);
-	void* hh_leak_mech = myriad_new(HHLeakMechanism, id, G_LEAK, E_REV);
-	void* hh_na_curr_mech = myriad_new(HHNaCurrMechanism, id, G_NA, E_NA, HH_M, HH_H);
-	void* hh_k_curr_mech = myriad_new(HHKCurrMechanism, id, G_K, E_K, HH_N);
+	void* hh_comp_obj = NULL;
+    if (!(hh_comp_obj = myriad_new(HHSomaCompartment, id, 0, NULL, NULL, INIT_VM, CM)))
+    {
+        fputs("Failed to create mechanism", stderr);
+        exit(EXIT_FAILURE);
+    }
 
+    void* hh_leak_mech = NULL;
+    if (!(hh_leak_mech = myriad_new(HHLeakMechanism, id, G_LEAK, E_LEAK)))
+    {
+        fputs("Failed to create mechanism", stderr);
+        exit(EXIT_FAILURE);
+    }
+    
+	void* hh_na_curr_mech = NULL;
+    if (!(hh_na_curr_mech = myriad_new(HHNaCurrMechanism, id, G_NA, E_NA, HH_M, HH_H)))
+    {
+        fputs("Failed to create mechanism", stderr);
+        exit(EXIT_FAILURE);        
+    }
+    
+	void* hh_k_curr_mech = NULL;
+    if (!(hh_k_curr_mech = myriad_new(HHKCurrMechanism, id, G_K, E_K, HH_N)))
+    {
+        fputs("Failed to create mechanism", stderr);
+        exit(EXIT_FAILURE);        
+    }
+    
 	void* dc_curr_mech = NULL;
-	if (stimulate)
-	{
-		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 9.0);
-	} else {
-		dc_curr_mech = myriad_new(DCCurrentMech, id, 200000, 999000, 0.0);
-	}
+    if (!(dc_curr_mech = myriad_new(DCCurrentMech, id, STIM_ONSET, STIM_END, stimulate ? STIM_CURR : (scalar) 0.0)))
+    {
+        fputs("Failed to create mechanism", stderr);
+        exit(EXIT_FAILURE);                
+    }
 
 	const int result =
         add_mechanism(hh_comp_obj, hh_leak_mech) ||
@@ -98,51 +125,24 @@ static void* new_dsac_soma(unsigned int id,
             continue;
         }
             
-        void* hh_GABA_a_curr_mech = myriad_new(HHSpikeGABAAMechanism,
-                                               connect_to[i],
-                                               GABA_VM_THRESH,
-                                               -INFINITY,
-                                               GABA_G_MAX,
-                                               GABA_TAU_ALPHA,
-                                               GABA_TAU_BETA,
-                                               GABA_REV);
-        if (add_mechanism(hh_comp_obj, hh_GABA_a_curr_mech))
+        void* GABA_mech = myriad_new(
+            HHSpikeGABAAMechanism,
+            connect_to[i],
+            GABA_VM_THRESH,
+            -INFINITY,
+            GABA_G_MAX,
+            GABA_TAU_ALPHA,
+            GABA_TAU_BETA,
+            GABA_REV);
+        if (!GABA_mech || add_mechanism(hh_comp_obj, GABA_mech))
         {
-            fputs("Unable to add GABA current mechanism", stderr);
+            fputs("Unable to add GABA current mechanism\n", stderr);
             exit(EXIT_FAILURE);
         }
-        DEBUG_PRINTF("GABA synapse from ID# %li -> #ID %i\n", connect_to[i], id);
+        DEBUG_PRINTF("GABA synapse from ID# %li -> #ID %u\n", connect_to[i], id);
     }
 
 	return hh_comp_obj;
-}
-
-static ssize_t calc_total_size(int* num_allocs)
-{
-    ssize_t total_size = 0;
-    
-    // Class Overhead
-    total_size += sizeof(struct MyriadObject) + sizeof(struct MyriadClass);
-    total_size += sizeof(struct Mechanism) + sizeof(struct MechanismClass);
-    total_size += sizeof(struct DCCurrentMech) + sizeof(struct DCCurrentMechClass);
-    total_size += sizeof(struct HHLeakMechanism) + sizeof(struct HHLeakMechanismClass);
-    total_size += sizeof(struct HHNaCurrMechanism) + sizeof(struct HHNaCurrMechanismClass);
-    total_size += sizeof(struct HHKCurrMechanism) + sizeof(struct HHKCurrMechanismClass);
-    total_size += sizeof(struct HHSpikeGABAAMechanism) + sizeof(struct HHSpikeGABAAMechanismClass);
-    total_size += sizeof(struct Compartment) + sizeof(struct CompartmentClass);
-    total_size += sizeof(struct HHSomaCompartment) + sizeof(struct HHSomaCompartmentClass);
-    *num_allocs = *num_allocs + (9 * 2);
-
-    // Objects
-    total_size += sizeof(struct HHSomaCompartment) * NUM_CELLS;
-    total_size += sizeof(struct DCCurrentMech) * NUM_CELLS;
-    total_size += sizeof(struct HHLeakMechanism) * NUM_CELLS;
-    total_size += sizeof(struct HHNaCurrMechanism) * NUM_CELLS;
-    total_size += sizeof(struct HHKCurrMechanism) * NUM_CELLS;
-    total_size += sizeof(struct HHSpikeGABAAMechanism) * NUM_CELLS * NUM_CELLS;
-    *num_allocs = *num_allocs + (6 * NUM_CELLS) + (NUM_CELLS * NUM_CELLS);
-
-    return total_size;
 }
 
 #if NUM_THREADS > 1
@@ -196,17 +196,34 @@ static inline void* _thread_run(void* arg)
 __global__ void myriad_cuda_simul(void* network[NUM_CELLS])
 {
     int i = threadIdx.x;
+    i++;
 }
 #endif
 
 int main(void)
 {
-    srand(42);
-
 #ifdef MYRIAD_ALLOCATOR
-    int num_allocs = 0;
-    const size_t total_mem_usage = calc_total_size(&num_allocs);
-    if (myriad_alloc_init(total_mem_usage, num_allocs))
+    const size_t total_size = 0 +
+        // Classss
+        sizeof(struct MyriadObject) + sizeof(struct MyriadClass) +
+        sizeof(struct Mechanism) + sizeof(struct MechanismClass) +
+        sizeof(struct DCCurrentMech) + sizeof(struct DCCurrentMechClass) +
+        sizeof(struct HHLeakMechanism) + sizeof(struct HHLeakMechanismClass) +
+        sizeof(struct HHNaCurrMechanism) + sizeof(struct HHNaCurrMechanismClass) +
+        sizeof(struct HHKCurrMechanism) + sizeof(struct HHKCurrMechanismClass) +
+        sizeof(struct HHSpikeGABAAMechanism) + sizeof(struct HHSpikeGABAAMechanismClass) +
+        sizeof(struct Compartment) + sizeof(struct CompartmentClass) +
+        sizeof(struct HHSomaCompartment) + sizeof(struct HHSomaCompartmentClass) +
+        // Objects
+        (sizeof(struct HHSomaCompartment) * NUM_CELLS) +
+        (sizeof(struct DCCurrentMech) * NUM_CELLS) +
+        (sizeof(struct HHLeakMechanism) * NUM_CELLS) +
+        (sizeof(struct HHNaCurrMechanism) * NUM_CELLS) +
+        (sizeof(struct HHKCurrMechanism) * NUM_CELLS) +
+        (sizeof(struct HHSpikeGABAAMechanism) * NUM_CELLS * NUM_CELLS); 
+    const int num_allocs = (9 * 2) + (6 * NUM_CELLS) + (NUM_CELLS * NUM_CELLS);
+
+    if (myriad_alloc_init(total_size, num_allocs))
     {
         fputs("Unable to initialize myriad allocator\n", stderr);
         exit(EXIT_FAILURE);
@@ -219,7 +236,9 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 #endif /* MYRIAD_ALLOCATOR */
-
+    
+    srand(42);
+    
 	initMechanism();
     initCompartment();
 	initDCCurrMech();
@@ -256,6 +275,7 @@ int main(void)
                                        stimulate,
                                        num_connxs);
 	}
+    DEBUG_PRINTF("Network status: %s\n", network[0] ? "ready": "not ready");
 
 #if NUM_THREADS > 1
     // Pthread parallelism
@@ -298,9 +318,76 @@ int main(void)
     }
 #endif /* NUM_THREADS > 1 */
 
-#ifdef MYRIAD_ALLOCATOR
-    myriad_finalize();
-#endif
+    DEBUG_PRINTF("Simulation completed at time %li\n", time(NULL));
+
+    DEBUG_PRINTF("Writing %ui files ..\n", NUM_CELLS);
     
+    // Make directory if it doesn't exist
+    int mkdir_result = mkdir("cmyriad_dat/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if (mkdir_result == -1 && errno != EEXIST)
+    {
+        perror("Couldn't create directory cmyriad_dat/: ");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Change directory into data directory
+    if (-1 == chdir("cmyriad_dat/"))
+    {
+        perror("Couldn't change directory into cmyriad_dat: ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Write each compartment to a file
+    for (uint_fast32_t comp_id = 0; comp_id < NUM_CELLS; comp_id++)
+    {
+        // Parametrize file name
+        const size_t filename_len = sizeof("cmyriad_000.dat");
+        char filename[filename_len];
+        snprintf(filename, filename_len, "cmyriad_%03" PRIuFAST32 ".dat", comp_id);
+
+        FILE* file = NULL;
+        if (!(file = fopen(filename, "w+")))
+        {
+            perror("Couldn't open cmyriad.dat: ");
+            exit(EXIT_FAILURE);
+        }
+
+#ifdef ASYNC_IO
+        struct sigevent aio_sigeven;
+        aio_sigeven.sigev_notify = SIGEV_NONE;
+
+        struct aiocb async_io_params;
+        async_io_params.aio_fildes = fileno(file);
+        async_io_params.aio_offset = 0;
+        async_io_params.aio_reqprio = 0;
+        async_io_params.aio_buf = ((struct HHSomaCompartment*) network[comp_id])->vm;
+        async_io_params.aio_nbytes = sizeof(scalar) * SIMUL_LEN;
+        async_io_params.aio_sigevent = aio_sigeven;
+
+        if (aio_write(&async_io_params) == -1)
+        {
+            perror("AIO Write failed immediately: ");
+            exit(EXIT_FAILURE);
+        }
+#else
+        if (1 != fwrite(((struct HHSomaCompartment*) network[comp_id])->vm,
+                        sizeof(scalar) * SIMUL_LEN,
+                        1,
+                        file))
+        {
+            perror("Synchronous fwrite failed: ");
+            exit(EXIT_FAILURE);
+        }
+
+        if (fclose(file))
+        {
+            perror("Could not close file: ");
+            exit(EXIT_FAILURE);
+        }
+#endif  /* ASYNC_IO */
+    }
+
+    puts("Writing to files scheduled/done.");
+
     exit(EXIT_SUCCESS);
 }
