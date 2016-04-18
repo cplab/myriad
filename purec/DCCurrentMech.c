@@ -23,10 +23,10 @@ static void* DCCurrentMech_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double DCCurrentMech_mech_fun(void* _self,
+static scalar DCCurrentMech_mech_fun(void* _self,
                                      void* pre_comp,
                                      void* post_comp,
-                                     const double global_time,
+                                     const scalar global_time,
                                      const uint_fast32_t curr_step)
 {
 	const struct DCCurrentMech* self = (const struct DCCurrentMech*) _self;

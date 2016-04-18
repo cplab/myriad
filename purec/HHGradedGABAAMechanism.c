@@ -17,11 +17,11 @@ static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 	struct HHGradedGABAAMechanism* self = 
 		(struct HHGradedGABAAMechanism*) super_ctor(HHGradedGABAAMechanism, _self, app);
 
-    double* pot_g_s = va_arg(*app, double*);
-	const double g_s_init = va_arg(*app, double);
+    scalar* pot_g_s = va_arg(*app, scalar*);
+	const scalar g_s_init = va_arg(*app, double);
 	if (pot_g_s != NULL)
     {
-        memcpy(self->g_s, pot_g_s, SIMUL_LEN * sizeof(double));
+        memcpy(self->g_s, pot_g_s, SIMUL_LEN * sizeof(scalar));
         self->g_s[0] = g_s_init;
     }
 
@@ -35,11 +35,11 @@ static void* HHGradedGABAAMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHGradedGABAAMechanism_mech_fun(void* _self,
+static scalar HHGradedGABAAMechanism_mech_fun(void* _self,
                                               void* pre_comp,
                                               void* post_comp,
-                                              const double dt,
-                                              const double global_time,
+                                              const scalar dt,
+                                              const scalar global_time,
                                               const uint_fast32_t curr_step)
 {
 	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
@@ -47,14 +47,14 @@ static double HHGradedGABAAMechanism_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->vm[curr_step-1];
-	const double post_vm = c2->vm[curr_step-1];
-	const double prev_g_s = self->g_s[curr_step-1];
+	const scalar pre_vm = c1->vm[curr_step-1];
+	const scalar post_vm = c2->vm[curr_step-1];
+	const scalar prev_g_s = self->g_s[curr_step-1];
 
-	const double fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
+	const scalar fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
 	self->g_s[curr_step] += dt * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
 
-	const double I_GABA = -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
+	const scalar I_GABA = -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
 	return I_GABA;
 }
 

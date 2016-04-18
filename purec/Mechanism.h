@@ -18,10 +18,10 @@
 #include "MyriadObject.h"
 
 //! Mechanism function typedef
-typedef double (* mech_fun_t) (void* _self,
+typedef scalar (* mech_fun_t) (void* _self,
                                void* pre_comp,
                                void* post_comp,
-                               const double global_time,
+                               const scalar global_time,
                                const uint_fast32_t curr_step);
 
 //! Generic pointer for new(Mechanism) purposes
@@ -39,10 +39,10 @@ extern const void* MechanismClass;
  *
  * @returns calculated output value of this mechanism for the given timestep
  */
-extern double mechanism_fxn(void* _self,
+extern scalar mechanism_fxn(void* _self,
                             void* pre_comp,
                             void* post_comp,
-                            const double global_time,
+                            const scalar global_time,
                             const uint_fast32_t curr_step);
 
 /**

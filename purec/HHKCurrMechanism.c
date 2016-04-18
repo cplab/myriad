@@ -24,10 +24,10 @@ static void* HHKCurrMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHKCurrMechanism_mech_fun(void* _self,
+static scalar HHKCurrMechanism_mech_fun(void* _self,
                                         void* pre_comp,
                                         void* post_comp,
-                                        const double global_time,
+                                        const scalar global_time,
                                         const uint_fast32_t curr_step)
 {
 	struct HHKCurrMechanism* self = (struct HHKCurrMechanism*) _self;
@@ -35,10 +35,10 @@ static double HHKCurrMechanism_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const double pre_vm = c1->vm[curr_step-1];
+	const scalar pre_vm = c1->vm[curr_step-1];
 
-    const double alpha_n = (-0.01 * (pre_vm + 34.)) / (EXP((pre_vm+34.0)/-1.) - 1.);
-    const double beta_n  = 0.125 * EXP((pre_vm + 44.)/-80.);
+    const scalar alpha_n = (-0.01 * (pre_vm + 34.)) / (EXP((pre_vm+34.0)/-1.) - 1.);
+    const scalar beta_n  = 0.125 * EXP((pre_vm + 44.)/-80.);
 
     self->hh_n += DT*5.*(alpha_n*(1.-self->hh_n) - beta_n*self->hh_n);
 

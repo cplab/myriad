@@ -150,7 +150,7 @@ static inline void* new_dsac_soma(
 static struct _pthread_vals
 {
     void** network;
-    double curr_time;
+    scalar curr_time;
     uint_fast32_t curr_step;
     uint_fast32_t num_done;
     pthread_mutex_t barrier_mutx;
@@ -307,7 +307,7 @@ int main(void)
         }
     }
 #else
-    double current_time = DT;
+    scalar current_time = DT;
     for (uint_fast32_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
         for (uint_fast32_t i = 0; i < NUM_CELLS; i++)

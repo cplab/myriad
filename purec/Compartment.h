@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "MyriadObject.h"
 #include "Mechanism.h"
@@ -21,7 +22,7 @@
 //! Compartment simulate function pointer
 typedef void (* compartment_simul_fxn_t) (void* _self,
                                           void** network,
-                                          const double global_time,
+                                          const scalar global_time,
                                           const uint_fast32_t curr_step);
 
 //! Method for adding mechanisms to a compartment
@@ -42,7 +43,7 @@ extern const void* CompartmentClass;
  */
 extern void simul_fxn(void* _self,
                       void** network,
-                      const double global_time,
+                      const scalar global_time,
                       const uint_fast32_t curr_step);
 
 /**
@@ -54,6 +55,10 @@ extern void simul_fxn(void* _self,
  * @returns 0 if addition completed, -1 otherwise.
 */
 extern int add_mechanism(void* _self, void* mechanism);
+
+//! Utility macro for checking if mechanism adding worked
+#define safe_add_mechanism(comp, mech) \
+    if (add_mechanism(comp, mech)) fputs("Failed to add mechanism.\n", stderr); exit(EXIT_FAILURE)
 
 //! Generic Compartment structure definition
 struct Compartment

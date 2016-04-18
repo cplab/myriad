@@ -25,10 +25,10 @@ extern "C"
 __device__ __constant__ struct DCCurrentMech* DCCurrentMech_dev_t;
 __device__ __constant__ struct DCCurrentMechClass* DCCurrentMechClass_dev_t;
 
-__device__ double DCCurrentMech_cuda_mech_fun(void* _self,
+__device__ scalar DCCurrentMech_cuda_mech_fun(void* _self,
                                               void* pre_comp,
                                               void* post_comp,
-                                              const double global_time,
+                                              const scalar global_time,
                                               const uint_fast32_t curr_step)
 {
 	const struct DCCurrentMech* self = (const struct DCCurrentMech*) _self;

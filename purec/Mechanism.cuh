@@ -43,10 +43,10 @@ extern __device__ mech_fun_t Mechanism_cuda_mechanism_fxn_t;
  *
  * @returns calculated output value of this mechanism for the given timestep
  */
-extern __device__ double cuda_mechanism_fxn(void* _self,
+extern __device__ scalar cuda_mechanism_fxn(void* _self,
                                             void* pre_comp,
                                             void* post_comp,
-                                            const double global_time,
+                                            const scalar global_time,
                                             const uint_fast32_t curr_step);
 
 #endif /* CUDA */

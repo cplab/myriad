@@ -32,9 +32,9 @@ struct HHLeakMechanism
     //! HHLeakMechanism : Mechanism
 	struct Mechanism _;
     //! Leak Conductance - nS
-	double g_leak;
+	scalar g_leak;
     //! Leak Reversal Potential - mV
-	double e_rev;       
+	scalar e_rev;       
 };
 
 struct HHLeakMechanismClass

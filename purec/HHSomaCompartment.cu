@@ -15,12 +15,12 @@ extern "C"
 
 __device__ void HHSomaCompartment_cuda_simul_fxn(void* _self,
                                                  void** network,
-                                                 const double global_time,
+                                                 const scalar global_time,
                                                  const uint_fast32_t curr_step)
 {
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
 
-	double I_sum = 0.0;
+	scalar I_sum = 0.0;
 
 	// Calculate mechanism contribution to current term
 	for (uint_fast32_t i = 0; i < self->_.num_mechs; i++)
