@@ -10,9 +10,6 @@
    @date    April 23, 2014
  */
 #include <stdio.h>
-
-#include <cuda_runtime.h>
-
 extern "C"
 {
 	#include "MyriadObject.h"
@@ -21,6 +18,8 @@ extern "C"
 	#include "Mechanism.h"
 	#include "HHNaCurrMechanism.h"
 }
+
+#include <cuda_runtime.h>
 
 #include "HHSomaCompartment.cuh"
 #include "HHNaCurrMechanism.cuh"
@@ -42,10 +41,10 @@ __device__ double HHNaCurrMechanism_cuda_mech_fun(void* _self,
 	const double pre_vm = c1->vm[curr_step-1];
 
 	// @TODO: Magic numbers should be extracted out as defines
-	const double alpha_m = (0.32*(pre_vm+45.0)) / (1 - exp(-(pre_vm+45.0)/4.0));
-	const double beta_m =  (-0.28*(pre_vm+18.0)) / (1 - exp((pre_vm + 18.0)/5.0));
-	const double alpha_h = (0.128) / (exp((pre_vm+41.0)/18.0));
-	const double beta_h = 4.0 / (1 + exp(-(pre_vm + 18.0)/5.0));
+	const double alpha_m = (0.32*(pre_vm+45.0)) / (1.0 - expf(-(pre_vm+45.0)/4.0));
+	const double beta_m =  (-0.28*(pre_vm+18.0)) / (1.0 - expf((pre_vm + 18.0)/5.0));
+	const double alpha_h = (0.128) / (expf((pre_vm+41.0)/18.0));
+	const double beta_h = 4.0 / (1.0 + expf(-(pre_vm + 18.0)/5.0));
 
     self->hh_m = DT*( (alpha_m*(1.0-self->hh_m)) - beta_m*self->hh_m) + self->hh_m;
     self->hh_h = DT*( (alpha_h*(1.0-self->hh_h)) - beta_h*self->hh_h) + self->hh_h;

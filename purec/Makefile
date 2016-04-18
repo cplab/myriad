@@ -121,7 +121,11 @@ clean:
 # ------- Host Myriad Objects -------
 
 $(MYRIAD_LIB_OBJS): %.c.o : %.c
+ifdef CUDA
+	$(CC) $(CCFLAGS) $(INCLUDES) $(CUDA_INCLUDES) $(DEFINES) -o $@ -c $<
+else
 	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
+endif 
 
 # ------- CUDA Myriad Objects -------
 

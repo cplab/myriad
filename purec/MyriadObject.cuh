@@ -31,17 +31,11 @@ extern __constant__ __device__ struct MyriadClass* MyriadClass_dev_t;
 // Object management and Selectors //
 /////////////////////////////////////
 
-//! On-GPU implementation of myriad_class_of @see myriad_class_of
-extern __device__ const void* cuda_myriad_class_of(const void* _self);
+#define cuda_myriad_class_of(self) ((const struct MyriadObject*) self)->m_class
 
-//! On-GPU implementation of myriad_size_of @see myriad_size_of
-extern __device__ size_t cuda_myriad_size_of(const void* self);
+#define cuda_myriad_size_of(self) ((const struct MyriadObject*) self)->m_class->size
 
-//! On-GPU implementation of myriad_is_a @see myriad_is_a
-extern __device__ int cuda_myriad_is_a(
-	const void* _self,
-	const struct MyriadClass* m_class
-);
+#define cuda_myriad_is_a(self, mclass) self && ((const struct MyriadObject*) self)->m_class == mclass;
 
 //! On-GPU implementation of myriad_is_of @see myriad_is_of
 extern __device__ int cuda_myriad_is_of(
@@ -49,13 +43,8 @@ extern __device__ int cuda_myriad_is_of(
     const struct MyriadClass* m_class
 );
 
-///////////////////////////////
-// Super and related methods //
-///////////////////////////////
 
-//! On-GPU implementation of myriad_super @see myriad_super
-extern __device__ const void* cuda_myriad_super(const void* _self);
+#define cuda_myriad_super(self) ((const struct MyriadClass*) self)->super
 
-#endif
-
-#endif
+#endif  // CUDA 
+#endif  // MYRIADOBJECT_CUH

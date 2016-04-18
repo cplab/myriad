@@ -40,8 +40,8 @@ __device__ double HHKCurrMechanism_cuda_mech_fun(void* _self,
 
 	//	Channel dynamics calculation
 	const double pre_vm = c1->vm[curr_step-1];
-    const double alpha_n = (-0.01 * (pre_vm + 10.0)) / (exp((pre_vm+10.0)/-10.0) - 1.0);
-    const double beta_n  = 0.125 * exp(pre_vm/-80.);
+    const double alpha_n = (-0.01 * (pre_vm + 10.0)) / (expf((pre_vm+10.0)/-10.0) - 1.0);
+    const double beta_n  = 0.125 * expf(pre_vm/-80.);
 
     self->hh_n = DT*(alpha_n*(1-self->hh_n) - beta_n*self->hh_n) + self->hh_n;
 

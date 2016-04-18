@@ -51,8 +51,8 @@ __device__ double HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
 
     if (self->t_fired != -INFINITY)
     {
-        const double g_s = exp(-(global_time - self->t_fired) / self->tau_beta) - 
-            exp(-(global_time - self->t_fired) / self->tau_alpha);
+        const double g_s = expf(-(global_time - self->t_fired) / self->tau_beta) - 
+            expf(-(global_time - self->t_fired) / self->tau_alpha);
         const double I_GABA = self->norm_const * -self->g_max * g_s * (post_vm - self->gaba_rev);
         return I_GABA;        
     } else {
