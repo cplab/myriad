@@ -320,7 +320,7 @@ int main(void)
 
     DEBUG_PRINTF("Simulation completed at time %li\n", time(NULL));
 
-    DEBUG_PRINTF("Writing %ui files ..\n", NUM_CELLS);
+    DEBUG_PRINTF("Writing %u files ..\n", NUM_CELLS);
     
     // Make directory if it doesn't exist
     int mkdir_result = mkdir("cmyriad_dat/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
