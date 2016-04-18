@@ -28,10 +28,10 @@ extern "C"
 __device__ __constant__ struct HHLeakMechanism* HHLeakMechanism_dev_t;
 __device__ __constant__ struct HHLeakMechanismClass* HHLeakMechanismClass_dev_t;
 
-__device__ scalar HHLeakMechanism_cuda_mech_fun(void* _self,
+__device__ double HHLeakMechanism_cuda_mech_fun(void* _self,
                                                 void* pre_comp,
                                                 void* post_comp,
-                                                const scalar global_time,
+                                                const double global_time,
                                                 const uint_fast32_t curr_step)
 {
 	const struct HHLeakMechanism* self = (const struct HHLeakMechanism*) _self;

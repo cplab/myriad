@@ -25,10 +25,10 @@ static void* HHNaCurrMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static scalar HHNaCurrMechanism_mech_fun(void* _self,
+static double HHNaCurrMechanism_mech_fun(void* _self,
                                          void* pre_comp,
                                          void* post_comp,
-                                         const scalar global_time,
+                                         const double global_time,
                                          const uint_fast32_t curr_step)
 {
 	struct HHNaCurrMechanism* self = (struct HHNaCurrMechanism*) _self;
@@ -36,21 +36,21 @@ static scalar HHNaCurrMechanism_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const scalar pre_vm = c1->vm[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
     
-	const scalar alpha_m = (-0.1*(pre_vm + 35.)) / (EXP(-0.1*(pre_vm+35.)) - 1.);
-	const scalar beta_m =  4. * EXP((pre_vm + 60.) / -18.);
-	const scalar alpha_h = (0.128) / (EXP((pre_vm+41.0)/18.0));
-	const scalar beta_h = 4.0 / (1 + EXP(-(pre_vm + 18.0)/5.0));
+	const double alpha_m = (-0.1*(pre_vm + 35.)) / (EXP(-0.1*(pre_vm+35.)) - 1.);
+	const double beta_m =  4. * EXP((pre_vm + 60.) / -18.);
+	const double alpha_h = (0.128) / (EXP((pre_vm+41.0)/18.0));
+	const double beta_h = 4.0 / (1 + EXP(-(pre_vm + 18.0)/5.0));
 
-	const scalar minf = (alpha_m/(alpha_m + beta_m));
+	const double minf = (alpha_m/(alpha_m + beta_m));
 	self->hh_h += DT* 5. *(alpha_h*(1. - self->hh_h) - (beta_h * self->hh_h));
 
 	//	No extracellular compartment. Current simply "disappears".
 	if (c2 == NULL || c1 == c2)
 	{
 		//	I = g_Na * minf^3 * hh_h * (Vm[t-1] - e_rev)
-		const scalar I_Na = -self->g_na * minf * minf * minf *	self->hh_h *
+		const double I_Na = -self->g_na * minf * minf * minf *	self->hh_h *
 				(pre_vm - self->e_na);
 		return I_Na;
 

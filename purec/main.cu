@@ -255,7 +255,7 @@ __global__ void cuda_hh_compartment_test(void* hh_comp_obj, void* network)
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
 
-	scalar curr_time = DT;
+	double curr_time = DT;
 	for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
 	{
 		cuda_simul_fxn(curr_comp, (void**) dev_arr, DT, curr_time, curr_step);
@@ -284,23 +284,23 @@ static int HHCompartmentTest()
 	initHHSomaCompartment(cuda_init);
 
 	// Leak params
-	const scalar G_LEAK = 1.0;
-	const scalar E_REV = -65.0;
+	const double G_LEAK = 1.0;
+	const double E_REV = -65.0;
 
 	// Sodium params
-	const scalar G_NA = 35.0;
-	const scalar E_NA = 55.0;
-	const scalar HH_M = 0.5;
-	const scalar HH_H = 0.1;
+	const double G_NA = 35.0;
+	const double E_NA = 55.0;
+	const double HH_M = 0.5;
+	const double HH_H = 0.1;
 
 	// Potassium params
-	const scalar G_K = 9.0;
-	const scalar E_K = -90.0;
-	const scalar HH_N = 0.1;
+	const double G_K = 9.0;
+	const double E_K = -90.0;
+	const double HH_N = 0.1;
 
 	// Compartment Params
-	const scalar CM = 1.0;
-	const scalar INIT_VM = -65.0;
+	const double CM = 1.0;
+	const double INIT_VM = -65.0;
 
 	void** network = (void**) calloc(1, sizeof(void*));
 
@@ -351,7 +351,7 @@ static int HHCompartmentTest()
 		assert(EXIT_SUCCESS == add_mechanism(hh_comp_obj, dc_curr_mech));
 
      	network[0] = hh_comp_obj;
-		scalar curr_time = DT;
+		double curr_time = DT;
 		for (unsigned int curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
 		{
 	        simul_fxn(hh_comp_obj, network, DT, curr_time, curr_step);
@@ -362,7 +362,7 @@ static int HHCompartmentTest()
 
 	struct HHSomaCompartment* curr_comp = (struct HHSomaCompartment*) hh_comp_obj;
 	FILE* p_file = fopen("output.dat","wb");
-	fwrite(curr_comp->vm, sizeof(scalar), curr_comp->vm_len, p_file);
+	fwrite(curr_comp->vm, sizeof(double), curr_comp->vm_len, p_file);
 	fclose(p_file);
 
 	// Free

@@ -28,10 +28,10 @@ extern "C"
 __device__ __constant__ struct HHKCurrMechanism* HHKCurrMechanism_dev_t;
 __device__ __constant__ struct HHKCurrMechanismClass* HHKCurrMechanismClass_dev_t;
 
-__device__ scalar HHKCurrMechanism_cuda_mech_fun(void* _self,
+__device__ double HHKCurrMechanism_cuda_mech_fun(void* _self,
                                                  void* pre_comp,
                                                  void* post_comp,
-                                                 const scalar global_time,
+                                                 const double global_time,
                                                  const uint_fast32_t curr_step)
 {
 	struct HHKCurrMechanism* self = (struct HHKCurrMechanism*) _self;
@@ -39,9 +39,9 @@ __device__ scalar HHKCurrMechanism_cuda_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const scalar pre_vm = c1->vm[curr_step-1];
-    const scalar alpha_n = (-0.01 * (pre_vm + 10.0)) / (exp((pre_vm+10.0)/-10.0) - 1.0);
-    const scalar beta_n  = 0.125 * exp(pre_vm/-80.);
+	const double pre_vm = c1->vm[curr_step-1];
+    const double alpha_n = (-0.01 * (pre_vm + 10.0)) / (exp((pre_vm+10.0)/-10.0) - 1.0);
+    const double beta_n  = 0.125 * exp(pre_vm/-80.);
 
     self->hh_n = DT*(alpha_n*(1-self->hh_n) - beta_n*self->hh_n) + self->hh_n;
 

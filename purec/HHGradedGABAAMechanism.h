@@ -30,19 +30,19 @@ struct HHGradedGABAAMechanism
     //! HHGradedGABAAMechanism : Mechanism
 	struct Mechanism _;
     //! Synaptic gating variable (unitless, >=0, <=1)
-	scalar g_s[SIMUL_LEN];
+	double g_s[SIMUL_LEN];
     //! Maximum synaptic conductance - nS
-	scalar g_max;
+	double g_max;
     //! Half-activation potential - mV
-	scalar theta;
+	double theta;
     //! Maximal slope of the sigmoidal synaptic function
-	scalar sigma;
+	double sigma;
     //! Channel opening time constant - ms
-	scalar tau_alpha;
+	double tau_alpha;
     //! Channel closing time constant - ms
-	scalar tau_beta;
+	double tau_beta;
     //! Synaptic reversal potential - mV
-	scalar gaba_rev;
+	double gaba_rev;
 };
 
 struct HHGradedGABAAMechanismClass

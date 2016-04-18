@@ -13,7 +13,7 @@ extern "C"
 __device__ void Compartment_cuda_simul_fxn(
 	void* _self,
 	void** network,
-    const scalar global_time,
+    const double global_time,
 	const uint_fast32_t curr_step
 	)
 {
@@ -28,7 +28,7 @@ __device__ compartment_simul_fxn_t Compartment_cuda_compartment_fxn_t = Compartm
 __device__ void cuda_simul_fxn(
 	void* _self,
 	void** network,
-    const scalar global_time,
+    const double global_time,
 	const uint_fast32_t curr_step
 	)
 {

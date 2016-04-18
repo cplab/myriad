@@ -22,7 +22,7 @@
 //! Compartment simulate function pointer
 typedef void (* compartment_simul_fxn_t) (void* _self,
                                           void** network,
-                                          const scalar global_time,
+                                          const double global_time,
                                           const uint_fast32_t curr_step);
 
 //! Method for adding mechanisms to a compartment
@@ -43,7 +43,7 @@ extern const void* CompartmentClass;
  */
 extern void simul_fxn(void* _self,
                       void** network,
-                      const scalar global_time,
+                      const double global_time,
                       const uint_fast32_t curr_step);
 
 /**

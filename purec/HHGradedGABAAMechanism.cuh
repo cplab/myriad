@@ -35,11 +35,11 @@ extern __device__ __constant__ struct HHGradedGABAAMechanismClass* HHGradedGABAA
 //! On-GPU reference pointer to Mechanism function implementation
 extern __device__ mech_fun_t HHGradedGABAAMechanism_mech_fxn_t;
 
-extern __device__ scalar HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
+extern __device__ double HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
                                                               void* pre_comp,
                                                               void* post_comp,
-                                                              const scalar dt,
-                                                              const scalar global_time,
+                                                              const double dt,
+                                                              const double global_time,
                                                               const uint_fast32_t curr_step);
 
 #endif /* CUDA */

@@ -30,11 +30,11 @@ struct HHKCurrMechanism
     //! HHKCurrMechanism : Mechanism
 	struct Mechanism _;
     //! Sodium channel conductance - nS
-	scalar g_k;
+	double g_k;
     //! Sodium reversal potential - mV
-	scalar e_k;
+	double e_k;
     //! @TODO Figure out what hh_n is actually called
-	scalar hh_n;
+	double hh_n;
 };
 
 struct HHKCurrMechanismClass

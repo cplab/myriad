@@ -28,10 +28,10 @@ extern "C"
 __device__ __constant__ struct HHGradedGABAAMechanism* HHGradedGABAAMechanism_dev_t;
 __device__ __constant__ struct HHGradedGABAAMechanismClass* HHGradedGABAAMechanismClass_dev_t;
 
-__device__ scalar HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
+__device__ double HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
                                                        void* pre_comp,
                                                        void* post_comp,
-                                                       const scalar global_time,
+                                                       const double global_time,
                                                        const uint_fast32_t curr_step)
 {
 	struct HHGradedGABAAMechanism* self = (struct HHGradedGABAAMechanism*) _self;
@@ -39,11 +39,11 @@ __device__ scalar HHGradedGABAAMechanism_cuda_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-	const scalar pre_vm = c1->vm[curr_step-1];
-	const scalar post_vm = c2->vm[curr_step-1];
-	const scalar prev_g_s = self->g_s[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
+	const double post_vm = c2->vm[curr_step-1];
+	const double prev_g_s = self->g_s[curr_step-1];
 
-	const scalar fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
+	const double fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
 	self->g_s[curr_step] += DT * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
 
 	return -self->g_max * prev_g_s * (post_vm - self->gaba_rev);

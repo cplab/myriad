@@ -28,10 +28,10 @@ extern "C"
 __device__ __constant__ struct HHNaCurrMechanism* HHNaCurrMechanism_dev_t;
 __device__ __constant__ struct HHNaCurrMechanismClass* HHNaCurrMechanismClass_dev_t;
 
-__device__ scalar HHNaCurrMechanism_cuda_mech_fun(void* _self,
+__device__ double HHNaCurrMechanism_cuda_mech_fun(void* _self,
                                                   void* pre_comp,
                                                   void* post_comp,
-                                                  const scalar global_time,
+                                                  const double global_time,
                                                   const uint_fast32_t curr_step)
 {
 	struct HHNaCurrMechanism* self = (struct HHNaCurrMechanism*) _self;
@@ -39,13 +39,13 @@ __device__ scalar HHNaCurrMechanism_cuda_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	// Channel dynamics calculation
-	const scalar pre_vm = c1->vm[curr_step-1];
+	const double pre_vm = c1->vm[curr_step-1];
 
 	// @TODO: Magic numbers should be extracted out as defines
-	const scalar alpha_m = (0.32*(pre_vm+45.0)) / (1 - exp(-(pre_vm+45.0)/4.0));
-	const scalar beta_m =  (-0.28*(pre_vm+18.0)) / (1 - exp((pre_vm + 18.0)/5.0));
-	const scalar alpha_h = (0.128) / (exp((pre_vm+41.0)/18.0));
-	const scalar beta_h = 4.0 / (1 + exp(-(pre_vm + 18.0)/5.0));
+	const double alpha_m = (0.32*(pre_vm+45.0)) / (1 - exp(-(pre_vm+45.0)/4.0));
+	const double beta_m =  (-0.28*(pre_vm+18.0)) / (1 - exp((pre_vm + 18.0)/5.0));
+	const double alpha_h = (0.128) / (exp((pre_vm+41.0)/18.0));
+	const double beta_h = 4.0 / (1 + exp(-(pre_vm + 18.0)/5.0));
 
     self->hh_m = DT*( (alpha_m*(1.0-self->hh_m)) - beta_m*self->hh_m) + self->hh_m;
     self->hh_h = DT*( (alpha_h*(1.0-self->hh_h)) - beta_h*self->hh_h) + self->hh_h;

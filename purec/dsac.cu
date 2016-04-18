@@ -100,7 +100,7 @@ static inline void* new_dsac_soma(
     }
     
 	void* dc_curr_mech = NULL;
-    if (!(dc_curr_mech = myriad_new(DCCurrentMech, id, STIM_ONSET, STIM_END, stimulate ? STIM_CURR : (scalar) 0.0)))
+    if (!(dc_curr_mech = myriad_new(DCCurrentMech, id, STIM_ONSET, STIM_END, stimulate ? STIM_CURR : (double) 0.0)))
     {
         fputs("Failed to create mechanism", stderr);
         exit(EXIT_FAILURE);                
@@ -150,7 +150,7 @@ static inline void* new_dsac_soma(
 static struct _pthread_vals
 {
     void** network;
-    scalar curr_time;
+    double curr_time;
     uint_fast32_t curr_step;
     uint_fast32_t num_done;
     pthread_mutex_t barrier_mutx;
@@ -307,7 +307,7 @@ int main(void)
         }
     }
 #else
-    scalar current_time = DT;
+    double current_time = DT;
     for (uint_fast32_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
         for (uint_fast32_t i = 0; i < NUM_CELLS; i++)
@@ -361,7 +361,7 @@ int main(void)
         async_io_params.aio_offset = 0;
         async_io_params.aio_reqprio = 0;
         async_io_params.aio_buf = ((struct HHSomaCompartment*) network[comp_id])->vm;
-        async_io_params.aio_nbytes = sizeof(scalar) * SIMUL_LEN;
+        async_io_params.aio_nbytes = sizeof(double) * SIMUL_LEN;
         async_io_params.aio_sigevent = aio_sigeven;
 
         if (aio_write(&async_io_params) == -1)
@@ -371,7 +371,7 @@ int main(void)
         }
 #else
         if (1 != fwrite(((struct HHSomaCompartment*) network[comp_id])->vm,
-                        sizeof(scalar) * SIMUL_LEN,
+                        sizeof(double) * SIMUL_LEN,
                         1,
                         file))
         {

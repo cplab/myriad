@@ -28,10 +28,10 @@ extern "C"
 __device__ __constant__ struct HHSpikeGABAAMechanism* HHSpikeGABAAMechanism_dev_t;
 __device__ __constant__ struct HHSpikeGABAAMechanismClass* HHSpikeGABAAMechanismClass_dev_t;
 
-__device__ scalar HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
+__device__ double HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
                                                        void* pre_comp,
                                                        void* post_comp,
-                                                       const scalar global_time,
+                                                       const double global_time,
                                                        const uint_fast32_t curr_step)
 {
 	struct HHSpikeGABAAMechanism* self = (struct HHSpikeGABAAMechanism*) _self;
@@ -39,9 +39,9 @@ __device__ scalar HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-    const scalar pre_pre_vm = (curr_step > 1) ? c1->vm[curr_step-2] : INFINITY;
-	const scalar pre_vm = c1->vm[curr_step-1];
-	const scalar post_vm = c2->vm[curr_step-1];
+    const double pre_pre_vm = (curr_step > 1) ? c1->vm[curr_step-2] : INFINITY;
+	const double pre_vm = c1->vm[curr_step-1];
+	const double post_vm = c2->vm[curr_step-1];
     
     // If we just fired
     if (pre_vm > self->prev_vm_thresh && pre_pre_vm < self->prev_vm_thresh)
@@ -51,9 +51,9 @@ __device__ scalar HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
 
     if (self->t_fired != -INFINITY)
     {
-        const scalar g_s = exp(-(global_time - self->t_fired) / self->tau_beta) - 
+        const double g_s = exp(-(global_time - self->t_fired) / self->tau_beta) - 
             exp(-(global_time - self->t_fired) / self->tau_alpha);
-        const scalar I_GABA = self->norm_const * -self->g_max * g_s * (post_vm - self->gaba_rev);
+        const double I_GABA = self->norm_const * -self->g_max * g_s * (post_vm - self->gaba_rev);
         return I_GABA;        
     } else {
         return 0.0;

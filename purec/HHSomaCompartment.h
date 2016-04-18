@@ -14,11 +14,11 @@ struct HHSomaCompartment
     //! HHSomaCompartment : Compartment
     struct Compartment _;
     //! Membrane voltage - mV
-    scalar vm[SIMUL_LEN];
+    double vm[SIMUL_LEN];
     //! Length of soma_vm array
     uint_fast32_t vm_len;
     //! Capacitance - nF
-    scalar cm;   
+    double cm;   
 };
 
 struct HHSomaCompartmentClass
