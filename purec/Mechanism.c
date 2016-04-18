@@ -26,10 +26,10 @@ static void* Mechanism_ctor(void* _self, va_list* app)
 // Native Mechanism Fxn //
 //////////////////////////
 
-static double Mechanism_mechanism_fxn(void* _self,
+static scalar Mechanism_mechanism_fxn(void* _self,
                                       void* pre_comp,
                                       void* post_comp,
-                                      const double global_time,
+                                      const scalar global_time,
                                       const uint_fast32_t curr_step)
 {
 	// const struct Mechanism* self = (const struct Mechanism*) _self;
@@ -37,10 +37,10 @@ static double Mechanism_mechanism_fxn(void* _self,
 	return 0.0;
 }
 
-double mechanism_fxn(void* _self,
+scalar mechanism_fxn(void* _self,
                      void* pre_comp,
                      void* post_comp,
-                     const double global_time,
+                     const scalar global_time,
                      const uint_fast32_t curr_step)
 {
 	const struct MechanismClass* m_class = (const struct MechanismClass*) myriad_class_of(_self);
@@ -48,11 +48,11 @@ double mechanism_fxn(void* _self,
 	return m_class->m_mech_fxn(_self, pre_comp, post_comp, global_time, curr_step);
 }
 
-double super_mechanism_fxn(void* _class,
+scalar super_mechanism_fxn(void* _class,
                            void* _self,
                            void* pre_comp,
                            void* post_comp,
-                           const double global_time,
+                           const scalar global_time,
                            const uint_fast32_t curr_step)
 {
 	const struct MechanismClass* s_class=(const struct MechanismClass*) myriad_super(_class);

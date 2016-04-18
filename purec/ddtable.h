@@ -10,7 +10,7 @@
 #endif
 
 //! Default NULL value (not a value) for our table
-#define DDTABLE_NULL_VAL (double) 0xdeadbeef
+#define DDTABLE_NULL_VAL (scalar) 0xdeadbeef
 
 #ifdef MYRIAD_ALLOCATOR
 #include "myriad_alloc.h"
@@ -24,9 +24,9 @@
 #endif
 
 //! Double-to-Double function pointer for callbacks.
-typedef double (*d2dfun) (const double d);
+typedef scalar (*d2dfun) (const scalar d);
 
-//! Hash table for double-valued key-value pairs.
+//! Hash table for scalar-valued key-value pairs.
 typedef struct ddtable
 {
 #ifdef DEBUG
@@ -41,7 +41,7 @@ typedef struct ddtable
     //! Fast-checker for key existence
     int_fast8_t* restrict exists;
     //! Single-alloc array for kv pairs
-    double* restrict key_vals;
+    scalar* restrict key_vals;
 } *ddtable_t;
 
 /**
@@ -78,8 +78,8 @@ extern void ddtable_free(ddtable_t table);
  * 
  * @see get_check_key
  */
-extern double ddtable_get_val(ddtable_t table,
-                              const double key) __attribute__((pure));
+extern scalar ddtable_get_val(ddtable_t table,
+                              const scalar key) __attribute__((pure));
 
 /**
  * @brief Check if key-value pair has been assigned for the given key.
@@ -92,7 +92,7 @@ extern double ddtable_get_val(ddtable_t table,
  * @see get_key, get_check_key
  */
 extern bool ddtable_check_key(ddtable_t table,
-                              const double key) __attribute__((pure));
+                              const scalar key) __attribute__((pure));
 
 /**
  * @brief Get value, but check the key's value before returning.
@@ -105,8 +105,8 @@ extern bool ddtable_check_key(ddtable_t table,
  *
  * @see get_val
  */
-extern double ddtable_get_check_key(ddtable_t table,
-                                    const double key) __attribute__((pure));
+extern scalar ddtable_get_check_key(ddtable_t table,
+                                    const scalar key) __attribute__((pure));
 
 /**
  * @brief Add the given key-value pair to the given hash table.
@@ -119,7 +119,7 @@ extern double ddtable_get_check_key(ddtable_t table,
  *
  * @see ddtable_clobber_val
  */
-extern int ddtable_set_val(ddtable_t table, const double key, const double val);
+extern int ddtable_set_val(ddtable_t table, const scalar key, const scalar val);
 
 /**
  * @brief Add the given key-value pair to the given hash table, forcefully.
@@ -133,8 +133,8 @@ extern int ddtable_set_val(ddtable_t table, const double key, const double val);
  * @see ddtable_set_val
  */
 extern void ddtable_clobber_val(ddtable_t table,
-                               const double key,
-                               const double val);
+                               const scalar key,
+                               const scalar val);
 
 /**
  * @brief Checks key existence before retrieving, callbacks on mismatch.
@@ -157,8 +157,8 @@ extern void ddtable_clobber_val(ddtable_t table,
  * @see get_check_key
  * @see d2dfun
  */
-extern double ddtable_check_get_set(ddtable_t table,
-                                    const double key,
+extern scalar ddtable_check_get_set(ddtable_t table,
+                                    const scalar key,
                                     d2dfun cb);
 #undef restrict
 #endif

@@ -16,14 +16,14 @@ static void* HHSomaCompartment_ctor(void* _self, va_list* app)
     struct HHSomaCompartment* self =
         (struct HHSomaCompartment*) super_ctor(HHSomaCompartment, _self, app);
 
-    const double* restrict vm = va_arg(*app, double*);
-    const double init_vm = va_arg(*app, double);
+    const scalar* restrict vm = va_arg(*app, scalar*);
+    const scalar init_vm = va_arg(*app, double);
     self->cm = va_arg(*app, double);
 
     // If the given vm is non-NULL, we assume it contains data and copy it.
     if (vm != NULL)
     {
-        memcpy(self->vm, vm, SIMUL_LEN * sizeof(double));
+        memcpy(self->vm, vm, SIMUL_LEN * sizeof(scalar));
         self->vm[0] = init_vm;
     }
 
@@ -55,12 +55,12 @@ static int HHSomaCompartment_dtor(void* _self)
 
 static void HHSomaCompartment_simul_fxn(void* _self,
                                         void** network,
-                                        const double global_time,
+                                        const scalar global_time,
                                         const uint_fast32_t curr_step)
 {
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
 
-	double I_sum = 0.0;
+	scalar I_sum = 0.0;
 
 	//	Calculate mechanism contribution to current term
 	for (uint_fast32_t i = 0; i < self->_.num_mechs; i++)

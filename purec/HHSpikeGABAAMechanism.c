@@ -36,10 +36,10 @@ static void* HHSpikeGABAAMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHSpikeGABAAMechanism_mech_fun(void* _self,
+static scalar HHSpikeGABAAMechanism_mech_fun(void* _self,
                                              void* pre_comp,
                                              void* post_comp,
-                                             const double global_time,
+                                             const scalar global_time,
                                              const uint_fast32_t curr_step)
 {
 	struct HHSpikeGABAAMechanism* self = (struct HHSpikeGABAAMechanism*) _self;
@@ -47,9 +47,9 @@ static double HHSpikeGABAAMechanism_mech_fun(void* _self,
 	const struct HHSomaCompartment* c2 = (const struct HHSomaCompartment*) post_comp;
 
 	//	Channel dynamics calculation
-    const double pre_pre_vm = (curr_step > 1) ? c1->vm[curr_step-2] : INFINITY;
-	const double pre_vm = c1->vm[curr_step-1];
-	const double post_vm = c2->vm[curr_step-1];
+    const scalar pre_pre_vm = (curr_step > 1) ? c1->vm[curr_step-2] : INFINITY;
+	const scalar pre_vm = c1->vm[curr_step-1];
+	const scalar post_vm = c2->vm[curr_step-1];
     
     // If we just fired
     if (pre_vm > self->prev_vm_thresh && pre_pre_vm < self->prev_vm_thresh)
@@ -59,9 +59,9 @@ static double HHSpikeGABAAMechanism_mech_fun(void* _self,
 
     if (self->t_fired != -INFINITY)
     {
-        const double g_s = exp(-(global_time - self->t_fired) / self->tau_beta) - 
+        const scalar g_s = exp(-(global_time - self->t_fired) / self->tau_beta) - 
             exp(-(global_time - self->t_fired) / self->tau_alpha);
-        const double I_GABA = self->norm_const * -self->g_max * g_s * (post_vm - self->gaba_rev);
+        const scalar I_GABA = self->norm_const * -self->g_max * g_s * (post_vm - self->gaba_rev);
         return I_GABA;        
     } else {
         return 0.0;

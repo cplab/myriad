@@ -38,7 +38,7 @@ static void* Compartment_ctor(void* _self, va_list* app)
 // Simulate function
 static void Compartment_simul_fxn(void* _self,
                                   void** network,
-                                  const double global_time,
+                                  const scalar global_time,
                                   const uint_fast32_t curr_step)
 {
 	// const struct Compartment* self = (const struct Compartment*) _self;
@@ -49,7 +49,7 @@ static void Compartment_simul_fxn(void* _self,
 
 void simul_fxn(void* _self,
                void** network,
-               const double global_time,
+               const scalar global_time,
                const uint_fast32_t curr_step)
 {
 	const struct CompartmentClass* m_class = 
@@ -61,7 +61,7 @@ void simul_fxn(void* _self,
 void super_simul_fxn(void* _class,
                      void* _self,
                      void** network,
-                     const double global_time,
+                     const scalar global_time,
                      const uint_fast32_t curr_step)
 {
 	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);

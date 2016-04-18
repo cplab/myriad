@@ -150,7 +150,7 @@ static inline void* new_dsac_soma(
 static struct _pthread_vals
 {
     void** network;
-    double curr_time;
+    scalar curr_time;
     uint_fast32_t curr_step;
     uint_fast32_t num_done;
     pthread_mutex_t barrier_mutx;
@@ -307,7 +307,7 @@ int main(void)
         }
     }
 #else
-    double current_time = DT;
+    scalar current_time = DT;
     for (uint_fast32_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
         for (uint_fast32_t i = 0; i < NUM_CELLS; i++)
@@ -320,7 +320,7 @@ int main(void)
 
     DEBUG_PRINTF("Simulation completed at time %li\n", time(NULL));
 
-    DEBUG_PRINTF("Writing %ui files ..\n", NUM_CELLS);
+    DEBUG_PRINTF("Writing %u files ..\n", NUM_CELLS);
     
     // Make directory if it doesn't exist
     int mkdir_result = mkdir("cmyriad_dat/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);

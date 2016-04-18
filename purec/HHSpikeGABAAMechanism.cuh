@@ -36,10 +36,10 @@ extern __device__ __constant__ struct HHSpikeGABAAMechanismClass* HHSpikeGABAAMe
 //! On-GPU reference pointer to Mechanism function implementation
 extern __device__ mech_fun_t HHSpikeGABAAMechanism_mech_fxn_t;
 
-extern __device__ double HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
+extern __device__ scalar HHSpikeGABAAMechanism_cuda_mech_fun(void* _self,
                                                               void* pre_comp,
                                                               void* post_comp,
-                                                              const double global_time,
+                                                              const scalar global_time,
                                                               const uint_fast32_t curr_step);
 
 #endif /* CUDA */

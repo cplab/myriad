@@ -41,7 +41,7 @@ struct DCCurrentMech
     //! Time step at which current stops flowing
 	uint_fast32_t t_stop;
     //! Current amplitude in nA
-	double amplitude;
+	scalar amplitude;
 };
 
 /**

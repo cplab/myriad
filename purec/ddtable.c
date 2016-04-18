@@ -240,14 +240,14 @@ static inline uint64_t spooky_hash64(const void *message,
 }
 
 //! Hash function using spooky 64-bit hash
-static inline uint64_t dd_hash(const double key,
+static inline uint64_t dd_hash(const scalar key,
                                const uint64_t size)
 {
 #if DEBUG > 1
     printf("key: %f, ", key);
 #endif
     // Can use faster & instead of % if we enforce power of 2 size.
-    return spooky_hash64(&key, sizeof(double), SPOOKY_HASH_SEED) & size;
+    return spooky_hash64(&key, sizeof(scalar), SPOOKY_HASH_SEED) & size;
 }
 
 //! Gets the next power of two from the given number (e.g. 30 -> 32)
@@ -271,7 +271,7 @@ ddtable_t ddtable_new(const uint64_t num_keys)
     const uint64_t pot_num_keys = next_power_of_2(num_keys);
     
     // Calculate the memory footprint so we can try allocate.
-    const size_t pot_size = (sizeof(double) * pot_num_keys * 2) +
+    const size_t pot_size = (sizeof(scalar) * pot_num_keys * 2) +
         sizeof(struct ddtable) + (sizeof(int_fast8_t) * pot_num_keys);
 
     // Allocate entire table at one time
@@ -293,12 +293,12 @@ ddtable_t ddtable_new(const uint64_t num_keys)
 
     // Bitmap array starts right at the end of the struct
     new_ht->exists = (int_fast8_t*) (((intptr_t) &new_ht->exists)
-                                     + sizeof(int_fast8_t*) + sizeof(double*));
+                                     + sizeof(int_fast8_t*) + sizeof(scalar*));
     
     // Key-value pair array starts after the bitmap
-    new_ht->key_vals = (double*) (((intptr_t) &new_ht->exists)
+    new_ht->key_vals = (scalar*) (((intptr_t) &new_ht->exists)
                                   + sizeof(int_fast8_t*)
-                                  + sizeof(double*)
+                                  + sizeof(scalar*)
                                   + ((new_ht->size + 1) * sizeof(int_fast8_t)));
 
     return new_ht;
@@ -322,7 +322,7 @@ void ddtable_free(ddtable_t table)
     }
 }
 
-double ddtable_get_val(ddtable_t table, const double key)
+scalar ddtable_get_val(ddtable_t table, const scalar key)
 {
     const uint64_t indx = dd_hash(key, table->size);
 
@@ -345,7 +345,7 @@ double ddtable_get_val(ddtable_t table, const double key)
     #endif
 }
 
-double ddtable_get_check_key(ddtable_t table, const double key)
+scalar ddtable_get_check_key(ddtable_t table, const scalar key)
 {
     const uint64_t indx = dd_hash(key, table->size);
 
@@ -370,7 +370,7 @@ double ddtable_get_check_key(ddtable_t table, const double key)
     #endif
 }
 
-int ddtable_set_val(ddtable_t table, const double key, const double val)
+int ddtable_set_val(ddtable_t table, const scalar key, const scalar val)
 {
     const uint64_t indx = dd_hash(key, table->size);
 
@@ -394,7 +394,7 @@ int ddtable_set_val(ddtable_t table, const double key, const double val)
     }
 }
 
-void ddtable_clobber_val(ddtable_t table, const double key, const double val)
+void ddtable_clobber_val(ddtable_t table, const scalar key, const scalar val)
 {
     const uint64_t indx = dd_hash(key, table->size);
     table->exists[indx] = (int_fast8_t) 1;
@@ -402,18 +402,18 @@ void ddtable_clobber_val(ddtable_t table, const double key, const double val)
     table->key_vals[(indx << 1) + 1] = val;
 }
 
-bool ddtable_check_key(ddtable_t table, const double key)
+bool ddtable_check_key(ddtable_t table, const scalar key)
 {
     return (bool) table->exists[dd_hash(key, table->size)];
 }
 
-double ddtable_check_get_set(ddtable_t table, const double key, d2dfun cb)
+scalar ddtable_check_get_set(ddtable_t table, const scalar key, d2dfun cb)
 {
     const uint64_t indx = dd_hash(key, table->size);
     const uint64_t indx_s = indx << 1;
     if (table->exists[indx])
     {
-        const double val = table->key_vals[indx_s + 1];
+        const scalar val = table->key_vals[indx_s + 1];
         if (val == DDTABLE_NULL_VAL || table->key_vals[indx_s] != key)
         {
 #if DEBUG
@@ -430,7 +430,7 @@ double ddtable_check_get_set(ddtable_t table, const double key, d2dfun cb)
 #if DEBUG
         table->_ddtable_misses++;
 #endif          
-        const double val = cb(key);
+        const scalar val = cb(key);
         table->exists[indx] = (int_fast8_t) 1;
         table->key_vals[indx_s] = key;
         table->key_vals[indx_s + 1] = val;

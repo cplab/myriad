@@ -23,11 +23,11 @@ static void* HHLeakMechanism_ctor(void* _self, va_list* app)
 	return self;
 }
 
-static double HHLeakMechanism_mech_fun(void* _self,
+static scalar HHLeakMechanism_mech_fun(void* _self,
                                        void* pre_comp,
                                        void* post_comp,
-                                       const double dt,
-                                       const double global_time,
+                                       const scalar dt,
+                                       const scalar global_time,
                                        const uint_fast32_t curr_step)
 {
 	const struct HHLeakMechanism* self = (const struct HHLeakMechanism*) _self;
