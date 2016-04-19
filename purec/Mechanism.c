@@ -32,32 +32,7 @@ static double Mechanism_mechanism_fxn(void* _self,
                                       const double global_time,
                                       const uint_fast32_t curr_step)
 {
-	// const struct Mechanism* self = (const struct Mechanism*) _self;
-	// printf("My source id is %u\n", self->source_id);
 	return 0.0;
-}
-
-double mechanism_fxn(void* _self,
-                     void* pre_comp,
-                     void* post_comp,
-                     const double global_time,
-                     const uint_fast32_t curr_step)
-{
-	const struct MechanismClass* m_class = (const struct MechanismClass*) myriad_class_of(_self);
-	assert(m_class->m_mech_fxn);
-	return m_class->m_mech_fxn(_self, pre_comp, post_comp, global_time, curr_step);
-}
-
-double super_mechanism_fxn(void* _class,
-                           void* _self,
-                           void* pre_comp,
-                           void* post_comp,
-                           const double global_time,
-                           const uint_fast32_t curr_step)
-{
-	const struct MechanismClass* s_class=(const struct MechanismClass*) myriad_super(_class);
-	assert(_self && s_class->m_mech_fxn);
-	return s_class->m_mech_fxn(_self, pre_comp, post_comp, global_time, curr_step);
 }
 
 ////////////////////////////////////
@@ -69,18 +44,18 @@ static void* MechanismClass_ctor(void* _self, va_list* app)
 {
 	struct MechanismClass* self = (struct MechanismClass*) super_ctor(MechanismClass, _self, app);
 
-	voidf selector = NULL; selector = va_arg(*app, voidf);
+    enum MyriadMethods selector = 0; selector = va_arg(app, enum MyriadMethods);
 
 	while (selector)
 	{
 		const voidf method = va_arg(*app, voidf);
 		
-		if (selector == (voidf) mechanism_fxn)
+		if (selector == MECH_SIMUL)
 		{
 			*(voidf *) &self->m_mech_fxn = method;
 		}
 
-		selector = va_arg(*app, voidf);
+		selector = va_arg(*app, enum MyriadMethods);
 	}
 
 	return self;
@@ -144,8 +119,8 @@ void initMechanism(void)
 				   MyriadClass,
 				   MyriadClass,
 				   sizeof(struct MechanismClass),
-				   myriad_ctor, MechanismClass_ctor,
-				   myriad_cudafy, MechanismClass_cudafy,
+				   CTOR, MechanismClass_ctor,
+				   CUDAFY, MechanismClass_cudafy,
 				   0
 			);
 		struct MyriadObject* mech_class_obj = NULL; mech_class_obj = (struct MyriadObject*) MechanismClass;
@@ -173,8 +148,8 @@ void initMechanism(void)
 				   MechanismClass,
 				   MyriadObject,
 				   sizeof(struct Mechanism),
-				   myriad_ctor, Mechanism_ctor,
-				   mechanism_fxn, Mechanism_mechanism_fxn,
+				   CTOR, Mechanism_ctor,
+				   MECH_SIMUL, Mechanism_mechanism_fxn,
 				   0
 			);
 

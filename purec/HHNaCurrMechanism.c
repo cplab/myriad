@@ -129,7 +129,7 @@ void initHHNaCurrMechanism(void)
 				MechanismClass,
 				MechanismClass,
 				sizeof(struct HHNaCurrMechanismClass),
-				myriad_cudafy, HHNaCurrMechanismClass_cudafy,
+				CUDAFY, HHNaCurrMechanismClass_cudafy,
 				0
 			);
 		
@@ -158,8 +158,8 @@ void initHHNaCurrMechanism(void)
 				HHNaCurrMechanismClass,
 				Mechanism,
 				sizeof(struct HHNaCurrMechanism),
-				myriad_ctor, HHNaCurrMechanism_ctor,
-				mechanism_fxn, HHNaCurrMechanism_mech_fun,
+				CTOR, HHNaCurrMechanism_ctor,
+				MECH_SIMUL, HHNaCurrMechanism_mech_fun,
 				0
 			);
 		

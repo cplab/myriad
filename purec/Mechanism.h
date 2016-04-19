@@ -30,22 +30,6 @@ extern const void* Mechanism;
 extern const void* MechanismClass;
 
 /**
- * Delegator function for MechanismClass mechansim function method.
- *
- * @param[in]  _self        pointer to extant object instance
- * @param[in]  pre_comp     pointer to the compartment where this mechanism is
- * @param[in]  global_time  current global time of the simulation
- * @param[in]  curr_step    current global time step of the simulation
- *
- * @returns calculated output value of this mechanism for the given timestep
- */
-extern double mechanism_fxn(void* _self,
-                            void* pre_comp,
-                            void* post_comp,
-                            const double global_time,
-                            const uint_fast32_t curr_step);
-
-/**
  * Mechanism object structure definition.
  *
  * Stores mechanism state.
@@ -74,6 +58,22 @@ struct MechanismClass
     //! Mechanism simulation function
 	mech_fun_t m_mech_fxn;
 };
+
+/**
+ * Delegator function for MechanismClass mechansim function method.
+ *
+ * @param[in]  _self        pointer to extant object instance
+ * @param[in]  pre_comp     pointer to the compartment where this mechanism is
+ * @param[in]  global_time  current global time of the simulation
+ * @param[in]  curr_step    current global time step of the simulation
+ *
+ * @returns calculated output value of this mechanism for the given timestep
+ */
+#define mechanism_fxn(self, pre_comp, post_comp, g_time, c_step) \
+    ((const struct MechanismClass*) myriad_class_of(self))->m_mech_fxn(self, pre_comp, post_comp, g_time, c_step)
+
+#define super_mechanism_fxn(class, self, pre_comp, post_comp, g_time, c_step) \
+    ((const struct MechanismClass*) myriad_super(class))->m_mech_fxn(self, pre_comp, post_comp, g_time, c_step)
 
 /**
  * Initializes prototype mechanism infrastructure on the heap.

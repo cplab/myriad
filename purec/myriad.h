@@ -124,4 +124,15 @@ extern __thread union _eco _eco;  //! Must be thread-local due to side-effects.
     } }
 #endif
 
+//! Myriad Methods
+enum MyriadMethods {
+    COMPARTMENT_SIMUL = 42,
+    COMPARTMENT_ADD_MECH,
+    MECH_SIMUL,
+    CTOR,
+    DTOR,
+    CUDAFY,
+    DECUDAFY,
+};
+
 #endif  // MYRIAD_H

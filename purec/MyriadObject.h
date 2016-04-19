@@ -93,9 +93,7 @@ extern void* myriad_new(const void* _class, ...);
    
    @returns pointer to the reference class of the instance object
  */
-#ifndef myriad_class_of
 #define myriad_class_of(self) ((const struct MyriadObject*) self)->m_class
-#endif
 
 /**
    Returns the size of a given generic object.
@@ -137,12 +135,12 @@ extern int myriad_is_of(const void* _self, const struct MyriadClass* m_class);
    Note that for MyriadObject this is passthrough, but it's necessary for it to
    exit to have a reference point for the selector in the MyriadClass_ctor.
   
-   @param[in]    _self  pointer to the object's memory as it currently exists
+   @param[in]    self  pointer to the object's memory as it currently exists
    @param[in]    app    variable arguments list from @see myriad_new
 
    @returns newly created object as a generic void pointer
  */
-extern void* myriad_ctor(void* _self, va_list* app);
+#define myriad_ctor(self, app) ((const struct MyriadClass*) myriad_class_of(self))->my_ctor(self, app)
 
 /**
    Calls destructor for the given object.
@@ -150,31 +148,31 @@ extern void* myriad_ctor(void* _self, va_list* app);
    Note that calling a destructor multiple times is undefined behavior.
    Note that calling a destructor on a MyriadClass is undefined behavior.
 
-   @param[in]    _self    pointer to an extant object in memory
+   @param[in]    self    pointer to an extant object in memory
    
    @returns EXIT_SUCCESS if memory was successfully freed, EXIT_FAILURE o.w.
  */
-extern int myriad_dtor(void* _self);
+#define myriad_dtor(self) ((const struct MyriadClass*) myriad_class_of(self))->my_dtor(self)
 
 /**
    Calls CUDAfy method for the given object, with clobber flag.
    
-   @param[in]    _self    pointer to an extant object in memory
+   @param[in]    self    pointer to an extant object in memory
    @param[in]    clobber  flag for overriding underclass' CUDAfy call
 
    @returns pointer in CUDA device memory to new object instance
  */
-extern void* myriad_cudafy(void* _self, int clobber);
+#define myriad_cudafy(self, clobber) ((const struct MyriadClass*) myriad_class_of(self))->my_cudafy(self, clobber)
 
 /**
    Calls deCUDAfy method for the given object.
 
    Note that this overrides the extant CPU object with the GPU contents.
 
-   @param[in,out]  _self      pointer to an extant object in memory
-   @param[in]      cuda_self  pointer to extant object in CUDA device memory 
+   @param[in,out]  self      pointer to an extant object in memory
+   @param[in]      cudaself  pointer to extant object in CUDA device memory 
  */
-extern void myriad_decudafy(void* _self, void* cuda_self);
+#define myriad_decudafy(self, cudas_elf) ((const struct MyriadClass*) myriad_class_of(self))->my_decudafy(self, cuda_self)
 
 
 ///////////////////////////////
@@ -188,7 +186,7 @@ extern void myriad_decudafy(void* _self, void* cuda_self);
    
    @returns pointer to the superclass of the given object
  */
-extern const void* myriad_super(const void* _self);
+#define myriad_super(_self) ((const struct MyriadClass*) _self)->super
 
 /**
    Calls the superclass' constructor for an underclass object.
@@ -201,7 +199,7 @@ extern const void* myriad_super(const void* _self);
    
    @see myriad_ctor
  */
-extern void* super_ctor(const void* _class, void* _self, va_list* app);
+#define super_ctor(class, self, app) ((const struct MyriadClass*) myriad_super(class))->my_ctor(self, app)
 
 /**
    Calls the superclass' destructor for an underclass object.
@@ -213,7 +211,7 @@ extern void* super_ctor(const void* _class, void* _self, va_list* app);
 
    @see myriad_dtor
  */
-extern int super_dtor(const void* _class, void* _self);
+#define super_dtor(class, self) ((const struct MyriadClass*) myriad_super(class))->my_dtor(self)
 
 /**
    Calls the superclass' destructor for an underclass object.
@@ -226,7 +224,7 @@ extern int super_dtor(const void* _class, void* _self);
 
    @see myriad_cudafy
  */
-extern void* super_cudafy(const void* _class, void* _self, int clobber);
+#define super_cudafy(class, self, clobber) ((const struct MyriadClass*) myriad_super(class))->my_cudafy(self, clobber)
 
 /**
    Calls the superclass' deCUDAfyer for an underclass object.
@@ -239,7 +237,7 @@ extern void* super_cudafy(const void* _class, void* _self, int clobber);
 
    @see myriad_decudafy
  */
-extern void super_decudafy(const void* _class, void* _self, void* cuda_self);
+#define super_decudafy(class, self, cudaself) ((const struct MyriadClass*) myriad_super(class))->my_decudafy(self, cudaself)
 
 ////////////////////////////////////////
 // Object & Class Struct declarations //

@@ -103,7 +103,7 @@ void initDCCurrMech(void)
 				MechanismClass,
 				MechanismClass,
 				sizeof(struct DCCurrentMechClass),
-				myriad_cudafy, DCCurrentMechClass_cudafy,
+				CUDAFY, DCCurrentMechClass_cudafy,
 				0
 			);
 		
@@ -132,8 +132,8 @@ void initDCCurrMech(void)
 				DCCurrentMechClass,
 				Mechanism,
 				sizeof(struct DCCurrentMech),
-				myriad_ctor, DCCurrentMech_ctor,
-				mechanism_fxn, DCCurrentMech_mech_fun,
+				CTOR, DCCurrentMech_ctor,
+				MECH_SIMUL, DCCurrentMech_mech_fun,
 				0
 			);
 		

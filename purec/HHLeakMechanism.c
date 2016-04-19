@@ -112,7 +112,7 @@ void initHHLeakMechanism(void)
 				MechanismClass,
 				MechanismClass,
 				sizeof(struct HHLeakMechanismClass),
-				myriad_cudafy, HHLeakMechanismClass_cudafy,
+				CUDAFY, HHLeakMechanismClass_cudafy,
 				0
 			);
 		
@@ -141,8 +141,8 @@ void initHHLeakMechanism(void)
 				HHLeakMechanismClass,
 				Mechanism,
 				sizeof(struct HHLeakMechanism),
-				myriad_ctor, HHLeakMechanism_ctor,
-				mechanism_fxn, HHLeakMechanism_mech_fun,
+				CTOR, HHLeakMechanism_ctor,
+				MECH_SIMUL, HHLeakMechanism_mech_fun,
 				0
 			);
 		

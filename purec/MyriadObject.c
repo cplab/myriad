@@ -116,15 +116,6 @@ static void* MyriadClass_ctor(void* _self, va_list* app)
 
     assert(self->super);
     
-    /*
-     * MASSIVE TODO:
-     * 
-     * Since this is generics-based we want to be able to have default behavior for classes
-     * that don't want to specify their own overrides; we probably then need to change this
-     * memcpy to account for ALL the methods, not just the ones we like.
-     * 
-     * Solution: Make it absolutely sure if we're memcpying ALL the methods.
-     */
     // Memcopies MyriadObject cudafy methods onto self (in case defaults aren't set)
     memcpy((char*) self + offset,
            (char*) self->super + offset,
@@ -133,24 +124,25 @@ static void* MyriadClass_ctor(void* _self, va_list* app)
     va_list ap;
     va_copy(ap, *app);
 
-    voidf selector = NULL; selector = va_arg(ap, voidf);
+    // Technically this will just use int, but whatever
+    enum MyriadMethods selector = 0; selector = va_arg(ap, enum MyriadMethods);
 
     while (selector)
     {
         const voidf curr_method = va_arg(ap, voidf);
     
-        if (selector == (voidf) myriad_ctor)
+        if (selector == CTOR)
         {
             *(voidf *) &self->my_ctor = curr_method;
-        } else if (selector == (voidf) myriad_cudafy) {
+        } else if (selector == CUDAFY) {
             *(voidf *) &self->my_cudafy = curr_method;
-        } else if (selector == (voidf) myriad_dtor) {
+        } else if (selector == DTOR) {
             *(voidf *) &self->my_dtor = curr_method;
-        } else if (selector == (voidf) myriad_decudafy) {
+        } else if (selector == DECUDAFY) {
             *(voidf *) &self->my_decudafy = curr_method;
         }
         
-        selector = va_arg(ap, voidf);
+        selector = va_arg(ap, enum MyriadMethods);
     }
 
     return self;
@@ -158,7 +150,7 @@ static void* MyriadClass_ctor(void* _self, va_list* app)
 
 static int MyriadClass_dtor(void* self __attribute__((unused)))
 {
-    fprintf(stderr, "Destroying a Class is undefined behavior.\n");
+    fputs("Destroying a Class is undefined behavior.\n", stderr);
     exit(EXIT_FAILURE);
 }
 
@@ -287,86 +279,6 @@ int myriad_is_of(const void* _self, const struct MyriadClass* m_class)
     }
 
     return 0;
-}
-
-//------------------------------
-//   Object Built-in Generics
-//------------------------------
-
-void* myriad_ctor(void* _self, va_list* app)
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-
-    assert(m_class->my_ctor);
-    return m_class->my_ctor(_self, app);
-}
-
-int myriad_dtor(void* _self)
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-    
-    assert(m_class->my_dtor);
-    return m_class->my_dtor(_self);
-}
-
-void* myriad_cudafy(void* _self, int clobber)
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-
-    assert(m_class->my_cudafy);
-    return m_class->my_cudafy(_self, clobber);
-}
-
-void myriad_decudafy(void* _self, void* cuda_self)
-{
-    const struct MyriadClass* m_class = (const struct MyriadClass*) myriad_class_of(_self);
-    
-    assert(m_class->my_decudafy);
-    m_class->my_decudafy(_self, cuda_self);
-    return;
-}
-
-///////////////////////////////
-// Super and related methods //
-///////////////////////////////
-
-const void* myriad_super(const void* _self)
-{
-    const struct MyriadClass* self = (const struct MyriadClass*) _self;
-
-    assert(self && self->super);
-    return self->super;
-}
-
-void* super_ctor(const void* _class, void* _self, va_list* app)
-{
-    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
-
-    assert(_self && superclass->my_ctor);
-    return superclass->my_ctor(_self, app);
-}
-
-int super_dtor(const void* _class, void* _self)
-{
-    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
-
-    assert(_self && superclass->my_dtor);
-    return superclass->my_dtor(_self);
-}
-
-void* super_cudafy(const void* _class, void* _self, int clobber)
-{
-    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
-    assert(_self && superclass->my_cudafy);
-    return superclass->my_cudafy(_self, clobber);
-}
-
-void super_decudafy(const void* _class, void* _self, void* cuda_self)
-{
-    const struct MyriadClass* superclass = (const struct MyriadClass*) myriad_super(_class);
-    assert(_self && superclass->my_decudafy);
-    superclass->my_decudafy(_self, cuda_self);
-    return;
 }
 
 ///////////////////////////////////

@@ -33,33 +33,6 @@ extern const void* Compartment;
 //! Generic pointer for new(CompartmentClass) purposes
 extern const void* CompartmentClass;
 
-/**
- * Generic simulation function delegator.
- *
- * @param[in]  _self        pointer to extant object instance
- * @param[in]  network      list of pointers to other compartments in network
- * @param[in]  global_time  current global time of the simulation
- * @param[in]  curr_step    current global time step of the simulation
- */
-extern void simul_fxn(void* _self,
-                      void** network,
-                      const double global_time,
-                      const uint_fast32_t curr_step);
-
-/**
- * Generic mechanism adder delegator.
- *
- * @param[in]  _self      pointer to extant compartent instance
- * @param[in]  mechanism  pointer to extant mechanism to add
- * 
- * @returns 0 if addition completed, -1 otherwise.
-*/
-extern int add_mechanism(void* _self, void* mechanism);
-
-//! Utility macro for checking if mechanism adding worked
-#define safe_add_mechanism(comp, mech) \
-    if (add_mechanism(comp, mech)) fputs("Failed to add mechanism.\n", stderr); exit(EXIT_FAILURE)
-
 //! Generic Compartment structure definition
 struct Compartment
 {
@@ -83,6 +56,34 @@ struct CompartmentClass
     //! Allows for adding mechanisms to compartment
 	compartment_add_mech_t m_compartment_add_mech_fxn;
 };
+
+/**
+ * Generic simulation function delegator.
+ *
+ * @param[in]  _self        pointer to extant object instance
+ * @param[in]  network      list of pointers to other compartments in network
+ * @param[in]  global_time  current global time of the simulation
+ * @param[in]  curr_step    current global time step of the simulation
+ */
+#define simul_fxn(self, network, g_time, c_step) \
+    ((const struct CompartmentClass*) myriad_class_of(self))->m_compartment_simul_fxn(self, network, g_time, c_step)
+
+#define super_simul_fxn(class, self, network, g_time, c_step) \
+    ((const struct CompartmentClass*) myriad_super(class))->m_compartment_simul_fxn(self, network, g_time, c_step)
+
+/**
+ * Generic mechanism adder delegator.
+ *
+ * @param[in]  _self      pointer to extant compartent instance
+ * @param[in]  mechanism  pointer to extant mechanism to add
+ * 
+ * @returns 0 if addition completed, -1 otherwise.
+*/
+#define add_mechanism(self, mechanism) \
+    ((const struct CompartmentClass*) myriad_class_of(self))->m_compartment_add_mech_fxn(self, mechanism)
+
+#define super_add_mechanism(class, self, mechanism) \
+    ((const struct CompartmentClass*) myriad_super(class))->(self, mechanism)
 
 /**
  * Initializes prototype compartment infrastructure on the heap.

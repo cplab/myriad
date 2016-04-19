@@ -144,7 +144,7 @@ void initHHSomaCompartment(void)
 				CompartmentClass,
 				CompartmentClass,
 				sizeof(struct HHSomaCompartmentClass),
-				myriad_cudafy, HHSomaCompartmentClass_cudafy,
+				CUDAFY, HHSomaCompartmentClass_cudafy,
 				0
 			);
 
@@ -170,11 +170,11 @@ void initHHSomaCompartment(void)
 				HHSomaCompartmentClass,
 				Compartment,
 				sizeof(struct HHSomaCompartment),
-				myriad_ctor, HHSomaCompartment_ctor,
-				myriad_dtor, HHSomaCompartment_dtor,
-				myriad_cudafy, HHSomaCompartment_cudafy,
-				myriad_decudafy, HHSomaCompartment_decudafy,
-				simul_fxn, HHSomaCompartment_simul_fxn,
+				CTOR, HHSomaCompartment_ctor,
+				DTOR, HHSomaCompartment_dtor,
+				CUDAFY, HHSomaCompartment_cudafy,
+				DECUDAFY, HHSomaCompartment_decudafy,
+				COMPARTMENT_SIMUL, HHSomaCompartment_simul_fxn,
 				0
 			);
 

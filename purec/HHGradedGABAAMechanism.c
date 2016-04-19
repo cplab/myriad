@@ -127,7 +127,7 @@ void initHHGradedGABAAMechanism(const bool init_cuda)
 				MechanismClass,
 				MechanismClass,
 				sizeof(struct HHGradedGABAAMechanismClass),
-				myriad_cudafy, HHGradedGABAAMechanismClass_cudafy,
+				CUDAFY, HHGradedGABAAMechanismClass_cudafy,
 				0
 			);
 		
@@ -159,8 +159,8 @@ void initHHGradedGABAAMechanism(const bool init_cuda)
 				HHGradedGABAAMechanismClass,
 				Mechanism,
 				sizeof(struct HHGradedGABAAMechanism),
-				myriad_ctor, HHGradedGABAAMechanism_ctor,
-				mechanism_fxn, HHGradedGABAAMechanism_mech_fun,
+				CTOR, HHGradedGABAAMechanism_ctor,
+				MECH_SIMUL, HHGradedGABAAMechanism_mech_fun,
 				0
 			);
 		

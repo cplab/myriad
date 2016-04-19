@@ -41,32 +41,7 @@ static void Compartment_simul_fxn(void* _self,
                                   const double global_time,
                                   const uint_fast32_t curr_step)
 {
-	// const struct Compartment* self = (const struct Compartment*) _self;
-	// printf("My id is %u\n", self->id);
-	// printf("My num_mechs is %u\n", self->num_mechs);
 	return;
-}
-
-void simul_fxn(void* _self,
-               void** network,
-               const double global_time,
-               const uint_fast32_t curr_step)
-{
-	const struct CompartmentClass* m_class = 
-		(const struct CompartmentClass*) myriad_class_of((void*) _self);
-	assert(m_class->m_compartment_simul_fxn);
-	m_class->m_compartment_simul_fxn(_self, network, global_time, curr_step);
-}
-
-void super_simul_fxn(void* _class,
-                     void* _self,
-                     void** network,
-                     const double global_time,
-                     const uint_fast32_t curr_step)
-{
-	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
-	assert(_self && s_class->m_compartment_simul_fxn);
-	s_class->m_compartment_simul_fxn(_self, network, global_time, curr_step);
 }
 
 // Add mechanism function
@@ -93,21 +68,6 @@ static int Compartment_add_mech(void* _self, void* mechanism)
 	return 0;
 }
 
-int add_mechanism(void* _self, void* mechanism)
-{
-	const struct CompartmentClass* m_class = 
-		(const struct CompartmentClass*) myriad_class_of((void*) _self);
-	assert(m_class->m_compartment_add_mech_fxn);
-	return m_class->m_compartment_add_mech_fxn(_self, mechanism);
-}
-
-int super_add_mechanism(const void* _class, void* _self, void* mechanism)
-{
-	const struct CompartmentClass* s_class=(const struct CompartmentClass*) myriad_super(_class);
-	assert(_self && s_class->m_compartment_add_mech_fxn);
-	return s_class->m_compartment_add_mech_fxn(_self, mechanism);
-}
-
 //////////////////////////////////////
 // CompartmentClass Super Overrides //
 //////////////////////////////////////
@@ -116,20 +76,20 @@ static void* CompartmentClass_ctor(void* _self, va_list* app)
 {
 	struct CompartmentClass* self = (struct CompartmentClass*) super_ctor(CompartmentClass, _self, app);
 
-	voidf selector = NULL; selector = va_arg(*app, voidf);
+    enum MyriadMethods selector = 0; selector = va_arg(app, enum MyriadMethods);
 
 	while (selector)
 	{
 		const voidf method = va_arg(*app, voidf);
 		
-		if (selector == (voidf) simul_fxn)
+		if (selector == COMPARTMENT_SIMUL)
 		{
 			*(voidf *) &self->m_compartment_simul_fxn = method;
-		} else if (selector == (voidf) add_mechanism) {
+		} else if (selector == COMPARTMENT_ADD_MECH) {
 			*(voidf *) &self->m_compartment_add_mech_fxn = method;
 		}
 
-		selector = va_arg(*app, voidf);
+		selector = va_arg(*app, enum MyriadMethods);
 	}
 
 	return self;
@@ -137,7 +97,7 @@ static void* CompartmentClass_ctor(void* _self, va_list* app)
 
 static void* CompartmentClass_cudafy(void* _self, int clobber)
 {
-	#ifdef CUDA
+#ifdef CUDA
     // We know what class we are
 	struct CompartmentClass* my_class = (struct CompartmentClass*) _self;
 
@@ -176,11 +136,11 @@ static void* CompartmentClass_cudafy(void* _self, int clobber)
 	// semi-static superclass definition, not it's ->super attribute.
 	return super_cudafy(CompartmentClass, (void*) &copy_class, 0);
 
-	#else
+#else
 
     return NULL;
 
-	#endif
+#endif
 
 }
 
@@ -199,8 +159,8 @@ void initCompartment(void)
 				   MyriadClass,
 				   MyriadClass,
 				   sizeof(struct CompartmentClass),
-				   myriad_ctor, CompartmentClass_ctor,
-				   myriad_cudafy, CompartmentClass_cudafy,
+				   CTOR, CompartmentClass_ctor,
+				   CUDAFY, CompartmentClass_cudafy,
 				   0
 			);
 		struct MyriadObject* mech_class_obj = (struct MyriadObject*) CompartmentClass;
@@ -228,9 +188,9 @@ void initCompartment(void)
 				   CompartmentClass,
 				   MyriadObject,
 				   sizeof(struct Compartment),
-				   myriad_ctor, Compartment_ctor,
-				   simul_fxn, Compartment_simul_fxn,
-				   add_mechanism, Compartment_add_mech,
+				   CTOR, Compartment_ctor,
+				   COMPARTMENT_SIMUL, Compartment_simul_fxn,
+				   COMPARTMENT_ADD_MECH, Compartment_add_mech,
 				   0
 			);
 

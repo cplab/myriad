@@ -126,7 +126,7 @@ void initHHKCurrMechanism(void)
 				MechanismClass,
 				MechanismClass,
 				sizeof(struct HHKCurrMechanismClass),
-				myriad_cudafy, HHKCurrMechanismClass_cudafy,
+				CUDAFY, HHKCurrMechanismClass_cudafy,
 				0
                 );
 		
@@ -155,8 +155,8 @@ void initHHKCurrMechanism(void)
 				HHKCurrMechanismClass,
 				Mechanism,
 				sizeof(struct HHKCurrMechanism),
-				myriad_ctor, HHKCurrMechanism_ctor,
-				mechanism_fxn, HHKCurrMechanism_mech_fun,
+				CTOR, HHKCurrMechanism_ctor,
+				MECH_SIMUL, HHKCurrMechanism_mech_fun,
 				0
                 );
 		

@@ -133,7 +133,7 @@ void initHHSpikeGABAAMechanism(void)
 				MechanismClass,
 				MechanismClass,
 				sizeof(struct HHSpikeGABAAMechanismClass),
-				myriad_cudafy, HHSpikeGABAAMechanismClass_cudafy,
+				CUDAFY, HHSpikeGABAAMechanismClass_cudafy,
 				0
                 );
 		
@@ -162,8 +162,8 @@ void initHHSpikeGABAAMechanism(void)
 				HHSpikeGABAAMechanismClass,
 				Mechanism,
 				sizeof(struct HHSpikeGABAAMechanism),
-				myriad_ctor, HHSpikeGABAAMechanism_ctor,
-				mechanism_fxn, HHSpikeGABAAMechanism_mech_fun,
+				CTOR, HHSpikeGABAAMechanism_ctor,
+				MECH_SIMUL, HHSpikeGABAAMechanism_mech_fun,
 				0
                 );
 		
