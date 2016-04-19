@@ -336,7 +336,8 @@ int main(void)
         perror("Couldn't change directory into cmyriad_dat: ");
         exit(EXIT_FAILURE);
     }
-
+    
+#ifdef SAVE_OUTPUT
     // Write each compartment to a file
     for (uint_fast32_t comp_id = 0; comp_id < NUM_CELLS; comp_id++)
     {
@@ -351,7 +352,6 @@ int main(void)
             perror("Couldn't open cmyriad.dat: ");
             exit(EXIT_FAILURE);
         }
-
 #ifdef ASYNC_IO
         struct sigevent aio_sigeven;
         aio_sigeven.sigev_notify = SIGEV_NONE;
@@ -386,8 +386,8 @@ int main(void)
         }
 #endif  /* ASYNC_IO */
     }
-
-    puts("Writing to files scheduled/done.");
+#endif // SAVE_OUTPUT
+    DEBUG_PRINTF("Writing to %" PRIuFAST32 " files scheduled/done.\n", NUM_CELLS);
 
     exit(EXIT_SUCCESS);
 }

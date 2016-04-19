@@ -44,7 +44,7 @@
 // Simulation parameters
 #define DT  0.025
 #define SIMUL_LEN 20000
-#define NUM_CELLS 20
+#define NUM_CELLS 100
 #define MAX_NUM_MECHS 2048
 #ifndef NUM_THREADS
 #define NUM_THREADS 1
