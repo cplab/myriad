@@ -154,7 +154,7 @@ cuda: $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_LIB_OBJS) $(CUDA_MYRIAD_LIB_OB
 
 host: $(SIMUL_MAIN_OBJ) $(MYRIAD_LIB_OBJS)
 ifdef LTO
-	$(CC) -o $@ $+ -flto $(LD_FLAGS)
+	$(CC) -o $@.bin $+ -flto $(LD_FLAGS)
 else
-	$(CC) -o $@ $+ $(LD_FLAGS)
+	$(CC) -o $@.bin $+ $(LD_FLAGS)
 endif
