@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#if NUM_THREADS > 1
+#include <omp.h>
+#endif
 
 #include "MyriadObject.h"
 #include "HHSomaCompartment.h"
@@ -61,15 +64,19 @@ static void HHSomaCompartment_simul_fxn(void* _self,
 	struct HHSomaCompartment* self = (struct HHSomaCompartment*) _self;
 
 	double I_sum = 0.0;
-
+    uint_fast32_t i = 0;
+    struct Mechanism* curr_mech = NULL; // TODO: GENERICSE DIS
+    struct Compartment* pre_comp = NULL;
 	//	Calculate mechanism contribution to current term
-	for (uint_fast32_t i = 0; i < self->_.num_mechs; i++)
+#if NUM_THREADS > 1    
+    #pragma omp parallel for private (i, curr_mech, pre_comp) reduction(+:I_sum)
+#endif
+	for (i = 0; i < self->_.num_mechs; i++)
 	{
-		struct Mechanism* curr_mech = self->_.my_mechs[i]; // TODO: GENERICSE DIS
-		struct Compartment* pre_comp = network[curr_mech->source_id];
+		curr_mech = self->_.my_mechs[i]; // TODO: GENERICSE DIS
+		pre_comp = network[curr_mech->source_id];
 
 		//TODO: Make this conditional on specific Mechanism types
-		//if (curr_mech->fx_type == CURRENT_FXN)
 		I_sum += mechanism_fxn(curr_mech, pre_comp, self, global_time, curr_step);
 	}
 

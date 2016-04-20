@@ -41,7 +41,7 @@ extern "C" {
 #include "HHLeakMechanism.h"
 #include "HHNaCurrMechanism.h"
 #include "HHKCurrMechanism.h"
-#include "HHSpikeGABAAMechanism.h"
+#include "HHGradedGABAAMechanism.h"
 #include "DCCurrentMech.h"
     
 #ifdef __cplusplus
@@ -131,11 +131,12 @@ static inline void* new_dsac_soma(
         }
             
         void* GABA_mech = myriad_new(
-            HHSpikeGABAAMechanism,
+            HHGradedGABAAMechanism,
             connect_to[i],
-            GABA_VM_THRESH,
-            -INFINITY,
+            0.0,
             GABA_G_MAX,
+            GABA_THETA,
+            GABA_SIGMA,
             GABA_TAU_ALPHA,
             GABA_TAU_BETA,
             GABA_REV);
@@ -151,52 +152,6 @@ static inline void* new_dsac_soma(
 
 	return hh_comp_obj;
 }
-
-#if NUM_THREADS > 1
-
-static struct _pthread_vals
-{
-    void** network;
-    double curr_time;
-    uint_fast32_t curr_step;
-    uint_fast32_t num_done;
-    pthread_mutex_t barrier_mutx;
-    pthread_cond_t barrier_cv;
-} _pthread_vals;
-
-static inline void* _thread_run(void* arg)
-{
-    const int thread_id = (unsigned long int) arg;
-    const int network_indx_start = thread_id * (NUM_CELLS / NUM_THREADS);
-    const int network_indx_end = network_indx_start + (NUM_CELLS / NUM_THREADS) - 1;
-    
-    while (_pthread_vals.curr_step < SIMUL_LEN)
-	{
-		for (int i = network_indx_start; i < network_indx_end; i++)
-		{
-			simul_fxn(_pthread_vals.network[i],
-                      _pthread_vals.network,
-                      _pthread_vals.curr_time,
-                      _pthread_vals.curr_step);
-		}
-
-        pthread_mutex_lock(&_pthread_vals.barrier_mutx);
-        _pthread_vals.num_done++;
-        if (_pthread_vals.num_done < NUM_THREADS)
-        {
-            pthread_cond_wait(&_pthread_vals.barrier_cv,
-                              &_pthread_vals.barrier_mutx);
-        } else {
-            _pthread_vals.curr_step++;
-            _pthread_vals.curr_time += DT;
-            _pthread_vals.num_done = 0;
-            pthread_cond_broadcast(&_pthread_vals.barrier_cv);
-        }
-        pthread_mutex_unlock(&_pthread_vals.barrier_mutx);
-	}
-    return NULL;
-}
-#endif /* NUM_THREADS > 1 */
 
 // CUDA Kernel
 #ifdef CUDA
@@ -252,7 +207,7 @@ int main(void)
 	initHHLeakMechanism();
 	initHHNaCurrMechanism();
 	initHHKCurrMechanism();
-	initHHSpikeGABAAMechanism();
+	initHHGradedGABAAMechanism();
 	initHHSomaCompartment();
 
 	void* network[NUM_CELLS] = {NULL};
@@ -284,47 +239,18 @@ int main(void)
 	}
     DEBUG_PRINTF("Network status: %s\n", network[0] ? "ready": "not ready");
 
-#if NUM_THREADS > 1
-    // Pthread parallelism
-    pthread_t _threads[NUM_THREADS];
-
-    // Initialize global pthread values
-    _pthread_vals.network = network;
-    _pthread_vals.curr_time = DT;
-    _pthread_vals.curr_step = 1;
-    _pthread_vals.num_done = 0;
-    pthread_mutex_init(&_pthread_vals.barrier_mutx, NULL);
-    pthread_cond_init(&_pthread_vals.barrier_cv, NULL);
-
-    for(unsigned long int i = 0; i < NUM_THREADS; ++i)
-    {
-        if(pthread_create(&_threads[i], NULL, &_thread_run, (void*) i))
-        {
-            DEBUG_PRINTF(stderr, "Could not create thread %lu\n", i);
-            exit(EXIT_FAILURE);
-        }
-    }
-    DEBUG_PRINTF("Done creating %d threads\n", NUM_THREADS);
-    for(int i = 0; i < NUM_THREADS; ++i)
-    {
-        if(pthread_join(_threads[i], NULL))
-        {
-            DEBUG_PRINTF(stderr, "Could not join thread %d\n", i);
-            exit(EXIT_FAILURE);
-        }
-    }
-#else
     double current_time = DT;
     for (uint_fast32_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
-        #pragma omp for schedule(guided)
+#if NUM_THREADS > 1
+        #pragma omp parallel for
+#endif        
         for (uint_fast32_t i = 0; i < NUM_CELLS; i++)
         {
             simul_fxn(network[i], network, current_time, curr_step);
         }
         current_time += DT;
     }
-#endif /* NUM_THREADS > 1 */
 
     DEBUG_PRINTF("Simulation completed at time %li\n", time(NULL));
 

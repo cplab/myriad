@@ -64,7 +64,9 @@
 #define INIT_VM  -65.0
 // GABA-a Params
 #define GABA_VM_THRESH  0.0
-#define GABA_G_MAX  0.1
+#define GABA_THETA -5.0
+#define GABA_SIGMA 0.3
+#define GABA_G_MAX  1.0
 #define GABA_TAU_ALPHA  0.08333333333333333
 #define GABA_TAU_BETA  10.0
 #define GABA_REV  -75.0

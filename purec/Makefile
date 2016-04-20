@@ -69,8 +69,8 @@ CUDA_LDFLAGS := -L$(CUDA_LIB_PATH) -lcudart $(LD_FLAGS) -Wl,-rpath=$(CUDA_LIB_PA
 #       Definition Flags      #
 ###############################
 
-# -DSAVE_OUTPUT 
-DEFINES ?= -DFAST_EXP
+#  -DFAST_EXP 
+DEFINES ?= -DFAST_EXP -DNUM_THREADS=8 -DSAVE_OUTPUT
 
 ifdef CUDA
 DEFINES += -DCUDA

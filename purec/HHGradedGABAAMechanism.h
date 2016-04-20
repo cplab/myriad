@@ -50,6 +50,6 @@ struct HHGradedGABAAMechanismClass
 	struct MechanismClass _; //! HHGradedGABAAMechanismClass : MechanismClass
 };
 
-void initHHGradedGABAAMechanism(const bool init_cuda);
+extern void initHHGradedGABAAMechanism(void);
 
 #endif
