@@ -4,13 +4,17 @@
 #include <inttypes.h>
 #include <string.h>
 #include <time.h>
-
+#include <tgmath.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#if NUM_THREADS > 1
+#include <omp.h>
+#endif
 
 #ifdef CUDA
 #include <vector_types.h>
@@ -107,10 +111,11 @@ static inline void* new_dsac_soma(
     }
 
 	const int result =
-        add_mechanism(hh_comp_obj, hh_leak_mech) ||
-        add_mechanism(hh_comp_obj, hh_na_curr_mech) ||
-        add_mechanism(hh_comp_obj, hh_k_curr_mech) ||
-        add_mechanism(hh_comp_obj, dc_curr_mech);
+        add_mechanism(hh_comp_obj, hh_leak_mech)
+        || add_mechanism(hh_comp_obj, hh_na_curr_mech)
+        || add_mechanism(hh_comp_obj, hh_k_curr_mech)
+        || add_mechanism(hh_comp_obj, dc_curr_mech)
+        ;
     if (result)
     {
         fputs("Failed to add mechanisms to compartment", stderr);
@@ -142,6 +147,8 @@ static inline void* new_dsac_soma(
         DEBUG_PRINTF("GABA synapse from ID# %li -> #ID %u\n", connect_to[i], id);
     }
 
+    ((struct HHSomaCompartment*)hh_comp_obj)->vm[0] = INIT_VM;
+
 	return hh_comp_obj;
 }
 
@@ -163,7 +170,7 @@ static inline void* _thread_run(void* arg)
     const int network_indx_start = thread_id * (NUM_CELLS / NUM_THREADS);
     const int network_indx_end = network_indx_start + (NUM_CELLS / NUM_THREADS) - 1;
     
-    while(_pthread_vals.curr_step < SIMUL_LEN)
+    while (_pthread_vals.curr_step < SIMUL_LEN)
 	{
 		for (int i = network_indx_start; i < network_indx_end; i++)
 		{
@@ -310,6 +317,7 @@ int main(void)
     double current_time = DT;
     for (uint_fast32_t curr_step = 1; curr_step < SIMUL_LEN; curr_step++)
     {
+        #pragma omp for schedule(guided)
         for (uint_fast32_t i = 0; i < NUM_CELLS; i++)
         {
             simul_fxn(network[i], network, current_time, curr_step);

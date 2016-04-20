@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <tgmath.h>
 
 #include "MyriadObject.h"
 #include "Mechanism.h"
@@ -59,8 +60,8 @@ static double HHSpikeGABAAMechanism_mech_fun(void* _self,
 
     if (self->t_fired != -INFINITY)
     {
-        const double g_s = exp(-(global_time - self->t_fired) / self->tau_beta) - 
-            exp(-(global_time - self->t_fired) / self->tau_alpha);
+        const double g_s = EXP(-(global_time - self->t_fired) / self->tau_beta) - 
+            EXP(-(global_time - self->t_fired) / self->tau_alpha);
         const double I_GABA = self->norm_const * -self->g_max * g_s * (post_vm - self->gaba_rev);
         return I_GABA;        
     } else {

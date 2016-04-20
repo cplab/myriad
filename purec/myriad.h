@@ -35,17 +35,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#ifdef FAST_EXP
-#ifndef DOUBLE_PRECISION
-#error "Fast exponential calculation only works with float64 (-DDOUBLE_PRECISION)"
-#endif // DOUBLE_PRECISION
-#endif // FAST_EXP
-
 // Simulation parameters
 #define DT  0.025
 #define SIMUL_LEN 20000
 #define NUM_CELLS 100
-#define MAX_NUM_MECHS 2048
+#define MAX_NUM_MECHS 128
 #ifndef NUM_THREADS
 #define NUM_THREADS 1
 #endif
@@ -59,8 +53,8 @@
 // Sodium params
 #define G_NA  35.0
 #define E_NA  55.0
-#define HH_M  0.9
-#define HH_H  0.01
+#define HH_M  0.01
+#define HH_H  0.9
 // Potassium params
 #define G_K  9.0
 #define E_K  -90.0

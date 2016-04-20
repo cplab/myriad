@@ -26,7 +26,7 @@ COMMON_CFLAGS += -g3
 endif
 
 # Flags only given to host-side C
-CCFLAGS := $(COMMON_CFLAGS) -Wpedantic -std=gnu99
+CCFLAGS := $(COMMON_CFLAGS) -Wpedantic -std=gnu99 -fopenmp
 ifndef DEBUG
 CCFLAGS += -O2 -march=native -ffinite-math-only -fno-trapping-math -fno-math-errno
 ifdef LTO
@@ -62,14 +62,15 @@ CUDA_MYRIAD_LIB_OBJS = MyriadObject.cu.o Mechanism.cu.o Compartment.cu.o \
 #      Linker (LD) Flags      #
 ###############################
 
-LD_FLAGS     := -L. -lm -lpthread -lrt
+LD_FLAGS     := -L. -lm -lpthread -lrt -lgomp
 CUDA_LDFLAGS := -L$(CUDA_LIB_PATH) -lcudart $(LD_FLAGS) -Wl,-rpath=$(CUDA_LIB_PATH)
 
 ###############################
 #       Definition Flags      #
 ###############################
 
-DEFINES ?=
+# -DSAVE_OUTPUT 
+DEFINES ?= -DFAST_EXP
 
 ifdef CUDA
 DEFINES += -DCUDA

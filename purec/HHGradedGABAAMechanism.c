@@ -51,7 +51,7 @@ static double HHGradedGABAAMechanism_mech_fun(void* _self,
 	const double post_vm = c2->vm[curr_step-1];
 	const double prev_g_s = self->g_s[curr_step-1];
 
-	const double fv = 1.0 / (1.0 + exp((pre_vm - self->theta)/-self->sigma));
+	const double fv = 1.0 / (1.0 + EXP((pre_vm - self->theta)/-self->sigma));
 	self->g_s[curr_step] += dt * (self->tau_alpha * fv * (1.0 - prev_g_s) - self->tau_beta * prev_g_s);
 
 	const double I_GABA = -self->g_max * prev_g_s * (post_vm - self->gaba_rev);
