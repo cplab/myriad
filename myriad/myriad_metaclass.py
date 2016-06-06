@@ -1,8 +1,7 @@
 """
 .. module:: myriad_metaclass
-    :platform: Linux
-    :synopsis: Provides metaclass for automatic Myriad integration
-
+:platform: Linux
+:synopsis: Provides metaclass for automatic Myriad integration
 .. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
 
 Purpose of this module is to provide an abstraction layer for Myriad objects,
@@ -21,7 +20,7 @@ Objects
 Myriad's objects are structured as simple structs with state variables. We
 expect the compiler to reasonably align the struct so that binary compatibility
 is maintained across platforms. Struct declarations are done in a header file
-named after the object, e.g. 'MyriadObject.h'.
+named after the object, e.g. 'MyriadObject.cuh'.
 
 Inheriting another Myriad object's state is a simple manner of embedding it::
 
@@ -39,39 +38,51 @@ start of the parent struct is the same as the memory start of the child::
 Note that this does not work in the reverse, i.e. down-casts.
 
 All objects are 'inherited' from `struct MyriadObject`, which itself contains
-a pointer to the object's class singleton (see :mod:`MyriadObject` for details)
+an enum identifying the object's class (see :mod:`MyriadObject` for details)
 
 =======
 Classes
 =======
 
-Classes are structured identically to objects; in fact, classes are themselves
-objects (see :mod:`MyriadObject` for how this circular dependency is resolved).
+Classes are not actual objects like they are in other object-oriented
+programming languages. Instead, an object can have any number virtual methods,
+which are inheritable/overridable by child objects. These are simply written as
+globally-visible functions, declared in the object's header file.
 
-The major difference is that while objects' structs are replicable state, so
-that they mimic other OOP models with instances having their own, separable
-state, classes are meant to be treated as define-once-reference-everywhere
-singletons. Each object type is created with a pointer to its class definition
-embedded in the state of the originator object (see :mod:`MyriadObject` for
-details on how this is accomplished via `myriad_new`).
+Each object type is created with an enum value identifying its class embedded
+in the state of the originator object (see :mod:`MyriadObject` for details on
+how this is accomplished via `myriad_new`).
 
-Classes' own state are composed entirely of function pointers representing
-method definitions and the superclass they inherit from, for example::
 
-    // Constructor function pointer type
-    typedef void* (* ctor_t) (void* self, va_list* app);
+Thus, the entire parent object can be represented as a single enum struct:
 
-    struct ChildClass {
-        struct ParentClass _;  // Embedded parent class
-        ctor_t my_ctor;        // 'Method' storage using function pointer type
-    }
+    // Class enum values
+    enum MyriadClass
+    {
+        MYRIADOBJECT = 0,
+        MECHANISM,
+        COMPARTMENT,
+        ...
+        NUM_CU_CLASS
+    };
 
-Classes are initialized on-demand at runtime via a special stand-alone `init`
-function that dynamically creates the singletons. This allows for reduced
-overhead when only a small subset of classes are required in the simulation
-kernel, as well as allowing for run-time overriding of methods in a standard
-fashion (i.e. by passing different arguments to the `myriad_new` calls that
-create the class singletons).
+    // Progenitor object
+    typedef struct MyriadObject
+    {
+        const enum MyriadClass class_id;
+    } *MyriadObject_t;
+
+The class enum value is chiefly used for virtual table lookups in the macros
+that are used to generically call virtual functions, as follows:
+
+    // Macro for calling an object's constructor
+    #define myriad_ctor(obj, vap)\
+        ctor_vtable[((MyriadObject_t) obj)->class_id](obj, vap)
+
+Classes' virtual functions are initialized at runtime via a special stand-alone
+`init` function that dynamically allocates the virtual tables. This allows for
+reduced overhead when only a small subset of classes are required in the
+simulation kernel.
 
 See the section below for how methods are abstracted.
 
@@ -79,29 +90,23 @@ See the section below for how methods are abstracted.
 Methods
 =======
 
-Methods are considered to be a loose amalgamation of 3 or more function
-definitions in addition to a function pointer typedef (for class storage):
+Methods are considered to be a loose amalgamation of exactly one function
+definition, 2 macros, and a function pointer typedef (for virtual tables):
 
-1. Stand-alone (i.e. not stored in class struct) Delegator function.
-2. Stand-alone (i.e. not stored in class struct) Superclass Delegator function.
-3. Any number of class-specific Instance Method function definitions.
+1. Instance method, i.e. the implementor of the method
+2. Delegator macro, which appropriately derefences the appropriate vtable
+3. Super Delegator macro, which does the same as (2) but for the parent class
 
-Each delegator function template can be see in :class:`MyriadMethod`, but in
-short the purpose of those functions are to acquire an object's class pointer
-and dereference the class' function pointer. This is necessary because, since
-the delegators are stand-alone functions with external bindings provided in
-the object's header file, any code that includes said header file will be able
-to call the delegator on any eligible (i.e. subclass'ed) object.
+Each delegator macro template can be see in :class:`MyriadMethod`, but in short
+the purpose of those functions are to acquire an object's class enum and
+dereference the appropriate function pointer from the virtual function
+table.
 
-The same applies for the Super Delegator function, albeit it will call the
+The same applies for the 'super' delegator macro, albeit it will call the
 given object's superclass' version of the function instead. This is provided
 so that constructors and destructor calls may be made recursively up the
 inheritance tree.
 
-Classes that declare new methods must provide an instance method definition
-so that the `init` function (see above section about Classes) the constructor
-can correctly override the right method. Subclasses can override methods in
-the same fashion, provided they declare their own instance methods.
 """
 
 import inspect
@@ -271,7 +276,6 @@ def gen_instance_method_from_str(delegator, m_name: str,
     return MyriadFunction(m_name + '_' + delegator.ident,
                           args_list=delegator.args_list,
                           ret_var=delegator.ret_var,
-                          storage=['static'],
                           fun_def=method_body)
 
 #####################

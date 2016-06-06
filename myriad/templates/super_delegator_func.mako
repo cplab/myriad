@@ -12,17 +12,16 @@
     class_arg = list(super_delegator.args_list.values())[0].ident
     ## Get the return variable type of this function
     ret_var = super_delegator.ret_var
+    ## Get the name of the vtable
+    vtable_name = str(delegator.fun_typedef.name) + "_vtable"
 %>
 ${super_delegator.stringify_decl()}
 {
-    const struct ${classname}* superclass = (const struct ${classname}*)
-        myriad_super(${class_arg});
-
 ## Make sure that we return only for non-pointer void
 % if ret_var.base_type is MVoid and not ret_var.ptr:
-    superclass->my_${delegator.fun_typedef.name}(${fun_args});
+    ${vtable_name}[${superclass.upper()}](${fun_args});
     return;
 % else:
-    return superclass->my_${delegator.fun_typedef.name}(${fun_args});
+    return ${vtable_name}[${superclass.upper()}](${fun_args});
 % endif
 }

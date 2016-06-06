@@ -11,20 +11,17 @@
     class_arg = list(delegator.args_list.values())[0].ident
     ## Get the return type of this function
     ret_var = delegator.ret_var
+    ## Get the name of the vtable
+    vtable_name = str(delegator.fun_typedef.name) + "_vtable"
 %>
 ${delegator.stringify_decl()}
 {
-    const struct ${classname}* m_class = (const struct ${classname}*)
-        myriad_class_of(${class_arg});
-
-    assert(m_class->my_${delegator.fun_typedef.name});
-
 % if ret_var.base_type is MVoid and not ret_var.ptr:
-    m_class->my_${delegator.fun_typedef.name}(self, ${fun_args});
+    ${vtable_name}[((MyriadObject_t) obj)->class_id](self, ${fun_args});
     return;
 % elif fun_args:
-    return m_class->my_${delegator.fun_typedef.name}(self, ${fun_args});
+    return ${vtable_name}[((MyriadObject_t) obj)->class_id](self, ${fun_args});
 % else:
-    return m_class->my_${delegator.fun_typedef.name}(self);
+    return ${vtable_name}[((MyriadObject_t) obj)->class_id](self);
 % endif
 }
