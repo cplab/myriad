@@ -28,7 +28,7 @@ endif
 # Flags only given to host-side C
 CCFLAGS := $(COMMON_CFLAGS) -Wpedantic -std=gnu99 -fopenmp
 ifndef DEBUG
-CCFLAGS += -O2 -march=native -ffinite-math-only -fno-trapping-math -fno-math-errno
+CCFLAGS += -O2 -march=native -fno-trapping-math -ffinite-math-only -fno-math-errno -fpredictive-commoning -fprefetch-loop-arrays
 ifdef LTO
 CCFLAGS += -flto
 endif # ifdef LTO
@@ -70,7 +70,7 @@ CUDA_LDFLAGS := -L$(CUDA_LIB_PATH) -lcudart $(LD_FLAGS) -Wl,-rpath=$(CUDA_LIB_PA
 ###############################
 
 #  -DFAST_EXP 
-DEFINES ?= -DFAST_EXP -DNUM_THREADS=8 -DSAVE_OUTPUT
+DEFINES ?= -DFAST_EXP -DNUM_THREADS=8
 
 ifdef CUDA
 DEFINES += -DCUDA
