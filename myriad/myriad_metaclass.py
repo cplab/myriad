@@ -1,5 +1,4 @@
-"""
-.. module:: myriad_metaclass
+""".. module:: myriad_metaclass
 :platform: Linux
 :synopsis: Provides metaclass for automatic Myriad integration
 .. moduleauthor:: Pedro Rittner <pr273@cornell.edu>
@@ -53,7 +52,6 @@ Each object type is created with an enum value identifying its class embedded
 in the state of the originator object (see :mod:`MyriadObject` for details on
 how this is accomplished via `myriad_new`).
 
-
 Thus, the entire parent object can be represented as a single enum struct:
 
     // Class enum values
@@ -72,12 +70,13 @@ Thus, the entire parent object can be represented as a single enum struct:
         const enum MyriadClass class_id;
     } *MyriadObject_t;
 
-The class enum value is chiefly used for virtual table lookups in the macros
+The class enum value is chiefly used for virtual table lookups in the functions
 that are used to generically call virtual functions, as follows:
 
-    // Macro for calling an object's constructor
-    #define myriad_ctor(obj, vap)\
-        ctor_vtable[((MyriadObject_t) obj)->class_id](obj, vap)
+    // Function for calling an object's constructor
+    inline void myriad_ctor(obj, vap) {
+        ctor_vtable[((MyriadObject_t) obj)->class_id](obj, vap);
+    }
 
 Classes' virtual functions are initialized at runtime via a special stand-alone
 `init` function that dynamically allocates the virtual tables. This allows for
@@ -90,19 +89,18 @@ See the section below for how methods are abstracted.
 Methods
 =======
 
-Methods are considered to be a loose amalgamation of exactly one function
-definition, 2 macros, and a function pointer typedef (for virtual tables):
+Methods are considered to be a loose amalgamation of exactly three function
+definitions and a function pointer typedef (for virtual tables):
 
 1. Instance method, i.e. the implementor of the method
-2. Delegator macro, which appropriately derefences the appropriate vtable
-3. Super Delegator macro, which does the same as (2) but for the parent class
+2. Delegator function, which appropriately derefences the appropriate vtable
+3. Super Delegator function, which does the same but for the parent class
 
-Each delegator macro template can be see in :class:`MyriadMethod`, but in short
-the purpose of those functions are to acquire an object's class enum and
-dereference the appropriate function pointer from the virtual function
-table.
+Each delegator template can be see in :class:`MyriadMethod`, but in short the
+purpose of those functions are to acquire an object's class enum and
+dereference the appropriate function pointer from the virtual function table.
 
-The same applies for the 'super' delegator macro, albeit it will call the
+The same applies for the 'super' delegator, albeit it will call the
 given object's superclass' version of the function instead. This is provided
 so that constructors and destructor calls may be made recursively up the
 inheritance tree.
@@ -118,17 +116,11 @@ from copy import copy
 from functools import wraps
 from pkg_resources import resource_string
 
-from pycparser.c_ast import ID, TypeDecl, Struct, PtrDecl, Decl, ArrayDecl
-
-from .myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
-
+from .myriad_mako_wrapper import MakoTemplate
 from .myriad_utils import OrderedSet
-
 from .myriad_types import MyriadScalar, MyriadFunction, MyriadStructType
 from .myriad_types import _MyriadBase, MyriadCType, MyriadTimeseriesVector
-from .myriad_types import MDouble, MVoid, MSizeT, filter_inconvertible_types
-from .myriad_types import c_decl_to_pybuildarg
-
+from .myriad_types import MVoid, MInt, MDouble, filter_inconvertible_types
 from .ast_function_assembler import pyfun_to_cfun
 
 #######
@@ -167,38 +159,6 @@ SUPER_DELG_TEMPLATE = resource_string(
     __name__,
     os.path.join("templates", "super_delegator_func.mako")).decode("UTF-8")
 
-INIT_OB_FUN_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "init_ob_fun.mako")).decode("UTF-8")
-
-MYRIADOBJECT_OBJ_ARR_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "MyriadObject_obj_arr.mako")).decode("UTF-8")
-
-MYRIADOBJECT_INIT_FUN_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "MyriadObject_obj_init_fun.mako")
-).decode("UTF-8")
-
-HEADER_FILE_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "header_file.mako")).decode("UTF-8")
-
-CUH_FILE_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "cuda_header_file.mako")).decode("UTF-8")
-
-CU_FILE_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "cuda_impl.mako")).decode("UTF-8")
-
-C_FILE_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "c_file.mako")).decode("UTF-8")
-
-PYC_COMP_FILE_TEMPLATE = resource_string(
-    __name__,
-    os.path.join("templates", "pyc_file.mako")).decode("UTF-8")
 
 ######################
 # Delegator Creation #
@@ -242,7 +202,7 @@ def create_super_delegator(delg_fxn: MyriadFunction,
     """
     # Create copy of delegator function with modified parameters
     super_args = copy(delg_fxn.args_list)
-    super_class_arg = MyriadScalar("_class", MVoid, True, ["const"])
+    super_class_arg = MyriadScalar("_class", MInt, False, ["const"])
     tmp_arg_indx = len(super_args) + 1
     super_args[tmp_arg_indx] = super_class_arg
     super_args.move_to_end(tmp_arg_indx, last=False)
@@ -381,16 +341,13 @@ class _MyriadObjectBase(object):
     def get_file_list(cls) -> list:
         """ Generates list of files generated by Myriad for this class """
         base_name = cls.__name__
-        return [base_name + ".c",
-                base_name + ".h",
-                base_name + ".cuh",
+        return [base_name + ".cuh",
                 base_name + ".cu",
                 "py" + base_name.lower() + ".c"]
 
 
 def _method_organizer_helper(supercls: _MyriadObjectBase,
-                             myriad_methods: OrderedDict,
-                             myriad_cls_vars: OrderedDict) -> OrderedSet:
+                             myriad_methods: OrderedDict) -> OrderedSet:
     """
     Organizes Myriad Methods, including inheritance and verbatim methods.
 
@@ -433,65 +390,10 @@ def _method_organizer_helper(supercls: _MyriadObjectBase,
     for m_ident, mtd in myriad_methods.items():
         if m_ident in parent_methods or hasattr(mtd, "is_myriadclass_method"):
             continue
-        # For methods we've created, generate class variables for class struct
         own_methods.add(mtd)
-        new_ident = "my_" + mtd.fun_typedef.name
-        m_scal = MyriadScalar(new_ident, mtd.base_type)
-        myriad_cls_vars[new_ident] = m_scal
 
-    LOG.debug("_method_organizer_helper class variables selected: %r",
-              myriad_cls_vars)
+    LOG.debug("_method_organizer_helper own methods selected: %r", own_methods)
     return own_methods
-
-
-def _template_creator_helper(namespace: OrderedDict) -> OrderedDict:
-    """
-    Creates templates using namespace, and returns the updated namespace.
-    """
-    # Initialize delegators/superdelegators in local namespace
-    local_namespace = copy(namespace)
-    own_method_delgs = []
-    for method in namespace["own_methods"]:
-        own_method_delgs.append(
-            (create_delegator(method, namespace["cls_name"]),
-             create_super_delegator(method, namespace["cls_name"])))
-    local_namespace["own_method_delgs"] = own_method_delgs
-    namespace["c_file_template"] = MakoFileTemplate(
-        namespace["obj_name"] + ".c",
-        C_FILE_TEMPLATE,
-        local_namespace)
-    LOG.debug("c_file_template done for %s", namespace["obj_name"])
-    namespace["header_file_template"] = MakoFileTemplate(
-        namespace["obj_name"] + ".h",
-        HEADER_FILE_TEMPLATE,
-        local_namespace)
-    LOG.debug("header_file_template done for %s", namespace["obj_name"])
-    namespace["cuh_file_template"] = MakoFileTemplate(
-        namespace["obj_name"] + ".cuh",
-        CUH_FILE_TEMPLATE,
-        local_namespace)
-    LOG.debug("cuh_file_template done for %s", namespace["obj_name"])
-    namespace["cu_file_template"] = MakoFileTemplate(
-        namespace["obj_name"] + ".cu",
-        CU_FILE_TEMPLATE,
-        local_namespace)
-    LOG.debug("cu_file_template done for %s", namespace["obj_name"])
-    # Initialize object struct conversion for CPython getter methods
-    # Ignores superclass (_), class object, and array declarations
-    # Places result in local namespace to avoid collisions/for efficiency
-    pyc_scalar_types = {}
-    for obj_var_name, obj_var_decl in namespace["obj_struct"].members.items():
-        if (not obj_var_name.startswith("_") and
-                not obj_var_name == "mclass" and
-                not isinstance(obj_var_decl.type, ArrayDecl)):
-            pyc_scalar_types[obj_var_name] = c_decl_to_pybuildarg(obj_var_decl)
-    local_namespace["pyc_scalar_types"] = pyc_scalar_types
-    namespace["pyc_file_template"] = MakoFileTemplate(
-        "py" + namespace["obj_name"].lower() + ".c",
-        PYC_COMP_FILE_TEMPLATE,
-        local_namespace)
-    LOG.debug("pyc_file_template done for %s", namespace["obj_name"])
-    return namespace
 
 
 def _generate_includes(superclass) -> (set, set):
@@ -560,101 +462,12 @@ def _parse_namespace(namespace: dict,
     LOG.debug("myriad_obj_vars for %s: %s ", name, myriad_obj_vars)
 
 
-def _init_module_vars(obj_name: str,
-                      cls_name: str,
-                      namespace: dict) -> OrderedDict:
-    """ Special method for initializing MyriadObject objects"""
-    module_vars = OrderedDict()
-    is_myriad_obj = obj_name == "MyriadObject"
-    # MyriadObject has that weird object array
-    if is_myriad_obj:
-        template = MakoTemplate(MYRIADOBJECT_OBJ_ARR_TEMPLATE, namespace)
-        template.render()
-        module_vars['object'] = template.buffer
-    # Initialize const void pointers exported in module header files
-    module_vars[obj_name] =\
-        MyriadScalar(
-            obj_name,
-            MVoid,
-            True,
-            quals=["const"],
-            init=ID("object") if is_myriad_obj else None)
-    module_vars[cls_name] =\
-        MyriadScalar(
-            cls_name,
-            MVoid,
-            True,
-            quals=["const"],
-            init=ID("object + 1") if is_myriad_obj else None)
-    return module_vars
-
-
-def _initialize_obj_cls_structs(supercls: _MyriadObjectBase,
-                                myriad_obj_vars: OrderedDict,
-                                myriad_cls_vars: OrderedDict):
-    """ Initializes object and class structs """
-    if supercls is not _MyriadObjectBase:
-        myriad_obj_vars["_"] = supercls.obj_struct("_", quals=["const"])
-        myriad_cls_vars["_"] = supercls.cls_struct("_", quals=["const"])
-    else:
-        # Setup MyriadObject struct variables
-        myriad_obj_vars["mclass"] = _gen_mclass_ptr_scalar("mclass")
-        # Setup MyriadObjectClass struct variables
-        tmp = MyriadScalar("_", MVoid, quals=["const"])
-        tmp.type_decl = TypeDecl(declname="_", quals=[],
-                                 type=Struct("MyriadObject", None))
-        tmp.decl = Decl(name="_",
-                        quals=["const"], storage=[],
-                        funcspec=[], type=tmp.type_decl,
-                        init=None, bitsize=None)
-        myriad_cls_vars["_"] = tmp
-        myriad_cls_vars["super"] = _gen_mclass_ptr_scalar("super")
-        myriad_cls_vars["device_class"] =\
-            _gen_mclass_ptr_scalar("device_class")
-        myriad_cls_vars["size"] = MyriadScalar("size", MSizeT)
-
-
-def _gen_mclass_ptr_scalar(ident: str):
-    """ Quick & dirty way of hard-coding MyriadObjectClass struct pointers """
-    tmp = MyriadScalar(ident,
-                       MVoid,
-                       True,
-                       quals=["const"])
-    tmp.type_decl = TypeDecl(declname=ident,
-                             quals=[],
-                             type=Struct("MyriadObjectClass", None))
-    tmp.ptr_decl = PtrDecl(quals=[],
-                           type=tmp.type_decl)
-    tmp.decl = Decl(name=ident,
-                    quals=["const"],
-                    storage=[],
-                    funcspec=[],
-                    type=tmp.ptr_decl,
-                    init=None,
-                    bitsize=None)
-    return tmp
-
-
-def _gen_init_fun(namespace: OrderedDict, supercls: _MyriadObjectBase) -> str:
-    """ Generates the init* function for modules """
-    if supercls is _MyriadObjectBase:
-        template = MakoTemplate(MYRIADOBJECT_INIT_FUN_TEMPLATE, namespace)
-        LOG.debug("Rendering init function for MyriadObject")
-        template.render()
-        return template.buffer
-    # Make temporary dictionary since we need to add an extra value
-    tmp_dict = {"super_obj": supercls.obj_name, "super_cls": supercls.cls_name}
-    tmp_dict.update(namespace)
-    template = MakoTemplate(INIT_OB_FUN_TEMPLATE, tmp_dict)
-    LOG.debug("Rendering init function for %s", namespace["obj_name"])
-    template.render()
-    return template.buffer
-
-
 class MyriadMetaclass(type):
     """
     TODO: Documentation for MyriadMetaclass
     """
+    #: Master list of all MyriadClasses
+    myriad_classes = OrderedSet()
 
     @classmethod
     def __prepare__(mcs, name, bases):
@@ -713,12 +526,12 @@ class MyriadMetaclass(type):
             raise TypeError("Myriad modules must inherit from MyriadObject")
 
         # Setup object/class variables, methods, and verbatim methods
-        myriad_cls_vars = OrderedDict()
         myriad_obj_vars = OrderedDict()
         myriad_methods = OrderedDict()
 
         # Setup object with implicit superclass to start of struct definition
-        _initialize_obj_cls_structs(supercls, myriad_obj_vars, myriad_cls_vars)
+        if supercls is not _MyriadObjectBase:
+            myriad_obj_vars["_"] = supercls.obj_struct("_", quals=["const"])
 
         # Parse namespace into appropriate variables
         _parse_namespace(namespace,
@@ -736,8 +549,7 @@ class MyriadMetaclass(type):
 
         # Organize myriad methods and class struct members
         namespace["own_methods"] = _method_organizer_helper(supercls,
-                                                            myriad_methods,
-                                                            myriad_cls_vars)
+                                                            myriad_methods)
 
         # Add #include's from system libraries, local files, and CUDA headers
         namespace["local_includes"], namespace["lib_includes"] =\
@@ -745,30 +557,13 @@ class MyriadMetaclass(type):
         namespace["cuda_local_includes"], namespace["cuda_lib_includes"] =\
             _generate_cuda_includes(supercls)
 
-        # Create myriad class struct
-        namespace["cls_struct"] = MyriadStructType(namespace["cls_name"],
-                                                   myriad_cls_vars)
-
         # Add other objects to namespace
         namespace["myriad_methods"] = myriad_methods
         namespace["myriad_obj_vars"] = myriad_obj_vars
-        namespace["myriad_cls_vars"] = myriad_cls_vars
+        namespace["init_functions"] = ""
 
         # Fill in missing methods (ctor/etc.)
         supercls._fill_in_base_methods(namespace, myriad_methods)
-
-        # Initialize module variables
-        namespace["myriad_module_vars"] = _init_module_vars(
-            namespace["obj_name"],
-            namespace["cls_name"],
-            namespace)
-
-        # Initialize module functions
-        namespace["init_fun"] = _gen_init_fun(namespace, supercls)
-
-        # Write templates now that we have full information
-        LOG.debug("Creating templates for class %s", name)
-        namespace = _template_creator_helper(namespace)
 
         # Finally, delete function from namespace
         for method_id in myriad_methods.keys():
@@ -778,4 +573,9 @@ class MyriadMetaclass(type):
         # Generate internal module representation
         namespace["__init__"] = MyriadMetaclass.myriad_init
         namespace["__setattr__"] = MyriadMetaclass.myriad_set_attr
-        return type.__new__(mcs, name, (supercls,), dict(namespace))
+        new_type = type.__new__(mcs, name, (supercls,), dict(namespace))
+
+        # Register implementor class
+        MyriadMetaclass.myriad_classes.add(new_type)
+
+        return new_type

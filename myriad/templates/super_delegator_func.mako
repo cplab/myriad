@@ -13,15 +13,15 @@
     ## Get the return variable type of this function
     ret_var = super_delegator.ret_var
     ## Get the name of the vtable
-    vtable_name = str(delegator.fun_typedef.name) + "_vtable"
+    vtable_name = str(delegator.ident) + "_vtable"
 %>
 ${super_delegator.stringify_decl()}
 {
 ## Make sure that we return only for non-pointer void
 % if ret_var.base_type is MVoid and not ret_var.ptr:
-    ${vtable_name}[${superclass.upper()}](${fun_args});
+    ${vtable_name}[${class_arg}](${fun_args});
     return;
 % else:
-    return ${vtable_name}[${superclass.upper()}](${fun_args});
+    return ${vtable_name}[${class_arg}](${fun_args});
 % endif
 }

@@ -12,16 +12,16 @@
     ## Get the return type of this function
     ret_var = delegator.ret_var
     ## Get the name of the vtable
-    vtable_name = str(delegator.fun_typedef.name) + "_vtable"
+    vtable_name = str(delegator.ident) + "_vtable"
 %>
 ${delegator.stringify_decl()}
 {
 % if ret_var.base_type is MVoid and not ret_var.ptr:
-    ${vtable_name}[((MyriadObject_t) obj)->class_id](self, ${fun_args});
+    ${vtable_name}[((struct MyriadObject*) obj)->class_id](self, ${fun_args});
     return;
 % elif fun_args:
-    return ${vtable_name}[((MyriadObject_t) obj)->class_id](self, ${fun_args});
+    return ${vtable_name}[((struct MyriadObject*) obj)->class_id](self, ${fun_args});
 % else:
-    return ${vtable_name}[((MyriadObject_t) obj)->class_id](self);
+    return ${vtable_name}[((struct MyriadObject*) obj)->class_id](self);
 % endif
 }

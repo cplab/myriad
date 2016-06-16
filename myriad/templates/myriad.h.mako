@@ -31,15 +31,37 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+## Myriad global enum
+enum MyriadClass {
+% for myriad_class in myriad_classes:
+    % if myriad_class.__name__ == "MyriadObject":
+    ${myriad_class.__name__.upper()} = 0,
+    % else:
+    ${myriad_class.__name__.upper()},
+    % endif
+% endfor
+  NUM_CU_CLASS
+};
+
+## Universal size table
+extern const size_t size_vtable[NUM_CU_CLASS];
+
+## Utility typedef for generic function pointers
 typedef void (* voidf) (void);
 
 ## Utility macros
 #define myriad_class_of(x) ((struct MyriadObject*) x)->mclass
-#define myriad_size_of(x) ((struct MyriadObject*) x)->mclass->size
-#define myriad_super(x) ((struct MyriadObjectClass*) x)->super
 
 ## Forward declaration of utility functions
-extern void* myriad_new(const void* _class, ...);
+
+## Generic host constructor
+extern void* myriad_new(const enum MyriadClass, ...);
+## CUDA copy constructor
+extern void* myriad_cuda_new(const void* hobj);
+## CUDA copy destructor
+extern void myriad_cuda_delete(void* hobj, void* dobj);
+## Size-of function
+extern size_t myriad_sizeof(void* obj);
 
 ## Use myriad's own private allocator scheme
 #include "myriad_alloc.h"

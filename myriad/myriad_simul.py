@@ -15,6 +15,7 @@ from copy import copy
 from pkg_resources import resource_string
 
 from .myriad_mako_wrapper import MakoFileTemplate
+from .myriad_metaclass import MyriadMetaclass
 
 #############
 # Templates #
@@ -278,6 +279,7 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         """ Renderes templates into temporary directory, which is returned """
         # Update parameters
         final_params = copy(self.simul_params)
+        final_params["myriad_classes"] = MyriadMetaclass.myriad_classes
         if extra_params:
             final_params.update(extra_params)
         # Create temporary directory to hold files in

@@ -19,9 +19,6 @@
 ## Class/Object structs
 ${obj_struct.stringify_decl()};
 
-${cls_struct.stringify_decl()};
-
-
 ## Declare typedefs/vtables/init functions for own methods ONLY
 % for (delg, _) in own_method_delgs:
 
@@ -39,6 +36,16 @@ const ${delg.typedef_name} ${delg.ident}_vtable[NUM_CU_CLASS];
 ## Top-level init functions for vtable
 extern void init_${delg.ident}_cuvtable(void);
 
+% endfor
+
+## Process instance methods
+<%
+instance_methods = [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]
+%>
+
+## Print methods forward declarations
+% for mtd in instance_methods:
+extern ${mtd.stringify_decl()};
 % endfor
 
 ## Method delegators

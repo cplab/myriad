@@ -8,13 +8,10 @@ from mako.template import Template
 from mako.runtime import Context
 from mako import exceptions
 
-from .myriad_utils import enforce_annotations
-
 
 class MakoTemplate(object):
     """ Wraps a mako template, context, and I/O Buffer. """
 
-    @enforce_annotations
     def __init__(self, template, context=None, buf: StringIO=None):
         """ Initializes a template relevant data """
         # Sets template
@@ -67,7 +64,6 @@ class MakoTemplate(object):
 class MakoFileTemplate(MakoTemplate):
     """ A MakoTemplate wrapper with file I/O functionality. """
 
-    @enforce_annotations
     def __init__(self,
                  filename: str,
                  template,
@@ -81,7 +77,6 @@ class MakoFileTemplate(MakoTemplate):
         # Superclass does the rest of the work for us
         super().__init__(template, context, buf)
 
-    @enforce_annotations
     def render_to_file(self, filename: str=None, overwrite: bool=True):
         """
         Renders the template to a file with the given filename

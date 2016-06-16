@@ -59,9 +59,6 @@ class TestMyriadMetaclass(MyriadTestCase):
             @mclass.myriad_method
             def do_stuff(self):
                 return 0
-        # Test whether a function pointer scalar is created
-        self.assertIn("myriad_cls_vars", MethodsObj.__dict__)
-        self.assertIn("my_do_stuff_t", MethodsObj.__dict__["myriad_cls_vars"])
         # Test whether a myriad method was created
         self.assertIn("myriad_methods", MethodsObj.__dict__)
         self.assertIn("do_stuff", MethodsObj.__dict__["myriad_methods"])
@@ -72,9 +69,6 @@ class TestMyriadMetaclass(MyriadTestCase):
             @mclass.myriad_method_verbatim
             def do_verbatim_stuff(self):
                 """return;"""
-        self.assertIn("myriad_cls_vars", VerbatimObj.__dict__)
-        self.assertIn("my_do_verbatim_stuff_t",
-                      VerbatimObj.__dict__["myriad_cls_vars"])
         self.assertIsNotNone(
             VerbatimObj.__dict__["myriad_methods"]["do_verbatim_stuff"])
 
@@ -131,7 +125,7 @@ class TestMyriadRendering(MyriadTestCase):
             pass
         RenderObj.render_templates()
         self.assertFilesExist(RenderObj)
-        self.cleanupFiles(RenderObj)
+        # self.cleanupFiles(RenderObj)
 
     def test_render_variable_only_class(self):
         """ Testing if rendering a variable-only class works """
@@ -139,7 +133,7 @@ class TestMyriadRendering(MyriadTestCase):
             capacitance = mtypes.MDouble
         VarOnlyObj.render_templates()
         self.assertFilesExist(VarOnlyObj)
-        self.cleanupFiles(VarOnlyObj)
+        # self.cleanupFiles(VarOnlyObj)
 
     def test_render_timeseries_class(self):
         """ Testing if rendering a timeseries-containing class works"""
@@ -148,7 +142,7 @@ class TestMyriadRendering(MyriadTestCase):
             vm = mtypes.MyriadTimeseriesVector
         TimeseriesObj.render_templates()
         self.assertFilesExist(TimeseriesObj)
-        self.cleanupFiles(TimeseriesObj)
+        # self.cleanupFiles(TimeseriesObj)
 
 
 if __name__ == '__main__':

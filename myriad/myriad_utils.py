@@ -16,6 +16,15 @@ def assert_list_type(m_list: list, m_type: type):
         raise TypeError(msg.format(str(m_type)))
 
 
+def get_all_subclasses(cls):
+    """ Gets all subclasses of a class """
+    all_subclasses = []
+    for subclass in cls.__subclasses__():
+        all_subclasses.append(subclass)
+        all_subclasses.extend(get_all_subclasses(subclass))
+    return all_subclasses
+
+
 class wrap_file_function(object):
     """
     Wrap a function which takes a file or a str as it's first argument.

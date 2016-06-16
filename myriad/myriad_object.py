@@ -3,17 +3,19 @@ Definition of the parent MyriadObject, from which all Myriad types inherit.
 """
 import logging
 import os
-
+from pprint import pprint
 from collections import OrderedDict
 from pkg_resources import resource_string
+from pycparser.c_ast import ArrayDecl
 
 from .myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
-
 from .myriad_types import MyriadScalar, MyriadFunction
 from .myriad_types import MVoid, MVarArgs, MInt
-
+from .myriad_types import c_decl_to_pybuildarg
 from .myriad_metaclass import _myriadclass_method, _MyriadObjectBase
 from .myriad_metaclass import myriad_method_verbatim, MyriadMetaclass
+from .myriad_metaclass import create_delegator, create_super_delegator
+from .myriad_utils import get_all_subclasses
 
 #######
 # Log #
@@ -39,13 +41,21 @@ CTOR_TEMPLATE_TEMPLATE = resource_string(
     __name__,
     os.path.join("templates", "ctor_template.mako")).decode("UTF-8")
 
-CLS_CTOR_TEMPLATE = resource_string(
+INIT_OB_FUN_TEMPLATE = resource_string(
     __name__,
-    os.path.join("templates", "class_ctor_template.mako")).decode("UTF-8")
+    os.path.join("templates", "init_ob_fun.mako")).decode("UTF-8")
 
-CLS_CUDAFY_TEMPLATE = resource_string(
+CUH_FILE_TEMPLATE = resource_string(
     __name__,
-    os.path.join("templates", "class_cudafy_template.mako")).decode("UTF-8")
+    os.path.join("templates", "cuh_file.mako")).decode("UTF-8")
+
+CU_FILE_TEMPLATE = resource_string(
+    __name__,
+    os.path.join("templates", "cu_file.mako")).decode("UTF-8")
+
+PYC_COMP_FILE_TEMPLATE = resource_string(
+    __name__,
+    os.path.join("templates", "pyc_file.mako")).decode("UTF-8")
 
 
 class MyriadObject(_MyriadObjectBase,
@@ -220,18 +230,91 @@ class MyriadObject(_MyriadObjectBase,
         """
 
     @classmethod
+    def gen_init_funs(cls):
+        """ Generates the init* functions for modules as a big string """
+        # Make temporary dictionary since we need to add an extra value
+        tmp_dict = {
+            "own_methods": getattr(cls, "own_methods"),
+            "subclasses":  get_all_subclasses(cls)}
+        template = MakoTemplate(INIT_OB_FUN_TEMPLATE, tmp_dict)
+        LOG.debug("Rendering init functions for TODO")
+        template.render()
+        setattr(cls, "init_functions", template.buffer)
+
+    @classmethod
+    def _template_creator_helper(cls):
+        """
+        Initializes templates for the current class
+        """
+        # Create empty local namespace
+        local_namespace = {}
+        # Get values from class namespace
+        own_methods = getattr(cls, "own_methods")
+        cls_name = getattr(cls, "cls_name")
+        obj_name = getattr(cls, "obj_name")
+        obj_struct = getattr(cls, "obj_struct")
+        # Initialize delegators/superdelegators in local namespace
+        own_method_delgs = []
+        for method in own_methods:
+            own_method_delgs.append(
+                (create_delegator(method, cls_name),
+                 create_super_delegator(method, cls_name)))
+        local_namespace["own_method_delgs"] = own_method_delgs
+        # Fill local namespace with values we need for template rendering
+        local_namespace["own_methods"] = getattr(cls, "own_methods")
+        local_namespace["cls_name"] = getattr(cls, "cls_name")
+        local_namespace["obj_name"] = getattr(cls, "obj_name")
+        local_namespace["obj_struct"] = getattr(cls, "obj_struct")
+        local_namespace["myriad_methods"] = getattr(cls, "myriad_methods")
+        local_namespace["init_functions"] = getattr(cls, "init_functions")
+        local_namespace["local_includes"] = getattr(cls, "local_includes")
+        local_namespace["lib_includes"] = getattr(cls, "lib_includes")
+        local_namespace["myriad_classes"] = MyriadMetaclass.myriad_classes
+        local_namespace["our_subclasses"] = get_all_subclasses(cls)
+        pprint(local_namespace["our_subclasses"])
+        # Render main file templates
+        setattr(cls, "cuh_file_template",
+                MakoFileTemplate(
+                    obj_name + ".cuh",
+                    CUH_FILE_TEMPLATE,
+                    local_namespace))
+        LOG.debug("cuh_file_template done for %s", obj_name)
+        setattr(cls, "cu_file_template",
+                MakoFileTemplate(
+                    obj_name + ".cu",
+                    CU_FILE_TEMPLATE,
+                    local_namespace))
+        LOG.debug("cu_file_template done for %s", obj_name)
+        # Initialize object struct conversion for CPython getter methods
+        # Ignores superclass (_), class object, and array declarations
+        # Places result in local namespace to avoid collisions/for efficiency
+        pyc_scalars = {}
+        for obj_var_name, obj_var_decl in obj_struct.members.items():
+            if (not obj_var_name.startswith("_") and
+                    not obj_var_name == "mclass" and
+                    not isinstance(obj_var_decl.type, ArrayDecl)):
+                pyc_scalars[obj_var_name] = c_decl_to_pybuildarg(obj_var_decl)
+        local_namespace["pyc_scalar_types"] = pyc_scalars
+        setattr(cls, "pyc_file_template",
+                MakoFileTemplate(
+                    "py" + obj_name.lower() + ".c",
+                    PYC_COMP_FILE_TEMPLATE,
+                    local_namespace))
+        LOG.debug("pyc_file_template done for %s", obj_name)
+
+    @classmethod
     def render_templates(cls, template_dir=None):
         """ Render internal templates to files"""
         # Get template rendering directory
         template_dir = template_dir if template_dir else os.getcwd()
         # Render templates for the superclass
         if cls is not MyriadObject:
+            # Render init functions now that we have complete RTTI
+            cls.gen_init_funs()
             getattr(cls.__bases__[0], "render_templates")()
+        # Prepare templates for rendering by collecting subclass information
+        cls._template_creator_helper()
         # Render templates for the current class
-        LOG.debug("Rendering H File for %s", cls.__name__)
-        getattr(cls, "header_file_template").render_to_file(overwrite=False)
-        LOG.debug("Rendering C File for %s", cls.__name__)
-        getattr(cls, "c_file_template").render_to_file(overwrite=False)
         LOG.debug("Rendering CUH File for %s", cls.__name__)
         getattr(cls, "cuh_file_template").render_to_file(overwrite=False)
         LOG.debug("Rendering CU file for %s", cls.__name__)
@@ -269,20 +352,4 @@ class MyriadObject(_MyriadObjectBase,
             template.render()
             myriad_methods["ctor"] = MyriadFunction.from_myriad_func(
                 getattr(cls, "myriad_methods")["ctor"],
-                fun_def=template.buffer)
-        if "cls_cudafy" not in myriad_methods:
-            template = MakoTemplate(CLS_CUDAFY_TEMPLATE, child_namespace)
-            LOG.debug("Rendering cls_cudafy template for %s",
-                      child_namespace["obj_name"])
-            template.render()
-            myriad_methods["cls_cudafy"] = MyriadFunction.from_myriad_func(
-                getattr(cls, "myriad_methods")["cls_cudafy"],
-                fun_def=template.buffer)
-        if "cls_ctor" not in myriad_methods:
-            template = MakoTemplate(CLS_CTOR_TEMPLATE, child_namespace)
-            LOG.debug("Rendering cls_ctor template for %s",
-                      child_namespace["obj_name"])
-            template.render()
-            myriad_methods["cls_ctor"] = MyriadFunction.from_myriad_func(
-                getattr(cls, "myriad_methods")["cls_ctor"],
                 fun_def=template.buffer)

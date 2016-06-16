@@ -15,11 +15,6 @@
 instance_methods = [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]
 %>
 
-## Print methods forward declarations
-% for mtd in instance_methods:
-${mtd.stringify_decl()};
-% endfor
-
 ## Global vtables
 % for method in own_methods:
 #ifdef CUDA
@@ -33,12 +28,12 @@ const ${method.typedef_name} ${method.ident}_vtable[NUM_CU_CLASS] = {
     ## For each class in all Myriad classes, use NULL if it's a non-child class and if
     ## the subclass has overwritten the method. Otherwise, use the subclass' version
     ## of our method
-    % for mclass, subclasses in inheritors_dict.items():
-        % if mclass.obj_name == obj_name or mclass in our_subclasses:
-            &${mclass.obj_name}_${method.ident},
-        % else:
-            NULL,
-        % endif
+    % for cclass in myriad_classes:
+        ## % if cclass.obj_name == obj_name or cclass in our_subclasses:
+            &${cclass.obj_name}_${method.ident},
+        ## % else:
+        ##    NULL,
+        ## % endif
     % endfor
 };
 #endif

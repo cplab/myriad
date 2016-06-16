@@ -19,3 +19,4 @@ static struct ${cls_name} object[] =
 % endfor
     }
 };
+

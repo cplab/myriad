@@ -35,25 +35,63 @@
     % endfor
 % endif
 
-## Myriad new definition
-void* myriad_new(const void* _class, ...)
+const size_t size_vtable[NUM_CU_CLASS] = {
+% for myriad_class in myriad_classes:
+    sizeof(struct ${myriad_class.obj_name}),
+% endfor
+};
+
+size_t myriad_sizeof(void* obj)
 {
-    const struct MyriadObjectClass* prototype_class = (const struct MyriadObjectClass*) _class;
-    struct MyriadObject* curr_obj;
+    return size_vtable[((struct MyriadObject*) obj)->class_id];
+}
+
+## Myriad new definition
+void* myriad_new(const enum MyriadClass mclass, ...)
+{
     va_list ap;
+    // Allocate object
+    struct MyriadObject* new_obj = (struct MyriadObject*) calloc(1, size_vtable[mclass]);
+    assert(new_obj);
+    // Assing class id
+    memcpy((void*) &new_obj->class_id, &mclass, sizeof(void*));
 
-    assert(prototype_class && prototype_class->size);
-    
-    curr_obj = (struct MyriadObject*) _my_calloc(1, prototype_class->size);
-    assert(curr_obj);
-
-    curr_obj->mclass = (struct MyriadObjectClass*)prototype_class;
-
-    va_start(ap, _class);
-    curr_obj = (struct MyriadObject*) ctor(curr_obj, &ap);
+    // Call constructor
+    va_start(ap, mclass);
+    new_obj = (struct MyriadObject*) myriad_ctor(new_obj, &ap);
+    assert(new_obj);
     va_end(ap);
     
-    return curr_obj;
+    return new_obj;
+}
+
+void* myriad_cuda_new(const void* hobj)
+{
+#ifdef CUDA    
+    struct MyriadObject* new_obj = NULL;
+    // Allocate device object
+    CUDA_CHECK_CALL(cudaMalloc(&new_obj, myriad_sizeof(hobj)));
+    assert(new_obj);
+
+    // CUDAfy then return device pointer
+    myriad_cudafy(hobj, new_obj);
+    return new_obj;
+#else
+    fputs("CUDA object creation is not supported when CUDA is not enabled.\n", stderr);
+    return NULL;
+#endif
+}
+
+void myriad_cuda_delete(void* hobj, void* dobj)
+{
+#ifdef CUDA
+    // Call decudafy
+    myriad_decudafy(hobj, dobj);
+    // Finally, free the device object
+    CUDA_CHECK_CALL(cudaFree(dobj));
+#else
+    fputs("CUDA object deletion is not supported when CUDA is not enabled.\n", stderr);
+#endif
 }
 
 ## Fast exponential function structure/function
