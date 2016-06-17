@@ -28,9 +28,11 @@ ${delg.stringify_typedef()};
 #endif
 
 extern
+% if obj_name != "MyriadObject":
 #ifdef CUDA
 __constant__
 #endif
+% endif
 const ${delg.typedef_name} ${delg.ident}_vtable[NUM_CU_CLASS];
 
 ## Top-level init functions for vtable

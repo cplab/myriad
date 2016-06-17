@@ -3,7 +3,6 @@ Definition of the parent MyriadObject, from which all Myriad types inherit.
 """
 import logging
 import os
-from pprint import pprint
 from collections import OrderedDict
 from pkg_resources import resource_string
 from pycparser.c_ast import ArrayDecl
@@ -12,7 +11,7 @@ from .myriad_mako_wrapper import MakoTemplate, MakoFileTemplate
 from .myriad_types import MyriadScalar, MyriadFunction
 from .myriad_types import MVoid, MVarArgs, MInt
 from .myriad_types import c_decl_to_pybuildarg
-from .myriad_metaclass import _myriadclass_method, _MyriadObjectBase
+from .myriad_metaclass import _MyriadObjectBase
 from .myriad_metaclass import myriad_method_verbatim, MyriadMetaclass
 from .myriad_metaclass import create_delegator, create_super_delegator
 from .myriad_utils import get_all_subclasses
@@ -37,7 +36,7 @@ MYRIADOBJECT_PYH_FILE_TEMPLATE = resource_string(
     __name__,
     os.path.join("templates", "pymyriadobject.h.mako")).decode("UTF-8")
 
-CTOR_TEMPLATE_TEMPLATE = resource_string(
+CTOR_TEMPLATE = resource_string(
     __name__,
     os.path.join("templates", "ctor_template.mako")).decode("UTF-8")
 
@@ -76,157 +75,35 @@ class MyriadObject(_MyriadObjectBase,
         """
 
     @myriad_method_verbatim
-    def cudafy(self, clobber: MInt) -> MyriadScalar('', MVoid, ptr=True):
+    def cudafy(self, cuda_self: MyriadScalar("cuda_self", MVoid, ptr=True)):
         """
     #ifdef CUDA
-    struct MyriadObjectClass* _self = (struct MyriadObjectClass*) self;
-    void* n_dev_obj = NULL;
-    size_t my_size = myriad_size_of(self);
-
-    const struct MyriadObjectClass* tmp = _self->m_class;
-    _self->m_class = _self->m_class->device_class;
-
-    CUDA_CHECK_RETURN(cudaMalloc(&n_dev_obj, my_size));
-
-    CUDA_CHECK_RETURN(
-        cudaMemcpy(
-            n_dev_obj,
-            _self,
-            my_size,
-            cudaMemcpyHostToDevice
-            )
-        );
-
-    _self->m_class = tmp;
-
-    return n_dev_obj;
+        // Memcpy entire struct to CUDA pointer
+        CUDA_CHECK_CALL(
+            cudaMemcpy(
+                cuda_self,
+                self,
+                myriad_sizeof(self),
+                cudaMemcpyHostToDevice));
     #else
-    return NULL;
+        fputs("CUDAfication not supported when CUDA not enabled.\n", stderr);
     #endif
         """
 
     @myriad_method_verbatim
     def decudafy(self, cuda_self: MyriadScalar("cuda_self", MVoid, ptr=True)):
-        """    return;"""
-
-    @_myriadclass_method
-    def cls_ctor(self,
-                 app: MyriadScalar("app", MVarArgs, ptr=True)
-                 ) -> MyriadScalar('', MVoid, ptr=True):
         """
-    struct MyriadObjectClass* _self = (struct MyriadObjectClass*) self;
-    const size_t offset = offsetof(struct MyriadObjectClass, my_ctor_t);
-
-    _self->super = va_arg(*app, struct MyriadObjectClass*);
-    _self->size = va_arg(*app, size_t);
-
-    assert(_self->super);
-
-    memcpy((char*) _self + offset,
-           (char*) _self->super + offset,
-           myriad_size_of(_self->super) - offset);
-
-    va_list ap;
-    va_copy(ap, *app);
-
-    voidf selector = NULL; selector = va_arg(ap, voidf);
-
-    while (selector)
-    {
-        const voidf curr_method = va_arg(ap, voidf);
-        if (selector == (voidf) ctor)
-        {
-            *(voidf *) &_self->my_ctor_t = curr_method;
-        } else if (selector == (voidf) cudafy) {
-            *(voidf *) &_self->my_cudafy_t = curr_method;
-        } else if (selector == (voidf) dtor) {
-            *(voidf *) &_self->my_dtor_t = curr_method;
-        } else if (selector == (voidf) decudafy) {
-            *(voidf *) &_self->my_decudafy_t = curr_method;
-        }
-        selector = va_arg(ap, voidf);
-    }
-    return _self;
-        """
-
-    @_myriadclass_method
-    def cls_dtor(self) -> MInt:
-        """
-    fprintf(stderr, "Destroying a Class is undefined behavior.");
-    return -1;
-        """
-
-    @_myriadclass_method
-    def cls_cudafy(self, clobber: MInt) -> MyriadScalar('', MVoid, ptr=True):
-        """
-    /*
-     * Invariants/Expectations:
-     *
-     * A) The class we're given (_self) is fully initialized on the CPU
-     * B) _self->device_class == NULL, will receive this fxn's result
-     * C) _self->super has been set with (void*) SuperClass->device_class
-     *
-     * The problem here is that we're currently ignoring anything the
-     * extended class passes up at us through super_, and so we're only
-     * copying the c_class struct, not the rest of the class. To solve this,
-     * what we need to do is to:
-     *
-     * 1) Memcopy the ENTIRETY of the old class onto a new heap pointer
-     *     - This works because the extended class has already made any
-     *       and all of their pointers/functions CUDA-compatible.
-     * 2) Alter the "top-part" of the copied-class to go to CUDA
-     *     - cudaMalloc the future location of the class on the device
-     *     - Set our internal object's class pointer to that location
-     * 3) Copy our copied-class to the device
-     * 3a) Free our copied-class
-     * 4) Return the device pointer to whoever called us
-     *
-     * Q: How do we keep track of on-device super class?
-     * A: We take it on good faith that the under class has set their supercls
-     *    to be the visible SuperClass->device_class.
-     */
     #ifdef CUDA
-    struct MyriadObjectClass* _self = (struct MyriadObjectClass*) self;
-
-    const struct MyriadObjectClass* dev_class = NULL;
-
-    // DO NOT USE sizeof(struct MyriadObjectClass)!
-    const size_t class_size = myriad_size_of(_self);
-
-    // Allocate space for new class on the card
-    CUDA_CHECK_RETURN(cudaMalloc((void**)&dev_class, class_size));
-
-    // Memcpy the entirety of the old class onto a new CPU heap pointer
-    const struct MyriadObjectClass* class_cpy =
-        (const struct MyriadObjectClass*) calloc(1, class_size);
-    memcpy((void*)class_cpy, self, class_size);
-
-    // Embedded object's class set to our GPU class; this ignores $clobber
-    memcpy((void*)&class_cpy->_.m_class, &dev_class, sizeof(void*));
-
-    CUDA_CHECK_RETURN(
-        cudaMemcpy(
-            (void*)dev_class,
-            class_cpy,
-            class_size,
-            cudaMemcpyHostToDevice
-            )
-        );
-
-    free((void*)class_cpy); // Can safely free since underclasses get nothing
-
-    return (void*) dev_class;
+        // Memcpy entire struct back from CUDA pointer
+        CUDA_CHECK_CALL(
+            cudaMemcpy(
+                self,
+                cuda_self,
+                myriad_sizeof(self),
+                cudaMemcpyDeviceToHost));
     #else
-    return NULL;
+        mwarn("CUDAfication is not supported when CUDA is not enabled.\n");
     #endif
-        """
-
-    @_myriadclass_method
-    def cls_decudafy(self,
-                     cuda_self: MyriadScalar("cuda_self", MVoid, ptr=True)):
-        """
-    fputs("De-CUDAfying a class is undefined behavior. Aborted. ", stderr);
-    return;
         """
 
     @classmethod
@@ -271,7 +148,6 @@ class MyriadObject(_MyriadObjectBase,
         local_namespace["lib_includes"] = getattr(cls, "lib_includes")
         local_namespace["myriad_classes"] = MyriadMetaclass.myriad_classes
         local_namespace["our_subclasses"] = get_all_subclasses(cls)
-        pprint(local_namespace["our_subclasses"])
         # Render main file templates
         setattr(cls, "cuh_file_template",
                 MakoFileTemplate(
@@ -346,7 +222,7 @@ class MyriadObject(_MyriadObjectBase,
         """
         # Fill in ctor if it's missing
         if "ctor" not in myriad_methods:
-            template = MakoTemplate(CTOR_TEMPLATE_TEMPLATE, child_namespace)
+            template = MakoTemplate(CTOR_TEMPLATE, child_namespace)
             LOG.debug("Rendering ctor template for %s",
                       child_namespace["obj_name"])
             template.render()

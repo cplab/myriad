@@ -290,35 +290,6 @@ def myriad_method_verbatim(method):
     return inner
 
 
-def _myriadclass_method(method):
-    """
-    Tags a method in a class to be a MyriadClass method.
-
-    MyriadClass methods are methods exclusive to MyriadClass; they are not
-    declared as part of the MyriadClass struct but are used internally in
-    MyriadObject.c to define behaviour tied to MyriadObject inheritance.
-
-    NOTE: This MUST be the first decorator applied to the function! E.g.:
-    `
-    @another_decorator
-    @yet_another_decorator
-    @_myriadclass_method
-    def my_fn(stuff):
-    `
-
-    This is because decorators replace the wrapped function's signature.
-    """
-    @wraps(method)
-    def inner(*args, **kwargs):
-        """ Dummy inner function to prevent direct method calls """
-        raise Exception("Cannot directly call a myriad method")
-    LOG.debug("myriad_method annotation wrapping %s", method.__name__)
-    setattr(inner, "is_myriad_method_verbatim", True)
-    setattr(inner, "is_myriad_method", True)
-    setattr(inner, "is_myriadclass_method", True)
-    setattr(inner, "original_fun", method)
-    return inner
-
 #####################
 # MetaClass Wrapper #
 #####################
@@ -400,7 +371,7 @@ def _generate_includes(superclass) -> (set, set):
     """ Generates local and lib includes based on superclass """
     lcl_inc = []
     if superclass is not _MyriadObjectBase:
-        lcl_inc = [superclass.__name__ + ".h"]
+        lcl_inc = [superclass.__name__ + ".cuh"]
     # TODO: Better detection of system/library headers
     lib_inc = copy(DEFAULT_LIB_INCLUDES)
     return (lcl_inc, lib_inc)
@@ -558,6 +529,7 @@ class MyriadMetaclass(type):
             _generate_cuda_includes(supercls)
 
         # Add other objects to namespace
+        namespace["super_obj_name"] = bases[0].__name__
         namespace["myriad_methods"] = myriad_methods
         namespace["myriad_obj_vars"] = myriad_obj_vars
         namespace["init_functions"] = ""

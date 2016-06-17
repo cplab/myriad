@@ -8,15 +8,17 @@
 #include "${lib}"
 % endfor
 
-#include "${obj_name}.h"
+#include "${obj_name}.cuh"
 
 ## Process instance methods
 <%
 instance_methods = [m.from_myriad_func(m, obj_name + "_" + m.ident) for m in myriad_methods.values()]
 %>
 
-## Global vtables
+## Global vtables - pre-computed for MyriadObject
 % for method in own_methods:
+
+% if obj_name != "MyriadObject":
 #ifdef CUDA
 __device__ ${method.typedef_name} ${obj_name}_${method.ident}_devp = ${obj_name}_${method.ident};
 #endif
@@ -24,19 +26,26 @@ __device__ ${method.typedef_name} ${obj_name}_${method.ident}_devp = ${obj_name}
 #ifdef CUDA
 __constant__ const ${method.typedef_name} ${method.ident}_vtable[NUM_CU_CLASS] = { NULL };
 #else
+% endif
 const ${method.typedef_name} ${method.ident}_vtable[NUM_CU_CLASS] = {
     ## For each class in all Myriad classes, use NULL if it's a non-child class and if
     ## the subclass has overwritten the method. Otherwise, use the subclass' version
     ## of our method
     % for cclass in myriad_classes:
-        ## % if cclass.obj_name == obj_name or cclass in our_subclasses:
+        % if cclass.obj_name == obj_name or cclass in our_subclasses:
+            % if method.ident not in cclass.myriad_methods:
+            &${obj_name}_${method.ident},
+            % else:
             &${cclass.obj_name}_${method.ident},
-        ## % else:
-        ##    NULL,
-        ## % endif
+            % endif
+        % else:
+           NULL,
+        % endif
     % endfor
 };
+% if obj_name != "MyriadObject":
 #endif
+% endif
 % endfor
 
 ## Method definitions
@@ -45,7 +54,6 @@ ${mtd.stringify_decl()}
 {
 ${mtd.stringify_def()}
 }
-
 % endfor
 
 ## Method delegators

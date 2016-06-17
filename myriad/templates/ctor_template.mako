@@ -1,4 +1,4 @@
-    struct ${obj_name}* _self = (struct ${obj_name}*) super_ctor(${obj_name}, self, app);
+    struct ${obj_name}* _self = (struct ${obj_name}*) super_ctor(${super_obj_name.upper()}, self, app);
 
 % for var_name, var in myriad_obj_vars.items():
     % if var.arr_id is None and not var.ident.startswith('_'):

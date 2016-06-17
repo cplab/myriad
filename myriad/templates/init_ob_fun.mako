@@ -5,7 +5,7 @@ void init_${method.ident}_cuvtable(void)
 #ifdef CUDA
     mech_fun_t host_vtable[NUM_CU_CLASS] = { NULL };
 
-    % for subclass in subclasses:
+    % for subclass in our_subclasses:
         % if method.ident in subclass.own_methods:
     CUDA_CHECK_CALL(cudaMemcpyFromSymbol(
                         &host_vtable[subclass.__name__.upper()],
