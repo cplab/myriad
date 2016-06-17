@@ -9,9 +9,9 @@ import subprocess
 import importlib
 import time
 
+from pprint import pprint
 from tempfile import TemporaryDirectory
 from copy import copy
-
 from pkg_resources import resource_string
 
 from .myriad_mako_wrapper import MakoFileTemplate
@@ -285,9 +285,9 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         # Create temporary directory to hold files in
         template_dir = TemporaryDirectory()
         template_dir_name = template_dir.name + os.sep
-        # TODO: Render templates for dependencies into template_dir
+        # Render templates for dependencies into template_dir
         for dependency in getattr(self, "dependencies"):
-            dependency.render_templates()
+            dependency.render_templates(template_dir)
         # Render templates into template_dir
         self._makefile_tmpl = MakoFileTemplate(
             template_dir_name + "Makefile",
@@ -297,12 +297,16 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
             template_dir_name + "setup.py",
             SETUPPY_TEMPLATE,
             {"dependencies": getattr(self, "dependencies")})
+        # Main file template
+        main_tmpl_context = {
+            "dependencies": getattr(self, "dependencies"),
+            "compartments": self._compartments,
+            "mechanisms": self._mechanisms}
+        main_tmpl_context.update(final_params)
         self._main_tmpl = MakoFileTemplate(
-            template_dir_name + "main.c",
+            template_dir_name + "main.cu",
             MAIN_TEMPLATE,
-            {"dependencies": getattr(self, "dependencies"),
-             "compartments": self._compartments,
-             "mechanisms": self._mechanisms}.update(final_params))
+            main_tmpl_context)
         self._myriad_h_tmpl = MakoFileTemplate(
             template_dir_name + "myriad.h",
             MYRIAD_H_TEMPLATE,
@@ -350,7 +354,6 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         # Return template directory
         return template_dir
 
-    # TODO: Create temporary directory to put all this crap in
     def run(self):
         """ Runs the simulation and puts results back into Python objects """
         # Calculate the number of compartments
@@ -360,11 +363,13 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         template_dir = self._render_templates(
             {"NUM_COMPARTMENTS": len(self._compartments)})
         # Once templates are rendered, perform compilation
+        # time.sleep(15)
         subprocess.check_call(
-            ["make", "-C " + template_dir.name, "-j4", "all"])
+            ["make", "-C", template_dir.name, "-j1", "all"])
         # Invalidate cache and load dynamic extensions
         # TODO: Change this path to something platform-specific (autodetect)
-        sys.path.append(template_dir.name + "build/lib.linux-x86_64-3.4/")
+        sys.path.append(
+            os.path.join(template_dir.name, "build", "lib.linux-x86_64-3.4"))
         importlib.invalidate_caches()
         myriad_comm_mod = importlib.import_module("myriad_comm")
         for dependency in getattr(self, "dependencies"):
@@ -372,7 +377,7 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
                 importlib.import_module(dependency.__name__.lower())
         # Run simulation and return the communicator object back
         comm = SubprocessCommunicator(
-            myriad_comm_mod, template_dir.name + "main.bin")
+            myriad_comm_mod, os.path.join(template_dir.name, "main.bin"))
         comm.spawn_child()
         time.sleep(0.25)  # FIXME: Change this sleep to a wait of some kind
         comm.setup_connection()

@@ -84,8 +84,8 @@ _C_DECL_MAPPING = {
     "unsigned char": 'B',
     "unsigned int": 'I',
     "unsigned long": 'k',
-    "int64_t": 'L',
-    "uint64_t": 'K',
+    "int_fast32_t": 'L',
+    "uint_fast32_t": 'K',
     "size_t": 'n',
     "float": 'f',
     "double": 'd',
@@ -133,12 +133,12 @@ MDouble = type("MDouble",
 MInt = type("MInt",
             (MyriadCType,),
             {
-                'mtype': IdentifierType(names=["int64_t"]),
+                'mtype': IdentifierType(names=["int_fast32_t"]),
             })()
 MUInt = type("MUInt",
              (MyriadCType,),
              {
-                 'mtype': IdentifierType(names=["uint64_t"]),
+                 'mtype': IdentifierType(names=["uint_fast32_t"]),
              })()
 MVoid = type("MVoid",
              (MyriadCType,),
@@ -586,7 +586,7 @@ class MyriadFunction(_MyriadBase):
         """
         _tmp, tmp = None, None
 
-        # Fix for an insiduous bug with string identifiers (e.g. int64_t)
+        # Fix for an insiduous bug with string identifiers (e.g. int_fast32_t)
         _tmp = self.func_decl.type.type.type\
             if isinstance(self.func_decl.type.type, TypeDecl) else\
             IdentifierType(names=self.func_decl.type.type.names)

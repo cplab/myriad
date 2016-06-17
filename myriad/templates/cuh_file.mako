@@ -16,8 +16,20 @@
 #include "${lib}"
 % endfor
 
-## Class/Object structs
+## Add parent class include
+% if super_obj_name:
+#include "${super_obj_name}.cuh"
+% endif
+
+## Class/Object structs, with special case for MyriadObject
+% if obj_name != "MyriadObject":
 ${obj_struct.stringify_decl()};
+% else:
+struct MyriadObject
+{
+    const enum MyriadClass class_id;
+};
+% endif
 
 ## Declare typedefs/vtables/init functions for own methods ONLY
 % for (delg, _) in own_method_delgs:

@@ -29,19 +29,19 @@ class Mechanism(MyriadObject):
             app: MyriadScalar("app", MVarArgs, ptr=True)
     ) -> MyriadScalar('', MVoid, ptr=True):
         """
-        struct Mechanism* _self =
-            (struct Mechanism*) super_ctor(Mechanism, self, app);
-        _self->source_id = va_arg(*app, uint64_t);
-        return _self;
+    // Call superclass constructor first
+    struct Mechanism* _self = (struct Mechanism*) super_ctor(MYRIADOBJECT, self, app);
+    // Get source_id
+    _self->source_id = va_arg(*app, uint_fast32_t);
+    return self;
         """
 
     @myriad_method_verbatim
     def mechanism_calc(
             self,
             pre_comp: MyriadScalar("pre_comp", MVoid, True),
-            post_comp: MyriadScalar("post_comp", MVoid, True),
-            global_time: MyriadScalar("global_time", MDouble, quals=["const"]),
-            curr_step: MyriadScalar("curr_step", MInt, quals=["const"])
+            global_time: MyriadScalar("gtime", MDouble, quals=["const"]),
+            curr_step: MyriadScalar("cstep", MInt, quals=["const"])
     ) -> MDouble:
         """
         return 0.0;

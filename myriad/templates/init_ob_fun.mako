@@ -6,10 +6,10 @@ void init_${method.ident}_cuvtable(void)
     mech_fun_t host_vtable[NUM_CU_CLASS] = { NULL };
 
     % for subclass in our_subclasses:
-        % if method.ident in subclass.own_methods:
+        % if method.ident in [m.__name__ for m in subclass.own_methods]:
     CUDA_CHECK_CALL(cudaMemcpyFromSymbol(
-                        &host_vtable[subclass.__name__.upper()],
-                        Mechanism_mech_fun_devp,
+                        &host_vtable[${subclass.__name__.upper()}],
+                        ${subclass.__name__}_${method.ident}_devp,
                         sizeof(${method.typedef_name}),
                         0,
                         cudaMemcpyDeviceToHost));

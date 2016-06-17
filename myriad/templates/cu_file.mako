@@ -8,7 +8,11 @@
 #include "${lib}"
 % endfor
 
+## Include ourselves and our children
 #include "${obj_name}.cuh"
+% for subclass in our_subclasses:
+#include "${subclass.__name__}.cuh"
+% endfor
 
 ## Process instance methods
 <%

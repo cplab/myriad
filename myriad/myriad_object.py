@@ -86,7 +86,7 @@ class MyriadObject(_MyriadObjectBase,
                 myriad_sizeof(self),
                 cudaMemcpyHostToDevice));
     #else
-        fputs("CUDAfication not supported when CUDA not enabled.\n", stderr);
+        fputs("CUDAfication not supported when CUDA not enabled.\\n", stderr);
     #endif
         """
 
@@ -102,7 +102,7 @@ class MyriadObject(_MyriadObjectBase,
                 myriad_sizeof(self),
                 cudaMemcpyDeviceToHost));
     #else
-        mwarn("CUDAfication is not supported when CUDA is not enabled.\n");
+        fputs("CUDAfication not supported when CUDA not enabled.\\n", stderr);
     #endif
         """
 
@@ -112,17 +112,19 @@ class MyriadObject(_MyriadObjectBase,
         # Make temporary dictionary since we need to add an extra value
         tmp_dict = {
             "own_methods": getattr(cls, "own_methods"),
-            "subclasses":  get_all_subclasses(cls)}
+            "our_subclasses":  get_all_subclasses(cls)}
         template = MakoTemplate(INIT_OB_FUN_TEMPLATE, tmp_dict)
         LOG.debug("Rendering init functions for TODO")
         template.render()
         setattr(cls, "init_functions", template.buffer)
 
     @classmethod
-    def _template_creator_helper(cls):
+    def _template_creator_helper(cls, template_dir=None):
         """
         Initializes templates for the current class
         """
+        # Set template directory
+        template_dir = template_dir if template_dir else os.getcwd()
         # Create empty local namespace
         local_namespace = {}
         # Get values from class namespace
@@ -148,16 +150,20 @@ class MyriadObject(_MyriadObjectBase,
         local_namespace["lib_includes"] = getattr(cls, "lib_includes")
         local_namespace["myriad_classes"] = MyriadMetaclass.myriad_classes
         local_namespace["our_subclasses"] = get_all_subclasses(cls)
+        if cls is not MyriadObject:
+            local_namespace["super_obj_name"] = getattr(cls, "super_obj_name")
+        else:
+            local_namespace["super_obj_name"] = None
         # Render main file templates
         setattr(cls, "cuh_file_template",
                 MakoFileTemplate(
-                    obj_name + ".cuh",
+                    os.path.join(template_dir.name, obj_name + ".cuh"),
                     CUH_FILE_TEMPLATE,
                     local_namespace))
         LOG.debug("cuh_file_template done for %s", obj_name)
         setattr(cls, "cu_file_template",
                 MakoFileTemplate(
-                    obj_name + ".cu",
+                    os.path.join(template_dir.name, obj_name + ".cu"),
                     CU_FILE_TEMPLATE,
                     local_namespace))
         LOG.debug("cu_file_template done for %s", obj_name)
@@ -173,7 +179,7 @@ class MyriadObject(_MyriadObjectBase,
         local_namespace["pyc_scalar_types"] = pyc_scalars
         setattr(cls, "pyc_file_template",
                 MakoFileTemplate(
-                    "py" + obj_name.lower() + ".c",
+                    os.path.join(template_dir.name, "py" + obj_name.lower() + ".c"),
                     PYC_COMP_FILE_TEMPLATE,
                     local_namespace))
         LOG.debug("pyc_file_template done for %s", obj_name)
@@ -187,9 +193,9 @@ class MyriadObject(_MyriadObjectBase,
         if cls is not MyriadObject:
             # Render init functions now that we have complete RTTI
             cls.gen_init_funs()
-            getattr(cls.__bases__[0], "render_templates")()
+            getattr(cls.__bases__[0], "render_templates")(template_dir)
         # Prepare templates for rendering by collecting subclass information
-        cls._template_creator_helper()
+        cls._template_creator_helper(template_dir)
         # Render templates for the current class
         LOG.debug("Rendering CUH File for %s", cls.__name__)
         getattr(cls, "cuh_file_template").render_to_file(overwrite=False)
@@ -198,14 +204,16 @@ class MyriadObject(_MyriadObjectBase,
         # MyriadObject has its own special pyc/pyh files
         if cls is MyriadObject:
             LOG.debug("Rendering PYC File for MyriadObject")
-            c_template = MakoFileTemplate("pymyriadobject.c",
-                                          MYRIADOBJECT_PYC_FILE_TEMPLATE,
-                                          cls.__dict__)
+            c_template = MakoFileTemplate(
+                os.path.join(template_dir.name, "pymyriadobject.c"),
+                MYRIADOBJECT_PYC_FILE_TEMPLATE,
+                cls.__dict__)
             c_template.render_to_file(overwrite=False)
             LOG.debug("Rendering PYH File for MyriadObject")
-            h_template = MakoFileTemplate("pymyriadobject.h",
-                                          MYRIADOBJECT_PYH_FILE_TEMPLATE,
-                                          cls.__dict__)
+            h_template = MakoFileTemplate(
+                os.path.join(template_dir.name, "pymyriadobject.h"),
+                MYRIADOBJECT_PYH_FILE_TEMPLATE,
+                cls.__dict__)
             h_template.render_to_file(overwrite=False)
         else:
             LOG.debug("Rendering PYC File for %s", cls.__name__)

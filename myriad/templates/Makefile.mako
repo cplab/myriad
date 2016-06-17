@@ -1,161 +1,131 @@
-################################
-##     CUDA Binaries & Libs   ##
-################################
-CUDA_PATH := ${CUDA_PATH}
-CUDA_INC_PATH	?= $(CUDA_PATH)/include
-CUDA_BIN_PATH	?= $(CUDA_PATH)/bin
-CUDA_LIB_PATH	?= $(CUDA_PATH)/lib64
+##########################
+## CUDA Binaries & Libs ##
+##########################
 
-################################
-##      Compilers & Tools     ##
-################################
-NVCC	?= $(CUDA_BIN_PATH)/nvcc
-CC	    := ${CC}
-CXX	    := ${CXX}
-AR	    ?= ar
+CUDA_PATH     ?= /usr
+CUDA_INC_PATH ?= $(CUDA_PATH)/include
+CUDA_BIN_PATH ?= $(CUDA_PATH)/bin
+CUDA_LIB_PATH ?= $(CUDA_PATH)/lib/x86_64-linux-gnu/
 
-################################
-##       COMPILER FLAGS       ##
-################################
+#######################
+## Compilers & Tools ##
+#######################
 
-## OS Arch Flags
-OS_SIZE = ${OS_SIZE}
-OS_ARCH = ${OS_ARCH}
+NVCC ?= $(CUDA_BIN_PATH)/nvcc
+CC   := gcc-4.9
+CXX  := g++-4.9
 
-## CC & related flags, with debug switch
-COMMON_CFLAGS := -Wall -Wextra -Wno-unused-parameter -Wno-format -Wno-unknown-pragmas
+####################
+## Compiler Flags ##
+####################
 
-## Link-time optimization only when not debugging
+## Enable link-time optimization (requires GCC 4.8+ and gold linker)
+ifdef LTO
+FLTO := -flto
+endif
+## Enable undefined behaviour sanitizer (requires GCC 4.9+)
 % if DEBUG:
-COMMON_CFLAGS += -O0 -g3 -DDEBUG=1$(DEBUG)
+UBSAN := -fsanitize=undefined
+% endif
+
+## Flags only given to host-side C
+CCFLAGS := -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unknown-pragmas -std=gnu99 -fopenmp
+% if DEBUG:
+CCFLAGS += -Og -g3 $(UBSAN)
 % else:
-COMMON_CFLAGS += -DNDEBUG -O2 -flto -march=native
+CCFLAGS += -O2 $(FLTO) -march=native -fno-trapping-math -ffinite-math-only -fno-math-errno -fpredictive-commoning -fprefetch-loop-arrays
 % endif
 
-## To Consider:
-## -ffinite-math-only : Assume no -Inf/+Inf/NaN
-## -fno-trapping-math : Floating-point operations cannot generate OS traps
-## -fno-math-errno : Don't set errno for <math.h> functions
-CCFLAGS		:= $(COMMON_CFLAGS) -Wpedantic -std=gnu99
-CXXFLAGS	:= $(COMMON_CFLAGS) -std=c++11
-CUFLAGS		:= $(COMMON_CFLAGS)
+## Flags given only to CUDA C
+CUFLAGS := -m64 -x cu -ccbin $(CXX)
+% if DEBUG:
+CUFLAGS += -g -G
+% endif
+## GENCODE_FLAGS := -gencode arch=compute_35,code=sm_35
+GENCODE_FLAGS := -arch=sm_35
 
-## NVCC & related flags
-NVCC_HOSTCC_FLAGS = -x cu -ccbin $(CC) $(addprefix -Xcompiler , $(CUFLAGS))
-NVCCFLAGS := -m$(OS_SIZE)
+##################
+## Linker Flags ##
+##################
+
+LDFLAGS     := -L. -lm -lpthread -lrt -lgomp
+CUDA_LDFLAGS := -L$(CUDA_LIB_PATH) -lcudart -lcudadevrt
+
+######################
+## Definition Flags ##
+######################
+
+DEFINES ?= -DFAST_EXP -DNUM_THREADS=${NUM_THREADS}
+
+## CUDA 7.5 needs FORCE_INLINES to get around some kind of issue
+% if CUDA:
+DEFINES += -DCUDA -D_FORCE_INLINES
+% endif
 
 % if DEBUG:
-NVCCFLAGS += -g -G
+DEFINES += -DDEBUG
+% else:
+DEFINES += -DNDEBUG
 % endif
 
-## TODO: Make sure CUDA compute architecture flags are set correctly
-GENCODE_FLAGS := -gencode arch=compute_30,code=sm_30
-EXTRA_NVCC_FLAGS := -rdc=true
-
-## CPU Myriad Objects
-MYRIAD_OBJS 	:= myriad_alloc.o myriad_communicator.o ${myriad_lib_objs}
-
-################################
-##      Linker (LD) Flags     ##
-################################
-
-LD_FLAGS            := -L. -lm -lpthread -lrt
-CUDART_LD_FLAGS     := -L$(CUDA_LIB_PATH) -lcudart
-CUDA_BIN_LDFLAGS    := $(CUDART_LD_FLAGS) $(LD_FLAGS)
-
-################################
-##       Definition Flags     ##
-################################
-
-DEFINES ?=
-% if CUDA:
-DEFINES += -DCUDA
-% endif
-
-CUDA_DEFINES := $(DEFINES)
-CUDA_BIN_DEFINES ?= $(DEFINES)
-
-################################
-##    Include Path & Flags    ##
-################################
+##################
+## Include Path ##
+##################
 
 CUDA_INCLUDES := -I$(CUDA_INC_PATH)
-INCLUDES := $(CUDA_INCLUDES) -I.
+INCLUDES := -I.
 
-################################
-##        Make Targets        ##
-################################
+##################
+## Make Targets ##
+##################
 
-SIMUL_MAIN := main
-SIMUL_MAIN_OBJ := $(addsuffix .o, $(SIMUL_MAIN))
-SIMUL_MAIN_BIN := $(addsuffix .bin, $(SIMUL_MAIN))
-
-CUDA_LINK_OBJ := 
 % if CUDA:
-CUDA_LINK_OBJ	+= dlink.o
+CUDA_LINK_OBJ := dlink.o
 % endif
+OBJECTS := ${myriad_lib_objs}
+COBJECTS := myriad_alloc.o myriad_communicator.o
+BINARY  := app.bin
 
-OBJECTS		:= $(wildcard *.o)
-LIBRARIES	:= $(wildcard *.a)
-BINARIES	:= $(wildcard *.bin)
+################
+## Make Rules ##
+################
 
-################################
-##         Make Rules         ##
-################################
+.PHONY: clean all
 
-## ------- Build Rules -------
-
-.PHONY: clean all build
-
-build: all
-
-all: $(SIMUL_MAIN_BIN) python_build
+all: $(BINARY)
 
 clean:
-	@rm -f $(OBJECTS) $(LIBRARIES) $(BINARIES) *.s *.i *.ii
+	@rm -f *.bin *.o *.s *.i *.ii
 
-## ------- CPU Myriad Objects -------
+## ------- Myriad Objects -------
 
-$(MYRIAD_OBJS): %.o : %.c
-	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
+$(COBJECTS): %.o : %.c
+	$(CC) $(DEFINES) -x c $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
 
-## ------- CUDA Myriad Library -------
-
-$(CUDA_MYRIAD_LIB): $(CUDA_MYRIAD_LIB_OBJS)
-	$(NVCC) -lib $^ -o $(CUDA_MYRIAD_LIB)
-
-$(CUDA_MYRIAD_LIB_OBJS): %.o : %.cu
-	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
-	$(CUDA_INCLUDES) $(CUDA_DEFINES) -o $@ -dc $<
-
-## ------- Linker Object -------
-
-$(CUDA_LINK_OBJ): $(SIMUL_MAIN_OBJ) $(CUDA_MYRIAD_LIB_OBJS)
-	$(NVCC) $(GENCODE_FLAGS) -dlink $^ -o $(CUDA_LINK_OBJ) # Needed for seperate compilation
-
-## ------- Main binary object -------
-
-$(SIMUL_MAIN_OBJ): %.o : %.c
+$(OBJECTS): %.o : %.cu
 % if CUDA:
-	$(NVCC) $(NVCC_HOSTCC_FLAGS) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) \
-	$(CUDA_INCLUDES) $(CUDA_BIN_DEFINES) -o $@ -dc $<
+	$(NVCC) $(DEFINES) $(GENCODE_FLAGS) $(CUFLAGS) $(CUDA_INCLUDES) -o $@ -dc $<
 % else:
-	$(CC) $(CCFLAGS) $(INCLUDES) $(DEFINES) -x c -c $< -o $@
+	$(CC) $(DEFINES) -x c $(CCFLAGS) $(INCLUDES) $(DEFINES) -o $@ -c $<
 % endif
 
-## ------- Host Linker Generated Binary -------
+## ------- CUDA Linker Object -------
 
-$(SIMUL_MAIN_BIN): $(SIMUL_MAIN_OBJ) $(CUDA_LINK_OBJ) $(MYRIAD_OBJS) $(CUDA_MYRIAD_LIB)
+$(CUDA_LINK_OBJ): $(OBJECTS)
 % if CUDA:
-	$(CC) -o $@ $+ $(CUDA_BIN_LDFLAGS)
+	$(NVCC) $(GENCODE_FLAGS) -dlink $^ -o $@ $(CUDA_LDFLAGS)
+% endif
+
+## ------- Final Binary -------
+
+$(BINARY): $(OBJECTS) $(COBJECTS) $(CUDA_LINK_OBJ)
+% if CUDA:
+	$(NVCC) -o $@ $+ $(CUDA_LDFLAGS)
 % else:
-    % if DEBUG:
-	$(CC) -O0 -g3 -o $@ $+ $(LD_FLAGS)
-    % else:
-    $(CC) -O2 -flto -o $@ $+ $(LD_FLAGS)
-    % endif
+	$(CC) $(UBSAN) $(FLTO) -o $@ $+ $(LDFLAGS)
 % endif
 
 ## ----- Python build -----
+
 python_build:
 	python setup.py build
