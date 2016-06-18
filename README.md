@@ -1,6 +1,6 @@
 myriad
 ======
 
-Compartment-based CUDA-compatible Computational Neuro Simulator
+CUDA-compatible biophysical neuronal/network simulator for computational neuroscience
 
-* Mass balance as mechanism-based
+
