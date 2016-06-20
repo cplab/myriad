@@ -3,17 +3,30 @@
 *.a
 *.lib
 *.bin
+*.so
+*.la
+*.lo
 
 # C Tags
 .tags
 TAGS
 tags
 
-# Doxygen
-doc/
+# Python
+*.pyc
+*.swp
 
 # Fuse crap
 .fuse*
+*.bak
+*.old
+
+# Log crap
+*.log
+
+# Callgrind/perf crap
+callgrind.out.*
+*.perf
 
 # Emacs crap
 \#*
@@ -26,3 +39,11 @@ doc/
 .settings/language.settings.xml
 .settings/org.eclipse.cdt.codan.core.prefs
 .settings/org.eclipse.cdt.core.prefs
+/.cproject
+/.project
+/.settings/
+/__pycache__/
+/.ropeproject/
+/myriad/__pycache__/
+/docs/_build
+/build
