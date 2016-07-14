@@ -12,8 +12,11 @@ CUDA_LIB_PATH ?= $(CUDA_PATH)/lib/x86_64-linux-gnu/
 #######################
 
 NVCC ?= $(CUDA_BIN_PATH)/nvcc
-CC   := gcc-4.9
-CXX  := g++-4.9
+ifneq "$(shell expr `gcc -dumpversion | cut -f 1-2 -d.` \>= 4.9)" "1"
+    $(error gcc version 4.9 or greater is required)
+endif
+CC   := gcc
+CXX  := g++
 
 ####################
 ## Compiler Flags ##
