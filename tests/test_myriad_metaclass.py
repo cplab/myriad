@@ -34,7 +34,7 @@ class TestMyriadMethod(MyriadTestCase):
                                                              classname)
         # Compare result strings
         expected_result = """
-        void super_dtor(const int64_t _class, const void *self)
+        void super_dtor(const int_fast32_t _class, const void *self)
         {
         dtor_vtable[_class](self);
         return;
