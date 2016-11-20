@@ -39,7 +39,7 @@ class TestClassParsing(MyriadTestCase):
     def test_parse_class_method_decl(self):
         """ Testing if parsing class method declarations works """
         m_fun = ast_function_assembler.pyfun_to_cfun(TestClass.test_method)
-        expected_decl = "int64_t test_method(void *self, int64_t a, int64_t b)"
+        expected_decl = "int_fast32_t test_method(void *self, int_fast32_t a, int_fast32_t b)"
         self.assertTrimStrEquals(m_fun.stringify_decl(), expected_decl)
 
     def test_parse_class_method_def(self):

@@ -12,6 +12,7 @@ from myriad_testing import set_external_loggers, MyriadTestCase
 
 from context import myriad
 from myriad import myriad_types as mtypes
+from tempfile import TemporaryDirectory
 from myriad import myriad_metaclass as mclass
 from myriad import myriad_object as mobject
 
@@ -39,12 +40,12 @@ class TestMyriadMetaclass(MyriadTestCase):
 
     def test_create_variable_only_class(self):
         """ Testing if creating a variable-only metaclass works """
-        class VarOnlyObj(mobject.MyriadObject):
+        class VarOnlyObjCreate(mobject.MyriadObject):
             capacitance = mtypes.MDouble
             vm = mtypes.MyriadTimeseriesVector
-        result_str = VarOnlyObj.__dict__["obj_struct"].stringify_decl()
+        result_str = VarOnlyObjCreate.__dict__["obj_struct"].stringify_decl()
         expected_result = """
-        struct VarOnlyObj
+        struct VarOnlyObjCreate
         {
             const struct MyriadObject _;
             double capacitance;
@@ -74,40 +75,40 @@ class TestMyriadMetaclass(MyriadTestCase):
 
     def test_myriad_blank_init(self):
         """ Testing creating empty Myriad objects """
-        class InstanceObject(mobject.MyriadObject):
+        class InstanceObjectBlank(mobject.MyriadObject):
             pass
-        inst = InstanceObject()
+        inst = InstanceObjectBlank()
         self.assertIsNotNone(inst)
 
     def test_myriad_init(self):
         """ Testing creating a non-empty Myriad object """
-        class InstanceObject(mobject.MyriadObject):
+        class InstanceObjectDummy(mobject.MyriadObject):
             dummy = mtypes.MDouble
-        inst = InstanceObject(dummy=3.0)
+        inst = InstanceObjectDummy(dummy=3.0)
         self.assertIsNotNone(inst)
         self.assertTrue(hasattr(inst, "dummy"))
         self.assertEqual(getattr(inst, "dummy"), 3.0)
 
     def test_myriad_invalid_init(self):
         """ Testing creating Myriad object with invalid constructor calls """
-        class InstanceObject(mobject.MyriadObject):
+        class InstanceObjectInvalid(mobject.MyriadObject):
             dummy = mtypes.MDouble
         inst = None
         # No arguments - should fail
         try:
-            inst = InstanceObject()
+            inst = InstanceObjectInvalid()
         except ValueError:
             pass
         self.assertIsNone(inst)
         # Incorrect argument - should fail
         try:
-            inst = InstanceObject(bar="LOL")
+            inst = InstanceObjectInvalid(bar="LOL")
         except ValueError:
             pass
         self.assertIsNone(inst)
         # Incorrect argument type - should fail
         try:
-            inst = InstanceObject(value=1.0)
+            inst = InstanceObjectInvalid(value=1.0)
         except ValueError:
             pass
         self.assertIsNone(inst)
@@ -123,25 +124,28 @@ class TestMyriadRendering(MyriadTestCase):
         """ Testing if template rendering produces files """
         class RenderObj(mobject.MyriadObject):
             pass
-        RenderObj.render_templates()
-        self.assertFilesExist(RenderObj)
+        template_dir = TemporaryDirectory(prefix='RenderObj')
+        RenderObj.render_templates(template_dir=template_dir.name)
+        self.assertFilesExist(RenderObj, base_dir=template_dir.name)
         # self.cleanupFiles(RenderObj)
 
     def test_render_variable_only_class(self):
         """ Testing if rendering a variable-only class works """
-        class VarOnlyObj(mobject.MyriadObject):
+        class VarOnlyObjRender(mobject.MyriadObject):
             capacitance = mtypes.MDouble
-        VarOnlyObj.render_templates()
-        self.assertFilesExist(VarOnlyObj)
-        # self.cleanupFiles(VarOnlyObj)
+        template_dir = TemporaryDirectory(prefix='VarOnlyObjRender')
+        VarOnlyObjRender.render_templates(template_dir=template_dir.name)
+        self.assertFilesExist(VarOnlyObjRender, base_dir=template_dir.name)
+        # self.cleanupFiles(VarOnlyObjRender)
 
     def test_render_timeseries_class(self):
         """ Testing if rendering a timeseries-containing class works"""
         class TimeseriesObj(mobject.MyriadObject):
             capacitance = mtypes.MDouble
             vm = mtypes.MyriadTimeseriesVector
-        TimeseriesObj.render_templates()
-        self.assertFilesExist(TimeseriesObj)
+        template_dir = TemporaryDirectory(prefix='TimeseriesObj')
+        TimeseriesObj.render_templates(template_dir=template_dir.name)
+        self.assertFilesExist(TimeseriesObj, base_dir=template_dir.name)
         # self.cleanupFiles(TimeseriesObj)
 
 

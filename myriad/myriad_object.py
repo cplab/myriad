@@ -157,13 +157,13 @@ class MyriadObject(_MyriadObjectBase,
         # Render main file templates
         setattr(cls, "cuh_file_template",
                 MakoFileTemplate(
-                    os.path.join(template_dir.name, obj_name + ".cuh"),
+                    os.path.join(template_dir, obj_name + ".cuh"),
                     CUH_FILE_TEMPLATE,
                     local_namespace))
         LOG.debug("cuh_file_template done for %s", obj_name)
         setattr(cls, "cu_file_template",
                 MakoFileTemplate(
-                    os.path.join(template_dir.name, obj_name + ".cu"),
+                    os.path.join(template_dir, obj_name + ".cu"),
                     CU_FILE_TEMPLATE,
                     local_namespace))
         LOG.debug("cu_file_template done for %s", obj_name)
@@ -179,7 +179,7 @@ class MyriadObject(_MyriadObjectBase,
         local_namespace["pyc_scalar_types"] = pyc_scalars
         setattr(cls, "pyc_file_template",
                 MakoFileTemplate(
-                    os.path.join(template_dir.name, "py" + obj_name.lower() + ".c"),
+                    os.path.join(template_dir, "py" + obj_name.lower() + ".c"),
                     PYC_COMP_FILE_TEMPLATE,
                     local_namespace))
         LOG.debug("pyc_file_template done for %s", obj_name)
@@ -205,13 +205,13 @@ class MyriadObject(_MyriadObjectBase,
         if cls is MyriadObject:
             LOG.debug("Rendering PYC File for MyriadObject")
             c_template = MakoFileTemplate(
-                os.path.join(template_dir.name, "pymyriadobject.c"),
+                os.path.join(template_dir, "pymyriadobject.c"),
                 MYRIADOBJECT_PYC_FILE_TEMPLATE,
                 cls.__dict__)
             c_template.render_to_file(overwrite=False)
             LOG.debug("Rendering PYH File for MyriadObject")
             h_template = MakoFileTemplate(
-                os.path.join(template_dir.name, "pymyriadobject.h"),
+                os.path.join(template_dir, "pymyriadobject.h"),
                 MYRIADOBJECT_PYH_FILE_TEMPLATE,
                 cls.__dict__)
             h_template.render_to_file(overwrite=False)

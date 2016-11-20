@@ -287,7 +287,7 @@ class MyriadSimul(_MyriadSimulParent, metaclass=_MyriadSimulMeta):
         template_dir_name = template_dir.name + os.sep
         # Render templates for dependencies into template_dir
         for dependency in getattr(self, "dependencies"):
-            dependency.render_templates(template_dir)
+            dependency.render_templates(template_dir.name)
         # Render templates into template_dir
         self._makefile_tmpl = MakoFileTemplate(
             template_dir_name + "Makefile",

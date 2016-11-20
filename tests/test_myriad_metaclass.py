@@ -34,7 +34,7 @@ class TestMyriadMethod(MyriadTestCase):
                                                              classname)
         # Compare result strings
         expected_result = """
-        void super_dtor(const int64_t _class, const void *self)
+        void super_dtor(const int_fast32_t _class, const void *self)
         {
         dtor_vtable[_class](self);
         return;
@@ -60,9 +60,9 @@ class TestMyriadMethod(MyriadTestCase):
         result_fxn = myriad_metaclass.create_delegator(instance_fxn, classname)
         # Compare result strings
         expected_result = """
-        int64_t add_mech(void *_self, void *mechanism)
+        int_fast32_t add_mech(void *_self, void *mechanism)
         {
-        return add_mech_vtable[((struct MyriadObject*) obj)->class_id](self, mechanism);
+        return add_mech_vtable[((struct MyriadObject*) self)->class_id](self, mechanism);
         }
         """
         self.assertTrimStrEquals(str(result_fxn), expected_result)

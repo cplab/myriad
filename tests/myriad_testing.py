@@ -84,9 +84,11 @@ class MyriadTestCase(unittest.TestCase):
     TestCase class used to facilitate keeping logs of failed/error'd tests
     """
 
-    def assertFilesExist(self, base_cls):
+    def assertFilesExist(self, base_cls, base_dir=None):
         """ Raises AssertionError if template files do not exist """
         for filename in base_cls.get_file_list():
+            if base_dir:
+                filename = os.path.join(base_dir, filename)
             if not os.path.isfile(filename):
                 raise AssertionError("Template file not found: " + filename)
 

@@ -29,7 +29,7 @@ class ASTFunctionTester(MyriadTestCase):
             return 0
         mfun = ast_func.pyfun_to_cfun(test_fun)
         self.assertIsNotNone(mfun)
-        expected_decl = "int64_t test_fun(int64_t a, int64_t b)"
+        expected_decl = "int_fast32_t test_fun(int_fast32_t a, int_fast32_t b)"
         self.assertTrimStrEquals(mfun.stringify_decl(), expected_decl)
 
     def test_simple_func_def(self):
